@@ -745,10 +745,9 @@ def process_cas_data(cas_data):
             agg[sname] = {"cost": cost_v, "units": units, "value": cur_v}
             flat.append({"scheme_name": sname, "invested_cost": cost_v, "current_value": cur_v, "net_gain": cur_v - cost_v, "xirr": calculate_scheme_xirr(txs, cur_v, v_date), "asset_type": atype})
 
-            # MASTER SIP FILTER
-            # MASTER SIP FILTER: Excludes plain "PURCHASE" to stop flagging Lump Sums as SIPs
-    sip_txs = [t for t in txs if any(k in str(t.get("description","")).upper() or k in str(t.get("type","")).upper() 
-              for k in ["SIP", "SYSTEMATIC", "RECURRING", "AUTO", "DEBIT", "E-DEBIT", "ECS"])]
+          # MASTER SIP FILTER: Excludes plain "PURCHASE" to stop flagging Lump Sums as SIPs
+            sip_txs = [t for t in txs if any(k in str(t.get("description","")).upper() or k in str(t.get("type","")).upper() 
+                      for k in ["SIP", "SYSTEMATIC", "RECURRING", "AUTO", "DEBIT", "E-DEBIT", "ECS"])]
             
             if sip_txs:
                 days = [to_date_obj(tx.get("date")).day for tx in sip_txs]
