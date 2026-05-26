@@ -866,8 +866,11 @@ def process_cas_data(cas_data):
                         "Next Due": next_due.strftime("%d %b %Y"),
                         "Next Due Iso": next_due.isoformat(), "Status": "Live"
                     }
-                    cutoff = datetime.today().date() - __import__('datetime').timedelta(days=60)
-                    if last_dt >= cutoff:
+                    # Core Fix: Calculate the 60-day window from the statement date instead of today's calendar date
+                    statement_date = to_date_obj(v_date)
+                    cutoff = statement_date - __import__('datetime').timedelta(days=60)
+                    
+                    if last_dt >= cutoff and units > 0.01:
                         rec["Status"] = "Live"
                         summary["live_sips"].append(rec)
                     else:
