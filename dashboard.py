@@ -1037,23 +1037,22 @@ if menu == "Dashboard":
         with st.container(border=True):
             st.markdown('<div class="hud-card-title" style="margin-bottom:12px;">⏱ Systematic Operational Chronometer Ticker</div>', unsafe_allow_html=True)
             # Fix: Use .get() to prevent crash if "Next Due Iso" is missing
-            sorted_sips = sorted(live["live_sips"], key=lambda x: x.get("Next Due Iso", "9999-12-31"))
-           if sorted_sips:
-                ticker_html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">'
-                for idx, s in enumerate(sorted_sips[:4]):
-                    sn = clean_fund_name(s.get("Scheme Name", "Unknown"))
-                    iso = s.get("Next Due Iso", "9999-12-31")
-                    did = f"t{idx}"
-                    
-                    ticker_html += f"""
-                    <div class="sip-ticker-item">
-                        <div style="font-size:11px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;" title="{sn}">{sn}</div>
-                        <div id="{did}" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#6366f1;white-space:nowrap;">--</div>
-                    </div>
-                    <script>(function(){{var t=new Date("{iso}").getTime();function u(){{var g=t-Date.now();if(isNaN(t) || g<0){{document.getElementById("{did}").innerHTML="PROCESSED";return;}}var d=Math.floor(g/86400000),h=Math.floor(g%86400000/3600000),m=Math.floor(g%3600000/60000);document.getElementById("{did}").innerHTML=d+"d "+h+"h "+m+"m";}}setInterval(u,60000);u();}})();</script>
-                    """
-                ticker_html += '</div>'
-                st.components.v1.html(ticker_html, height=110, scrolling=False)
+        sorted_sips = sorted(live["live_sips"], key=lambda x: x.get("Next Due Iso", "9999-12-31"))
+        if sorted_sips:
+            ticker_html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;">'
+            for idx, s in enumerate(sorted_sips[:4]):
+                sn = clean_fund_name(s.get("Scheme Name", "Unknown"))
+                iso = s.get("Next Due Iso", "9999-12-31")
+                did = f"t{idx}"
+                ticker_html += f"""
+                <div class="sip-ticker-item">
+                    <div style="font-size:11px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;" title="{sn}">{sn}</div>
+                    <div id="{did}" style="font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#6366f1;white-space:nowrap;">--</div>
+                </div>
+                <script>(function(){{var t=new Date("{iso}").getTime();function u(){{var g=t-Date.now();if(isNaN(t) || g<0){{document.getElementById("{did}").innerHTML="PROCESSED";return;}}var d=Math.floor(g/86400000),h=Math.floor(g%86400000/3600000),m=Math.floor(g%3600000/60000);document.getElementById("{did}").innerHTML=d+"d "+h+"h "+m+"m";}}setInterval(u,60000);u();}})();</script>
+                """
+            ticker_html += '</div>'
+            st.components.v1.html(ticker_html, height=110, scrolling=False)
             
             st.markdown('<div class="section-header">Next Due Schedules</div>', unsafe_allow_html=True)
             sip_rows = [{"Scheme":clean_fund_name(s["Scheme Name"]),"Amount":f"₹{s['Amount']:,.2f}","Day":s["Trigger"],"Next Due":s["Next Due"]} for s in sorted_sips[:4]]
