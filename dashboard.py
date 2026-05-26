@@ -1193,13 +1193,41 @@ elif menu == "My Portfolio":
 # ════════════════════════════════════════════════════════
 elif menu == "SIP Center":
     st.markdown('<div class="page-title">Systematic Committed Capital Pipelines Dashboard</div>', unsafe_allow_html=True)
-    live_l = live.get("live_sips", []); inactive_l = live.get("inactive_sips", [])
-    total_out = sum(s["Amount"] for s in live_l)
-    st.markdown(f"""<div style="background:linear-gradient(135deg,#0d1228,#090e1c);border:1px solid rgba(99,102,241,0.2);border-radius:16px;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><div><div style="font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;">Committed Monthly Flow Outflow</div><div style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;color:#f1f5f9;letter-spacing:-1px;">₹{total_out:,.2f}</div></div><div style="text-align:right;"><span class="badge-live">{len(live_l)} COMMITMENT ACTIVE</span><div style="margin-top:6px;"><span class="badge-dead">{len(inactive_l)} TERMINATED STREAMS</span></div></div></div>""", unsafe_allow_html=True)
+    live_l = live.get("live_sips", [])
+    inactive_l = live.get("inactive_sips", [])
+    
+    # Create the tab selection bar first
     tab = st.segmented_control("sip_tab", [f"🟢 Operational Stream ({len(live_l)})", f"🔴 Stale Commitments ({len(inactive_l)})"], default=f"🟢 Operational Stream ({len(live_l)})", label_visibility="collapsed")
-    target = live_l if "Operational" in tab else inactive_l
+    
+    # Core Fix: Dynamically switch the total calculation based on which tab is open
+    if "Operational" in tab:
+        target = live_l
+        display_status = "COMMITMENT ACTIVE"
+        badge_style = "badge-live"
+    else:
+        target = inactive_l
+        display_status = "TERMINATED STREAMS"
+        badge_style = "badge-dead"
+        
+    total_out = sum(float(s["Amount"]) for s in target)
+    
+    st.markdown(f"""
+    <div style="background:linear-gradient(135deg,#0d1228,#090e1c);border:1px solid rgba(99,102,241,0.2);border-radius:16px;padding:20px 24px;display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+        <div>
+            <div style="font-size:11px;color:#475569;text-transform:uppercase;letter-spacing:2px;margin-bottom:4px;">Selected Stream Total Flow</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:32px;font-weight:700;color:#f1f5f9;letter-spacing:-1px;">₹{total_out:,.2f}</div>
+        </div>
+        <div style="text-align:right;">
+            <span class="{badge_style}">{len(target)} {display_status}</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+    
     rows = [{k:(f"₹{v:,.2f}" if k=="Amount" else v) for k,v in s.items() if k!="Next Due Iso"} for s in target]
-    if rows: st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    if rows: 
+        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    else: 
+        st.info("No investment schemes tracked inside this category partition.")
     
     st.markdown('<div class="section-header" style="margin-top:24px;">Monthly Outflow Distribution Profile Chart</div>', unsafe_allow_html=True)
     all_sips = live_l + inactive_l
