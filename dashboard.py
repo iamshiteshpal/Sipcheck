@@ -6,6 +6,7 @@ import os
 import io
 import tempfile
 import datetime
+import requests
 from datetime import date
 from collections import Counter
 from pyxirr import xirr
@@ -92,8 +93,7 @@ div[data-testid="stMetricLabel"] > div {
   letter-spacing: 1.4px;
   font-weight: 500 !important;
 }
-div[data-testid="stMetricDelta"] > div { font-size: 11px !important;
-}
+div[data-testid="stMetricDelta"] > div { font-size: 11px !important; }
 
 /* containers */
 [data-testid="stVerticalBlockBorderWrapper"] > div > div {
@@ -120,8 +120,7 @@ div[data-testid="stMetricDelta"] > div { font-size: 11px !important;
   border-radius: 8px !important;
   color: var(--text) !important;
 }
-[data-testid="stTextInput"] input { font-family: 'IBM Plex Mono', monospace !important;
-}
+[data-testid="stTextInput"] input { font-family: 'IBM Plex Mono', monospace !important; }
 
 /* file uploader */
 [data-testid="stFileUploader"] {
@@ -142,12 +141,10 @@ div[data-testid="stMetricDelta"] > div { font-size: 11px !important;
   border-radius: 6px !important;
 }
 
-hr { border-color: var(--border) !important;
-}
+hr { border-color: var(--border) !important; }
 ::-webkit-scrollbar { width: 4px; height: 4px; }
 ::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 4px;
-}
+::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 4px; }
 
 /* ---------- utility classes ---------- */
 .card {
@@ -175,12 +172,10 @@ hr { border-color: var(--border) !important;
   font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px;
 }
 .pill-loss {
-  display: inline-flex; align-items: center;
-  gap: 4px;
+  display: inline-flex; align-items: center; gap: 4px;
   background: rgba(252,129,129,0.1); border: 1px solid rgba(252,129,129,0.25);
   color: var(--loss); font-family: 'IBM Plex Mono',monospace;
-  font-size: 11px; font-weight: 600;
-  padding: 2px 10px; border-radius: 20px;
+  font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px;
 }
 .notice {
   background: rgba(99,179,237,0.05);
@@ -207,16 +202,14 @@ hr { border-color: var(--border) !important;
   font-weight: 800;
   color: #f7fafc; letter-spacing: -0.5px; margin-bottom: 4px;
 }
-.page-sub { font-size: 13px; color: var(--muted); margin-bottom: 22px;
-}
+.page-sub { font-size: 13px; color: var(--muted); margin-bottom: 22px; }
 .sip-card {
   background: var(--bg3);
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 12px 14px;
   margin-bottom: 8px;
-  display: flex; justify-content: space-between;
-  align-items: center;
+  display: flex; justify-content: space-between; align-items: center;
 }
 .alloc-row {
   display: flex; align-items: center;
@@ -267,7 +260,6 @@ def to_date(d):
         return d.date()
     return d
 
-
 def to_dict(obj):
     if isinstance(obj, dict):
         return {k: to_dict(v) for k, v in obj.items()}
@@ -278,7 +270,6 @@ def to_dict(obj):
     if hasattr(obj, "dict"):
         return to_dict(obj.dict())
     return obj
-
 
 def clean_name(name):
     if not name:
@@ -292,11 +283,9 @@ def clean_name(name):
         name = name.replace(sfx, "")
     return name.strip()
 
-
 def ordinal(n):
     suffix = "th" if 11 <= n <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
     return f"{n}{suffix}"
-
 
 def next_due_date(dom: int) -> date:
     """Return the next calendar date whose day-of-month == dom."""
@@ -314,7 +303,6 @@ def next_due_date(dom: int) -> date:
         except ValueError:
             candidate = candidate.replace(year=y, month=m, day=28)
     return candidate
-
 
 def calc_xirr(transactions, current_value, valuation_date_str):
     dates, amounts = [], []
@@ -341,14 +329,11 @@ def calc_xirr(transactions, current_value, valuation_date_str):
             return 0.0
     return 0.0
 
-
 def fmt_inr(v):
     return f"₹{abs(v):,.2f}"
 
-
 def gain_arrow(v):
     return "▲" if v >= 0 else "▼"
-
 
 def gain_color(v):
     return C_GAIN if v >= 0 else C_LOSS
@@ -509,6 +494,34 @@ def parse_pdf(pdf_bytes, password):
             pass
 
 # ══════════════════════════════════════════════════════════════════════════════
+#  LIVE DATA FETCHER
+# ══════════════════════════════════════════════════════════════════════════════
+
+def fetch_live_navs(holdings):
+    live_dict = {}
+    latest_date = None
+    for h in holdings:
+        amfi = h.get("amfi")
+        if amfi: # If casparser found the AMFI code
+            try:
+                # Call the free API
+                r = requests.get(f"https://api.mfapi.in/mf/{amfi}", timeout=5)
+                if r.status_code == 200:
+                    data = r.json().get("data", [])
+                    if data:
+                        nav = float(data[0]["nav"])
+                        date_str = data[0]["date"]
+                        live_dict[h["scheme"]] = {
+                            "nav": nav,
+                            "date": date_str,
+                            "live_value": nav * h["units"]
+                        }
+                        latest_date = date_str
+            except:
+                pass
+    return live_dict, latest_date
+
+# ══════════════════════════════════════════════════════════════════════════════
 #  DATA PROCESSOR  (core logic)
 # ══════════════════════════════════════════════════════════════════════════════
 
@@ -602,6 +615,8 @@ def process(raw):
             xirr_ = calc_xirr(txs, value, vdate)
             result["holdings"].append({
                 "scheme":   sname,
+                "amfi":     scheme.get("amfi"), # Added: Grab AMFI code
+                "units":    units,              # Added: Grab Units
                 "invested": cost,
                 "value":    value,
                 "pnl":      pnl,
@@ -672,6 +687,8 @@ for key, val in [
     ("show_email", True),
     ("pin_ok", False),
     ("switch_target", None),
+    ("live_data", {}),          # ADDED for live NAV feature
+    ("live_last_updated", None) # ADDED for live NAV feature
 ]:
     if key not in st.session_state:
         st.session_state[key] = val
@@ -691,9 +708,9 @@ def show_upload():
       <div style="max-width:520px;width:100%;text-align:center;">
         <div style="width:64px;height:64px;background:rgba(99,179,237,0.08);border:1px solid rgba(99,179,237,0.2);
                     border-radius:18px;display:flex;align-items:center;justify-content:center;
-                    margin:0 auto 22px;font-size:28px;">📂</div>
+margin:0 auto 22px;font-size:28px;">📂</div>
         <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#f7fafc;
-                    letter-spacing:-0.5px;margin-bottom:8px;">Upload your CAS PDF</div>
+letter-spacing:-0.5px;margin-bottom:8px;">Upload your CAS PDF</div>
         <div style="font-size:14px;color:#718096;margin-bottom:32px;line-height:1.7;">
           Consolidated Account Statement from CAMS or KFintech.<br>
           Your data never leaves your device.
@@ -734,9 +751,9 @@ with st.sidebar:
     st.markdown("""
     <div style="padding:6px 0 20px;">
       <div style="font-family:'Syne',sans-serif;font-size:21px;font-weight:800;
-                  color:#f7fafc;letter-spacing:-0.5px;">CAS 360 <span style="color:#63b3ed;">View</span></div>
+color:#f7fafc;letter-spacing:-0.5px;">CAS 360 <span style="color:#63b3ed;">View</span></div>
       <div style="font-size:10px;color:#2d3748;text-transform:uppercase;letter-spacing:2px;
-                  font-weight:600;margin-top:2px;">Portfolio Intelligence</div>
+font-weight:600;margin-top:2px;">Portfolio Intelligence</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -798,7 +815,7 @@ with st.sidebar:
             st.session_state.pin_ok = False
             st.rerun()
 
-        # ── NEW LOGOUT FEATURE ──
+        # ── LOGOUT FEATURE ──
         st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
         if st.button("🚪 Logout & Clear Data", use_container_width=True):
             st.session_state.clear()
@@ -847,25 +864,59 @@ if menu == "Dashboard":
         dp = to_date(d["statement_date"]).strftime("%d %b %Y")
     except:
         dp = "—"
-    st.markdown(f"""
-    <div class="notice">
-      <span style="color:#63b3ed;font-size:16px;">◈</span>
-      <div>
-        <span style="color:#63b3ed;font-size:11px;font-weight:700;text-transform:uppercase;
-                    letter-spacing:1px;">Statement · {dp}</span><br>
-        All figures are computed from your uploaded CAS statement.
-      </div>
-    </div>""", unsafe_allow_html=True)
 
-    pnl  = d["unrealized_pnl"]
-    pnl_pct = (pnl / d["total_invested"] * 100) if d["total_invested"] else 0.0
+    # Split layout for notice and button
+    nc1, nc2 = st.columns([3, 1])
+    with nc1:
+        st.markdown(f"""
+        <div class="notice" style="margin-bottom:8px;">
+          <span style="color:#63b3ed;font-size:16px;">◈</span>
+          <div>
+            <span style="color:#63b3ed;font-size:11px;font-weight:700;text-transform:uppercase;
+    letter-spacing:1px;">CAS Statement · {dp}</span><br>
+            Base figures computed from your uploaded PDF.
+          </div>
+        </div>""", unsafe_allow_html=True)
+    with nc2:
+        if st.button("🔄 Refresh Latest NAV", use_container_width=True):
+            with st.spinner("Fetching latest NAVs from AMFI..."):
+                l_data, l_date = fetch_live_navs(d["holdings"])
+                st.session_state.live_data = l_data
+                st.session_state.live_last_updated = l_date
+            st.rerun()
+
+    # Calculate Live Overrides if the button was clicked
+    display_wealth = d["total_value"]
+    
+    if st.session_state.live_data:
+        st.markdown(f"""
+        <div style="background:rgba(72,187,120,0.1);border:1px solid rgba(72,187,120,0.25);
+                    border-radius:10px;padding:8px 16px;margin-bottom:20px;display:inline-flex;
+                    align-items:center;gap:8px;color:#48bb78;font-size:12px;font-weight:700;">
+            <span style="display:inline-block;width:8px;height:8px;background:#48bb78;border-radius:50%;box-shadow:0 0 6px #48bb78;"></span>
+            LIVE DATA ACTIVE · Latest NAVs as of {st.session_state.live_last_updated}
+        </div>
+        """, unsafe_allow_html=True)
+        
+        # Recalculate Wealth based on Live NAVs
+        new_wealth = 0
+        for h in d["holdings"]:
+            sname = h["scheme"]
+            if sname in st.session_state.live_data:
+                new_wealth += st.session_state.live_data[sname]["live_value"]
+            else:
+                new_wealth += h["value"] # Fallback to CAS if API failed for this fund
+        display_wealth = new_wealth
+
+    display_pnl = display_wealth - d["total_invested"]
+    pnl_pct = (display_pnl / d["total_invested"] * 100) if d["total_invested"] else 0.0
     sip_mo  = sum(s["amount"] for s in d["live_sips"])
 
     m1, m2, m3, m4 = st.columns(4)
-    with m1: st.metric("Total Wealth",    fmt_inr(d["total_value"]))
+    with m1: st.metric("Total Wealth",    fmt_inr(display_wealth))
     with m2: st.metric("Invested",        fmt_inr(d["total_invested"]))
-    with m3: st.metric("Unrealized P&L",  fmt_inr(pnl),
-                        delta=f"{'▲' if pnl>=0 else '▼'} {abs(pnl_pct):.2f}% all-time")
+    with m3: st.metric("Unrealized P&L",  fmt_inr(display_pnl),
+                        delta=f"{'▲' if display_pnl>=0 else '▼'} {abs(pnl_pct):.2f}% all-time")
     with m4: st.metric("Monthly SIP",     fmt_inr(sip_mo),
                         delta=f"{len(d['live_sips'])} active")
 
@@ -877,14 +928,16 @@ if menu == "Dashboard":
     with ch:
         st.markdown('<div class="card">', unsafe_allow_html=True)
         st.markdown('<div class="card-title">Wealth Journey</div>', unsafe_allow_html=True)
+        
+        pnl = display_pnl
         st.markdown(f"""
         <div style="font-family:'IBM Plex Mono',monospace;font-size:28px;font-weight:700;
-                    color:#f7fafc;letter-spacing:-1px;margin-bottom:8px;">{fmt_inr(d['total_value'])}</div>
+color:#f7fafc;letter-spacing:-1px;margin-bottom:8px;">{fmt_inr(display_wealth)}</div>
         <span class="{'pill-gain' if pnl>=0 else 'pill-loss'}">{gain_arrow(pnl)} {fmt_inr(pnl)}</span>
         """, unsafe_allow_html=True)
 
         tf = st.segmented_control("tf", ["1M","6M","1Y","3Y","ALL"], default="1Y", label_visibility="collapsed")
-        bv = d["total_value"]
+        bv = display_wealth
         bi = d["total_invested"]
         slices = {
             "1M":  (["May 5","May 10","May 15","May 20","May 27"],   [bv*.97, bv*.985, bv*.975, bv*.99, bv]),
@@ -892,7 +945,7 @@ if menu == "Dashboard":
             "1Y":  (["Jun '25","Sep '25","Dec '25","Mar '26","May '26"],[bi*.91, bi*.95, bi*.97, bv*.99, bv]),
             "3Y":  (["May '23","Nov '23","May '24","Nov '24","May '25","Nov '25","May '26"],
                     [bi*.35, bi*.55, bi*.70, bi*.83, bi*.93, bv*.98, bv]),
-            "ALL": (["Jan '24","Jul '24","Jan '25","Jul '25","Jan '26","May '26"],
+             "ALL": (["Jan '24","Jul '24","Jan '25","Jul '25","Jan '26","May '26"],
                     [bi*.20, bi*.48, bi*.68, bi*.83, bi*.93, bv]),
         }
         xs, ys = slices.get(tf, slices["1Y"])
@@ -940,7 +993,7 @@ if menu == "Dashboard":
               </div>
               <div style="text-align:right;min-width:110px;">
                 <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;
-                            color:#f7fafc;">₹{val:,.0f}</div>
+color:#f7fafc;">₹{val:,.0f}</div>
                 <div style="font-size:11px;color:#4a5568;">{pct:.1f}%</div>
               </div>
             </div>""", unsafe_allow_html=True)
@@ -963,7 +1016,7 @@ if menu == "Dashboard":
                 height=120, showlegend=True,
                 legend=dict(font=dict(size=11, color="#718096"), bgcolor="rgba(0,0,0,0)",
                             orientation="h", x=0.5, xanchor="center", y=-0.2),
-                **PLOT_BASE,
+                 **PLOT_BASE,
             )
             st.plotly_chart(fig_r, use_container_width=True, config={"displayModeBar": False})
 
@@ -991,11 +1044,11 @@ if menu == "Dashboard":
                     did = f"sip_{idx}"
                     ticker_html += f"""
                     <div style="background:#111627;border:1px solid rgba(255,255,255,0.06);
-                                border-radius:8px;padding:10px 12px;">
+border-radius:8px;padding:10px 12px;">
                       <div style="font-size:11px;color:#718096;overflow:hidden;text-overflow:ellipsis;
-                                  white-space:nowrap;margin-bottom:4px;" title="{sn}">{sn[:26]}…</div>
+white-space:nowrap;margin-bottom:4px;" title="{sn}">{sn[:26]}…</div>
                       <div id="{did}" style="font-family:'IBM Plex Mono',monospace;font-size:12px;
-                                  font-weight:700;color:#63b3ed;">—</div>
+font-weight:700;color:#63b3ed;">—</div>
                     </div>
                     <script>
                     (function(){{
@@ -1034,7 +1087,7 @@ if menu == "Dashboard":
             st.markdown('<div class="card-title">Capital Concentration</div>', unsafe_allow_html=True)
             top5 = sorted(d["holdings"], key=lambda x: x["value"], reverse=True)[:5]
             if top5:
-                tw = d["total_value"] or 1.0
+                tw = display_wealth or 1.0
                 df_c = pd.DataFrame([{
                     "Scheme": clean_name(s["scheme"]),
                     "Value":  s["value"],
@@ -1100,13 +1153,29 @@ elif menu == "My Portfolio":
           <span style="font-size:11px;font-weight:700;color:{color};text-transform:uppercase;letter-spacing:2px;">{label}</span>
           <div style="flex:1;height:1px;background:rgba(255,255,255,0.05);"></div>
         </div>""", unsafe_allow_html=True)
-        rows = [{
-            "Scheme":        clean_name(s["scheme"]),
-            "Invested":      fmt_inr(s["invested"]),
-            "Current Value": fmt_inr(s["value"]),
-            "P&L":           (f"▲ {fmt_inr(s['pnl'])}" if s["pnl"] >= 0 else f"▼ {fmt_inr(s['pnl'])}"),
-            "XIRR %":        f"{s['xirr']:.2f}%",
-        } for s in sorted(group, key=lambda x: x["value"], reverse=True)]
+        
+        rows = []
+        for s in sorted(group, key=lambda x: x["value"], reverse=True):
+            sname = s["scheme"]
+            cas_val = s["value"]
+            live_val = cas_val
+            badge = ""
+            
+            # If we pulled live data for this specific fund, use it!
+            if st.session_state.live_data and sname in st.session_state.live_data:
+                live_val = st.session_state.live_data[sname]["live_value"]
+                badge = " 🟢"
+
+            curr_pnl = live_val - s["invested"]
+            
+            rows.append({
+                "Scheme":        clean_name(sname) + badge,
+                "Invested":      fmt_inr(s["invested"]),
+                "CAS Value":     fmt_inr(cas_val),
+                "Live Value":    fmt_inr(live_val) if badge else "—",
+                "Current P&L":   (f"▲ {fmt_inr(curr_pnl)}" if curr_pnl >= 0 else f"▼ {fmt_inr(curr_pnl)}"),
+                "XIRR %":        f"{s['xirr']:.2f}%",
+            })
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
     st.markdown('<div class="section-sep">Bubble Map — Invested vs XIRR</div>', unsafe_allow_html=True)
@@ -1141,10 +1210,10 @@ elif menu == "My Portfolio":
         rc = gain_color(rp)
         st.markdown(f"""
         <div style="background:rgba({'72,187,120' if rp>=0 else '252,129,129'},0.05);
-                    border:1px solid rgba({'72,187,120' if rp>=0 else '252,129,129'},0.2);
+border:1px solid rgba({'72,187,120' if rp>=0 else '252,129,129'},0.2);
                     border-radius:10px;padding:14px 18px;margin-bottom:14px;">
           <div style="font-size:10px;color:{rc};text-transform:uppercase;letter-spacing:1px;
-                      font-weight:600;margin-bottom:4px;">Total Realized P&L</div>
+font-weight:600;margin-bottom:4px;">Total Realized P&L</div>
           <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:{rc};">
             {gain_arrow(rp)} {fmt_inr(rp)}</div>
         </div>""", unsafe_allow_html=True)
@@ -1178,13 +1247,13 @@ elif menu == "SIP Center":
 
     st.markdown(f"""
     <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;
-                padding:20px 24px;display:flex;justify-content:space-between;
+padding:20px 24px;display:flex;justify-content:space-between;
                 align-items:center;margin-bottom:16px;">
       <div>
         <div style="font-size:10px;color:var(--muted);text-transform:uppercase;
-                    letter-spacing:1.5px;margin-bottom:4px;">Total Monthly Outflow</div>
+letter-spacing:1.5px;margin-bottom:4px;">Total Monthly Outflow</div>
         <div style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:700;
-                    color:#f7fafc;letter-spacing:-1px;">{fmt_inr(total_out)}</div>
+color:#f7fafc;letter-spacing:-1px;">{fmt_inr(total_out)}</div>
       </div>
       <div style="font-size:12px;font-weight:700;color:{'#48bb78' if 'Live' in tab else '#fc8181'};">
         {len(target)} {status_lbl}
@@ -1287,7 +1356,7 @@ elif menu == "Alerts":
         <div style="text-align:center;padding:60px 20px;">
           <div style="font-size:48px;margin-bottom:12px;">◎</div>
           <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:#f7fafc;
-                      margin-bottom:6px;">All Clear</div>
+margin-bottom:6px;">All Clear</div>
           <div style="font-size:13px;color:#718096;">No alerts detected in your portfolio.</div>
         </div>""", unsafe_allow_html=True)
     else:
