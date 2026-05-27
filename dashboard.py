@@ -288,7 +288,6 @@ def ordinal(n):
     return f"{n}{suffix}"
 
 def next_due_date(dom: int) -> date:
-    """Return the next calendar date whose day-of-month == dom."""
     today = date.today()
     try:
         candidate = today.replace(day=dom)
@@ -339,11 +338,29 @@ def gain_color(v):
     return C_GAIN if v >= 0 else C_LOSS
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  EXPORT: EXCEL
+#  EXPORT: EXCEL (UPDATED WITH LIVE DATA SUPPORT)
 # ══════════════════════════════════════════════════════════════════════════════
 
-def generate_excel(d):
+def generate_excel(d, live_data=None):
     out = io.BytesIO()
+    live_data = live_data or {}
+    
+    # Calculate Live Overrides for totals
+    display_wealth = d["total_value"]
+    has_live = False
+    if live_data:
+        new_wealth = 0
+        for h in d["holdings"]:
+            sname = h["scheme"]
+            if sname in live_data:
+                new_wealth += live_data[sname]["live_value"]
+                has_live = True
+            else:
+                new_wealth += h["value"]
+        display_wealth = new_wealth if has_live else d["total_value"]
+        
+    display_pnl = display_wealth - d["total_invested"]
+
     try:
         with pd.ExcelWriter(out, engine="xlsxwriter") as w:
             pd.DataFrame([
@@ -351,21 +368,41 @@ def generate_excel(d):
                 {"Field": "Email",          "Value": d["investor_email"]},
                 {"Field": "PAN",            "Value": d.get("investor_pan", "—")},
                 {"Field": "Statement Date", "Value": d["statement_date"]},
-                {"Field": "Total Value",    "Value": d["total_value"]},
+                {"Field": "Total Value",    "Value": display_wealth},
                 {"Field": "Total Invested", "Value": d["total_invested"]},
-                {"Field": "Unrealized P&L", "Value": d["unrealized_pnl"]},
+                {"Field": "Unrealized P&L", "Value": display_pnl},
                 {"Field": "Realized P&L",   "Value": d.get("realized_pnl", 0.0)},
             ]).to_excel(w, sheet_name="Summary", index=False)
 
             if d["holdings"]:
-                pd.DataFrame([{
-                    "Scheme":        clean_name(s["scheme"]),
-                    "Category":      s["category"],
-                    "Invested":      s["invested"],
-                    "Current Value": s["value"],
-                    "P&L":           s["pnl"],
-                    "XIRR %":        s["xirr"],
-                } for s in d["holdings"]]).to_excel(w, sheet_name="Holdings", index=False)
+                h_rows = []
+                for s in d["holdings"]:
+                    sname = s["scheme"]
+                    cas_val = s["value"]
+                    l_val = cas_val
+                    nav = s.get("cas_nav", 0.0)
+                    dt = s.get("cas_date", "—")
+                    
+                    if live_data and sname in live_data:
+                        l_val = live_data[sname]["live_value"]
+                        nav = live_data[sname]["nav"]
+                        dt = live_data[sname]["date"]
+                        sname = sname + " (LIVE)"
+                        
+                    curr_pnl = l_val - s["invested"]
+                    
+                    h_rows.append({
+                        "Scheme":        clean_name(sname),
+                        "Category":      s["category"],
+                        "Invested":      s["invested"],
+                        "CAS Value":     cas_val,
+                        "Live Value":    l_val if live_data else "—",
+                        "NAV":           nav,
+                        "NAV Date":      dt,
+                        "Current P&L":   curr_pnl,
+                        "XIRR %":        s["xirr"],
+                    })
+                pd.DataFrame(h_rows).to_excel(w, sheet_name="Holdings", index=False)
 
             if d.get("redeemed"):
                 pd.DataFrame(d["redeemed"]).to_excel(w, sheet_name="Redeemed", index=False)
@@ -385,17 +422,52 @@ def generate_excel(d):
         return None
 
 # ══════════════════════════════════════════════════════════════════════════════
-#  EXPORT: HTML REPORT
+#  EXPORT: HTML REPORT (UPDATED WITH LIVE DATA SUPPORT)
 # ══════════════════════════════════════════════════════════════════════════════
 
-def generate_html(d):
+def generate_html(d, live_data=None):
+    live_data = live_data or {}
+    
+    # Calculate Live Overrides for totals
+    display_wealth = d["total_value"]
+    if live_data:
+        new_wealth = 0
+        for h in d["holdings"]:
+            sname = h["scheme"]
+            if sname in live_data:
+                new_wealth += live_data[sname]["live_value"]
+            else:
+                new_wealth += h["value"]
+        display_wealth = new_wealth
+        
+    display_pnl = display_wealth - d["total_invested"]
+    realized    = d.get("realized_pnl", 0.0)
+
     rows_holdings = ""
     for s in d.get("holdings", []):
-        pnl = s["pnl"]
+        sname = s["scheme"]
+        cas_val = s["value"]
+        l_val = cas_val
+        nav = s.get("cas_nav", 0.0)
+        dt = s.get("cas_date", "—")
+        badge = ""
+        
+        if live_data and sname in live_data:
+            l_val = live_data[sname]["live_value"]
+            nav = live_data[sname]["nav"]
+            dt = live_data[sname]["date"]
+            badge = " 🟢"
+            
+        curr_pnl = l_val - s["invested"]
+        
         rows_holdings += f"""<tr>
-          <td>{clean_name(s['scheme'])}</td><td>{s['category']}</td>
-          <td>{fmt_inr(s['invested'])}</td><td>{fmt_inr(s['value'])}</td>
-          <td style="color:{'#48bb78' if pnl>=0 else '#fc8181'};font-weight:600;">{gain_arrow(pnl)} {fmt_inr(pnl)}</td>
+          <td>{clean_name(sname)}{badge}</td>
+          <td>{fmt_inr(s['invested'])}</td>
+          <td>{fmt_inr(cas_val)}</td>
+          <td style="font-weight:700;">{fmt_inr(l_val) if badge else '—'}</td>
+          <td>₹{nav:,.4f}</td>
+          <td>{dt}</td>
+          <td style="color:{'#48bb78' if curr_pnl>=0 else '#fc8181'};font-weight:600;">{gain_arrow(curr_pnl)} {fmt_inr(curr_pnl)}</td>
           <td style="color:{'#48bb78' if s['xirr']>=0 else '#fc8181'};font-family:monospace;">{s['xirr']:.2f}%</td>
         </tr>"""
 
@@ -420,8 +492,7 @@ def generate_html(d):
           <td style="color:{color};font-weight:700;">{s['status'].upper()}</td>
         </tr>"""
 
-    pnl_total = d["unrealized_pnl"]
-    realized  = d.get("realized_pnl", 0.0)
+    live_header = " — 🟢 LIVE DATA ACTIVE" if live_data else ""
 
     return f"""<!DOCTYPE html>
 <html><head><meta charset="utf-8">
@@ -445,7 +516,7 @@ def generate_html(d):
 </style></head><body>
 <div class="card">
   <h1>CAS 360 VIEW</h1>
-  <div class="sub">Portfolio Intelligence Dashboard</div>
+  <div class="sub">Portfolio Intelligence Dashboard{live_header}</div>
   <table style="border:none;background:transparent;"><tbody>
     <tr><td style="background:transparent;color:#718096;font-size:11px;width:120px;">Name</td><td style="background:transparent;color:#f7fafc;font-weight:600;">{d['investor_name'].title()}</td>
         <td style="background:transparent;color:#718096;font-size:11px;width:120px;">Email</td><td style="background:transparent;color:#f7fafc;">{d['investor_email'] or '—'}</td></tr>
@@ -453,14 +524,14 @@ def generate_html(d):
         <td style="background:transparent;color:#718096;font-size:11px;">Statement Date</td><td style="background:transparent;color:#f7fafc;">{d['statement_date']}</td></tr>
   </tbody></table>
   <div class="grid-4">
-    <div class="kpi"><div class="kpi-label">Total Wealth</div><div class="kpi-value">{fmt_inr(d['total_value'])}</div></div>
+    <div class="kpi"><div class="kpi-label">Total Wealth</div><div class="kpi-value">{fmt_inr(display_wealth)}</div></div>
     <div class="kpi"><div class="kpi-label">Invested</div><div class="kpi-value" style="color:#63b3ed;">{fmt_inr(d['total_invested'])}</div></div>
-    <div class="kpi"><div class="kpi-label">Unrealized P&L</div><div class="kpi-value" style="color:{'#48bb78' if pnl_total>=0 else '#fc8181'};">{gain_arrow(pnl_total)} {fmt_inr(pnl_total)}</div></div>
+    <div class="kpi"><div class="kpi-label">Unrealized P&L</div><div class="kpi-value" style="color:{'#48bb78' if display_pnl>=0 else '#fc8181'};">{gain_arrow(display_pnl)} {fmt_inr(display_pnl)}</div></div>
     <div class="kpi"><div class="kpi-label">Realized P&L</div><div class="kpi-value" style="color:{'#48bb78' if realized>=0 else '#fc8181'};">{gain_arrow(realized)} {fmt_inr(realized)}</div></div>
   </div>
 </div>
 <div class="sec">Active Holdings</div>
-<table><thead><tr><th>Scheme</th><th>Category</th><th>Invested</th><th>Current Value</th><th>P&L</th><th>XIRR %</th></tr></thead>
+<table><thead><tr><th>Scheme</th><th>Invested</th><th>CAS Value</th><th>Live Value</th><th>NAV</th><th>NAV Date</th><th>P&L</th><th>XIRR %</th></tr></thead>
 <tbody>{rows_holdings}</tbody></table>
 <div class="sec">SIP Registry</div>
 <table><thead><tr><th>Scheme</th><th>Amount</th><th>Day</th><th>Last Date</th><th>Status</th></tr></thead>
@@ -627,8 +698,8 @@ def process(raw):
                 "pnl":      pnl,
                 "xirr":     xirr_,
                 "category": cat,
-                "cas_nav":  c_nav,  # Added: Historical NAV tracker
-                "cas_date": vdate   # Added: Historical Date tracker
+                "cas_nav":  c_nav, 
+                "cas_date": vdate  
             })
 
             # ── SIP DETECTION ────────────────────────────────────────────────
@@ -831,7 +902,10 @@ font-weight:600;margin-top:2px;">Portfolio Intelligence</div>
         st.markdown("<hr>", unsafe_allow_html=True)
         st.markdown("<div style='font-size:10px;color:#2d3748;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;margin-bottom:8px;'>Export</div>", unsafe_allow_html=True)
 
-        xls = generate_excel(d)
+        # ── EXPORTS CONNECTED TO LIVE STATE ──
+        live_d = st.session_state.get("live_data", {})
+        
+        xls = generate_excel(d, live_d)
         if xls:
             st.download_button(
                 "📊 Excel", data=xls,
@@ -839,8 +913,10 @@ font-weight:600;margin-top:2px;">Portfolio Intelligence</div>
                 mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                 use_container_width=True,
             )
+        
+        # HTML Report is perfectly structured to be "Printed to PDF" from the browser
         st.download_button(
-            "📄 HTML Report", data=generate_html(d),
+            "📄 HTML Report (Print as PDF)", data=generate_html(d, live_d),
             file_name=f"CAS360_{d['investor_name']}.html",
             mime="text/html", use_container_width=True,
         )
