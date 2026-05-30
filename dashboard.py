@@ -578,6 +578,7 @@ def process(raw):
         "tx_map": {},
         "agg_map": {},
         "duplicate_alerts": [],
+        "special_transactions": [],
     }
 
     total_val = 0.0
@@ -604,33 +605,136 @@ def process(raw):
             sip_invested = 0.0
             lumpsum_invested = 0.0
             redeemed_amount = 0.0
-            SIP_TX_KEYS = ["SIP", "SYSTEMATIC", "RECURRING", "AUTO DEBIT", "E-DEBIT", "ECS", "MANDATE", "AUTO"]
-            for tx in transactions:
-                amount = abs(float(tx.get("amount", 0.0)))
-                txn_type = str(tx.get("type", "")).upper()
-                description = str(tx.get("description", "")).upper()
-                is_buy = any(k in txn_type or k in description for k in ["PURCHASE", "REINVEST", "SIP", "STP-IN"])
-                is_sell = any(k in txn_type or k in description for k in ["REDEMPTION", "PAYOUT", "WITHDRAWAL", "STP-OUT"])
-                is_sip_tx = any(k in txn_type or k in description for k in SIP_TX_KEYS)
 
-                if is_buy:
+            SIP_TX_KEYS = ["SIP", "SYSTEMATIC", "RECURRING", "AUTO DEBIT", "E-DEBIT", "ECS", "MANDATE"]
+
+            for tx in transactions:
+                raw_amount = float(tx.get("amount", 0.0))
+                raw_units  = float(tx.get("units",  0.0))
+                amount     = abs(raw_amount)
+                txn_type   = str(tx.get("type",        "")).upper()
+                description= str(tx.get("description", "")).upper()
+                tx_date    = to_date(tx.get("date"))
+                combined   = txn_type + " " + description
+
+                # ── CLASSIFY ──────────────────────────────────────────────
+                # Reversal / Rejection = negative units OR negative amount
+                # OR explicit keywords for insufficient / failed / bounced
+                is_negative_flow = (raw_units < 0) or (raw_amount < 0)
+                is_reversal_kw   = any(k in combined for k in [
+                    "REVERSAL", "REVERSED", "REJECTION", "REJECTED",
+                    "BOUNCE", "BOUNCED", "INSUFFICIENT", "FAILED",
+                    "RETURN", "CANCELLED", "CANCEL",
+                ])
+
+                # STP In/Out
+                is_stp_in  = "STP" in combined and ("IN" in combined or "TRANSFER IN" in combined) and "OUT" not in combined
+                is_stp_out = "STP" in combined and ("OUT" in combined or "TRANSFER OUT" in combined)
+
+                # Switch In/Out
+                is_switch_in  = "SWITCH" in combined and ("IN" in combined) and "OUT" not in combined
+                is_switch_out = "SWITCH" in combined and ("OUT" in combined)
+
+                # SWP
+                is_swp = "SWP" in combined or "SYSTEMATIC WITHDRAWAL" in combined
+
+                # SIP (normal and reversal)
+                is_sip_kw = any(k in combined for k in SIP_TX_KEYS)
+
+                # Redemption / Withdrawal
+                is_redemption = any(k in combined for k in ["REDEMPTION", "PAYOUT", "WITHDRAWAL"]) and not is_swp
+
+                # Purchase / Lumpsum
+                is_purchase = any(k in combined for k in ["PURCHASE", "LUMPSUM", "NFO", "NEW FUND", "REINVEST", "DIVIDEND REINVEST"])
+
+                # ── REVERSAL / REJECTION OVERRIDE ─────────────────────────
+                # If negative units/amount or reversal keyword → it's always
+                # a reversal regardless of other flags. Determine parent type.
+                if is_negative_flow or is_reversal_kw:
+                    if is_sip_kw:
+                        tx_class = "SIP Reversal"
+                    elif is_stp_in:
+                        tx_class = "STP In Reversal"
+                    elif is_stp_out:
+                        tx_class = "STP Out Reversal"
+                    elif is_switch_in:
+                        tx_class = "Switch In Reversal"
+                    elif is_switch_out:
+                        tx_class = "Switch Out Reversal"
+                    elif is_swp:
+                        tx_class = "SWP Reversal"
+                    elif is_redemption:
+                        tx_class = "Redemption Reversal"
+                    else:
+                        tx_class = "Reversal / Rejection"
+                elif is_stp_in:
+                    tx_class = "STP In"
+                elif is_stp_out:
+                    tx_class = "STP Out"
+                elif is_switch_in:
+                    tx_class = "Switch In"
+                elif is_switch_out:
+                    tx_class = "Switch Out"
+                elif is_swp:
+                    tx_class = "SWP"
+                elif is_sip_kw and not is_purchase:
+                    tx_class = "SIP"
+                elif is_redemption:
+                    tx_class = "Redemption"
+                elif is_purchase:
+                    tx_class = "Lumpsum Purchase"
+                else:
+                    tx_class = "Other"
+
+                # ── INFLOW OUTFLOW ACCOUNTING ──────────────────────────────
+                # Reversals of buy-type transactions → subtract from invested
+                # Reversals of sell-type transactions → subtract from redeemed
+                BUY_CLASSES  = {"SIP", "Lumpsum Purchase", "STP In",  "Switch In"}
+                SELL_CLASSES = {"Redemption", "SWP", "STP Out", "Switch Out"}
+                REV_BUY_CLASSES  = {"SIP Reversal", "STP In Reversal",  "Switch In Reversal"}
+                REV_SELL_CLASSES = {"Redemption Reversal", "SWP Reversal", "STP Out Reversal", "Switch Out Reversal"}
+
+                if tx_class in BUY_CLASSES:
                     invested += amount
-                    if is_sip_tx:
+                    if tx_class == "SIP":
                         sip_invested += amount
                     else:
                         lumpsum_invested += amount
-                if is_sell:
+                elif tx_class in REV_BUY_CLASSES:
+                    # Reverse a prior inflow
+                    invested     = max(0.0, invested     - amount)
+                    if tx_class == "SIP Reversal":
+                        sip_invested = max(0.0, sip_invested - amount)
+                    else:
+                        lumpsum_invested = max(0.0, lumpsum_invested - amount)
+                elif tx_class in SELL_CLASSES:
                     redeemed_amount += amount
-                    try:
-                        redemption_date = to_date(tx.get("date"))
-                        result["recent_redemptions"].append({
-                            "date_obj": redemption_date,
-                            "Date": redemption_date.strftime("%d %b %Y"),
-                            "Scheme": clean_name(scheme_name),
-                            "Payout": amount,
-                        })
-                    except Exception:
-                        pass
+                    if tx_class == "Redemption":
+                        try:
+                            result["recent_redemptions"].append({
+                                "date_obj": tx_date,
+                                "Date": tx_date.strftime("%d %b %Y"),
+                                "Scheme": clean_name(scheme_name),
+                                "Payout": amount,
+                            })
+                        except Exception:
+                            pass
+                elif tx_class in REV_SELL_CLASSES:
+                    # Reverse a prior outflow
+                    redeemed_amount = max(0.0, redeemed_amount - amount)
+
+                # ── STORE ENRICHED TX FOR SPECIAL ACTIVITY LOG ─────────────
+                result["special_transactions"].append({
+                    "date_obj": tx_date,
+                    "Date":     tx_date.strftime("%d %b %Y"),
+                    "Scheme":   clean_name(scheme_name),
+                    "Type":     tx_class,
+                    "Amount":   amount,
+                    "Raw Amount": raw_amount,
+                    "Units":    raw_units,
+                    "Description": tx.get("description", ""),
+                    "Category": category,
+                })
 
             if units < 0.001 and invested > 0 and redeemed_amount > 0:
                 profit = redeemed_amount - invested
@@ -670,6 +774,7 @@ def process(raw):
                 "category": category,
                 "cas_nav": cas_nav,
                 "cas_date": valuation_date,
+                "special_tx": [t for t in result["special_transactions"] if t["Scheme"] == clean_name(scheme_name)],
             })
 
             sip_keywords = ["SIP", "SYSTEMATIC", "RECURRING", "AUTO", "DEBIT", "E-DEBIT", "ECS", "MANDATE"]
@@ -720,8 +825,68 @@ def process(raw):
     result["recent_redemptions"] = sorted(
         result["recent_redemptions"], key=lambda x: x["date_obj"], reverse=True
     )
+    result["special_transactions"] = sorted(
+        result["special_transactions"], key=lambda x: x["date_obj"], reverse=True
+    )
 
     return result
+
+
+# ─────────────────────────────────────────────
+# SPECIAL TRANSACTION HELPERS
+# ─────────────────────────────────────────────
+
+TX_META = {
+    "SIP":                   {"icon": "🔄", "color": "#63b3ed",  "group": "inflow"},
+    "Lumpsum Purchase":      {"icon": "💰", "color": "#9f7aea",  "group": "inflow"},
+    "STP In":                {"icon": "➡️", "color": "#68d391",  "group": "inflow"},
+    "Switch In":             {"icon": "🔀", "color": "#4fd1c5",  "group": "inflow"},
+    "STP Out":               {"icon": "⬅️", "color": "#f6ad55",  "group": "outflow"},
+    "Switch Out":            {"icon": "🔁", "color": "#ed8936",  "group": "outflow"},
+    "SWP":                   {"icon": "💸", "color": "#fc8181",  "group": "outflow"},
+    "Redemption":            {"icon": "🏦", "color": "#fc8181",  "group": "outflow"},
+    "SIP Reversal":          {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "STP In Reversal":       {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "STP Out Reversal":      {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "Switch In Reversal":    {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "Switch Out Reversal":   {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "SWP Reversal":          {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "Redemption Reversal":   {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "Reversal / Rejection":  {"icon": "⛔", "color": "#fc8181",  "group": "reversal"},
+    "Other":                 {"icon": "◌",  "color": "#718096",  "group": "other"},
+}
+
+SPECIAL_TX_TYPES = [t for t in TX_META if t not in ("SIP", "Lumpsum Purchase", "Other")]
+
+
+def tx_badge_html(tx_type):
+    meta = TX_META.get(tx_type, TX_META["Other"])
+    return (
+        f'<span style="display:inline-flex;align-items:center;gap:4px;'
+        f'background:{meta["color"]}18;border:1px solid {meta["color"]}44;'
+        f'color:{meta["color"]};font-family:\'IBM Plex Mono\',monospace;'
+        f'font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;">'
+        f'{meta["icon"]} {tx_type}</span>'
+    )
+
+
+def build_special_tx_df(tx_list, types_filter=None):
+    """Convert special_transactions list → display DataFrame."""
+    rows = []
+    for t in tx_list:
+        if types_filter and t["Type"] not in types_filter:
+            continue
+        rows.append({
+            "Date":        t["Date"],
+            "Scheme":      t["Scheme"],
+            "Type":        t["Type"],
+            "Amount":      fmt_inr(t["Amount"]),
+            "Units":       f'{t["Units"]:+.3f}',
+            "Description": t.get("Description", ""),
+        })
+    return pd.DataFrame(rows) if rows else pd.DataFrame(
+        columns=["Date", "Scheme", "Type", "Amount", "Units", "Description"]
+    )
 
 
 # ─────────────────────────────────────────────
@@ -1242,41 +1407,61 @@ def render_dashboard(data):
             st.plotly_chart(fig_concentration, use_container_width=True, config={"displayModeBar": False})
 
     with r4:
-        st.markdown('<div class="card-title">Recent Redemptions</div>', unsafe_allow_html=True)
-        recent_redemptions = data.get("recent_redemptions", [])
-        if recent_redemptions:
-            df_redemptions = pd.DataFrame([
-                {"Scheme": item["Scheme"], "Payout": item["Payout"]}
-                for item in recent_redemptions[:4]
-            ])
-            fig_redemptions = px.bar(
-                df_redemptions,
-                x="Payout",
-                y="Scheme",
-                orientation="h",
-                color_discrete_sequence=[C_LOSS],
-            )
-            fig_redemptions.update_layout(
-                height=140,
-                xaxis=dict(visible=False),
-                yaxis=dict(tickfont=dict(size=10, color="#718096"), title=""),
-                **PLOT_BASE,
-            )
-            st.plotly_chart(fig_redemptions, use_container_width=True, config={"displayModeBar": False})
-            st.dataframe(
-                pd.DataFrame([
-                    {
-                        "Date": item["Date"],
-                        "Scheme": item["Scheme"],
-                        "Payout": fmt_inr(item["Payout"]),
-                    }
-                    for item in recent_redemptions[:4]
-                ]),
-                use_container_width=True,
-                hide_index=True,
-            )
+        st.markdown('<div class="card-title">⚡ Special Activity</div>', unsafe_allow_html=True)
+        special_txs = data.get("special_transactions", [])
+        # Filter out plain SIP and Lumpsum for this widget — focus on non-routine
+        activity = [t for t in special_txs if t["Type"] in SPECIAL_TX_TYPES]
+
+        if activity:
+            # Summary pill counts
+            from collections import Counter as _Counter
+            type_counts = _Counter(t["Type"] for t in activity)
+            pills_html = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">'
+            for tx_type, cnt in sorted(type_counts.items(), key=lambda x: -x[1]):
+                meta = TX_META.get(tx_type, TX_META["Other"])
+                pills_html += (
+                    f'<span style="background:{meta["color"]}18;border:1px solid {meta["color"]}44;'
+                    f'color:{meta["color"]};font-size:10px;font-family:\'IBM Plex Mono\',monospace;'
+                    f'font-weight:600;padding:2px 9px;border-radius:20px;">'
+                    f'{meta["icon"]} {tx_type} ×{cnt}</span>'
+                )
+            pills_html += '</div>'
+            st.markdown(pills_html, unsafe_allow_html=True)
+
+            # Top 5 recent
+            for t in activity[:5]:
+                meta = TX_META.get(t["Type"], TX_META["Other"])
+                units_str = f'{t["Units"]:+.3f} units' if t["Units"] != 0 else ""
+                st.markdown(
+                    f"""
+                    <div style="background:#0c0f1a;border:1px solid rgba(255,255,255,0.05);
+                                border-left:3px solid {meta['color']};border-radius:0 8px 8px 0;
+                                padding:8px 12px;margin-bottom:6px;">
+                      <div style="display:flex;justify-content:space-between;align-items:center;">
+                        <div>
+                          <span style="font-size:10px;font-weight:700;color:{meta['color']};
+                                       font-family:'IBM Plex Mono',monospace;">{meta['icon']} {t['Type']}</span>
+                          <div style="font-size:12px;color:#e2e8f0;font-weight:500;margin-top:2px;">{t['Scheme']}</div>
+                          <div style="font-size:10px;color:#4a5568;margin-top:1px;">{t['Date']} &nbsp;·&nbsp; {units_str}</div>
+                        </div>
+                        <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;
+                                    font-weight:700;color:{meta['color']};text-align:right;">
+                          {fmt_inr(t['Amount'])}
+                        </div>
+                      </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
+            if len(activity) > 5:
+                st.markdown(
+                    f'<div style="font-size:11px;color:#4a5568;text-align:center;padding:4px 0;">'
+                    f'+ {len(activity)-5} more — see My Portfolio for full view</div>',
+                    unsafe_allow_html=True,
+                )
         else:
-            st.info("No recent redemptions found.")
+            st.info("No special transactions detected.")
 
 
 # ─────────────────────────────────────────────
@@ -1395,6 +1580,97 @@ def render_my_portfolio(data):
         st.dataframe(pd.DataFrame(redeemed_rows), use_container_width=True, hide_index=True)
     else:
         st.info("No fully redeemed positions found.")
+
+    # ─── SPECIAL TRANSACTIONS DETAIL ────────────────────────────────────
+    st.markdown(
+        '<div class="section-sep" style="margin-top:36px;">⚡ Special Transactions — Full History</div>',
+        unsafe_allow_html=True,
+    )
+    special_txs = data.get("special_transactions", [])
+    activity_all = [t for t in special_txs if t["Type"] in SPECIAL_TX_TYPES]
+
+    if not activity_all:
+        st.info("No special transactions (STP, SWP, Switch, Reversals, Rejections) found.")
+    else:
+        # ── Filter controls ───────────────────────────────────────────────
+        fc1, fc2, fc3 = st.columns([2, 2, 1])
+        with fc1:
+            type_options = ["All Types"] + sorted(set(t["Type"] for t in activity_all))
+            selected_type = st.selectbox("Filter by Type", type_options, key="sptx_type")
+        with fc2:
+            scheme_options = ["All Schemes"] + sorted(set(t["Scheme"] for t in activity_all))
+            selected_scheme = st.selectbox("Filter by Scheme", scheme_options, key="sptx_scheme")
+        with fc3:
+            group_options = ["All", "inflow", "outflow", "reversal"]
+            selected_group = st.selectbox("Group", group_options, key="sptx_group")
+
+        # ── Apply filters ─────────────────────────────────────────────────
+        filtered = activity_all
+        if selected_type != "All Types":
+            filtered = [t for t in filtered if t["Type"] == selected_type]
+        if selected_scheme != "All Schemes":
+            filtered = [t for t in filtered if t["Scheme"] == selected_scheme]
+        if selected_group != "All":
+            filtered = [t for t in filtered if TX_META.get(t["Type"], {}).get("group") == selected_group]
+
+        # ── Summary stats ─────────────────────────────────────────────────
+        total_inflow  = sum(t["Amount"] for t in filtered if TX_META.get(t["Type"], {}).get("group") == "inflow")
+        total_outflow = sum(t["Amount"] for t in filtered if TX_META.get(t["Type"], {}).get("group") == "outflow")
+        total_rev     = sum(t["Amount"] for t in filtered if TX_META.get(t["Type"], {}).get("group") == "reversal")
+
+        sm1, sm2, sm3, sm4 = st.columns(4)
+        sm1.metric("Filtered Records", len(filtered))
+        sm2.metric("Total Inflow",  fmt_inr(total_inflow))
+        sm3.metric("Total Outflow", fmt_inr(total_outflow))
+        sm4.metric("Reversed / Rejected", fmt_inr(total_rev))
+
+        # ── Type pill summary ─────────────────────────────────────────────
+        from collections import Counter as _Counter
+        tc = _Counter(t["Type"] for t in filtered)
+        pills = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin:10px 0 14px;">'
+        for tx_type, cnt in sorted(tc.items(), key=lambda x: -x[1]):
+            meta = TX_META.get(tx_type, TX_META["Other"])
+            pills += (
+                f'<span style="background:{meta["color"]}18;border:1px solid {meta["color"]}44;'
+                f'color:{meta["color"]};font-size:10px;font-family:\'IBM Plex Mono\',monospace;'
+                f'font-weight:600;padding:2px 9px;border-radius:20px;">'
+                f'{meta["icon"]} {tx_type} <span style="opacity:.6;">×{cnt}</span></span>'
+            )
+        pills += '</div>'
+        st.markdown(pills, unsafe_allow_html=True)
+
+        # ── Full table ────────────────────────────────────────────────────
+        if filtered:
+            df_special = build_special_tx_df(filtered)
+            st.dataframe(df_special, use_container_width=True, hide_index=True)
+
+        # ── Per-scheme breakdown for holdings ─────────────────────────────
+        st.markdown(
+            '<div class="section-sep" style="margin-top:24px;">Per-Scheme Special Transaction Summary</div>',
+            unsafe_allow_html=True,
+        )
+        scheme_groups = {}
+        for t in activity_all:
+            scheme_groups.setdefault(t["Scheme"], []).append(t)
+
+        for s_name, s_txs in sorted(scheme_groups.items()):
+            inflow_amt  = sum(t["Amount"] for t in s_txs if TX_META.get(t["Type"], {}).get("group") == "inflow")
+            outflow_amt = sum(t["Amount"] for t in s_txs if TX_META.get(t["Type"], {}).get("group") == "outflow")
+            rev_amt     = sum(t["Amount"] for t in s_txs if TX_META.get(t["Type"], {}).get("group") == "reversal")
+            type_pills  = " ".join(
+                f'{TX_META.get(tt, TX_META["Other"])["icon"]} {tt} ×{cnt}'
+                for tt, cnt in _Counter(t["Type"] for t in s_txs).most_common()
+            )
+            with st.expander(f"{s_name}  —  {len(s_txs)} events  ·  {type_pills}"):
+                sc1, sc2, sc3 = st.columns(3)
+                sc1.metric("Inflow",   fmt_inr(inflow_amt))
+                sc2.metric("Outflow",  fmt_inr(outflow_amt))
+                sc3.metric("Reversed", fmt_inr(rev_amt))
+                st.dataframe(
+                    build_special_tx_df(sorted(s_txs, key=lambda x: x["date_obj"], reverse=True)),
+                    use_container_width=True,
+                    hide_index=True,
+                )
 
 
 # ─────────────────────────────────────────────
