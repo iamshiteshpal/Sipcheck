@@ -398,7 +398,9 @@ def generate_excel(d, live_data=None):
                     rows.append({
                         "Scheme": clean_name(sname),
                         "Category": s["category"],
-                        "Invested": s["invested"],
+                        "SIP Invested": s.get("sip_invested", 0.0),
+                        "Lump Sum Invested": s.get("lumpsum_invested", 0.0),
+                        "Total Invested": s["invested"],
                         "CAS Value": cas_val,
                         "Live Value": l_val if live_data else "—",
                         "NAV": nav,
@@ -562,6 +564,8 @@ def process(raw):
         "statement_date": str(date.today()),
         "total_value": 0.0,
         "total_invested": 0.0,
+        "total_sip_invested": 0.0,
+        "total_lumpsum_invested": 0.0,
         "unrealized_pnl": 0.0,
         "realized_pnl": 0.0,
         "alloc_values": {},
@@ -597,16 +601,24 @@ def process(raw):
             result["tx_map"][scheme_name] = transactions
 
             invested = 0.0
+            sip_invested = 0.0
+            lumpsum_invested = 0.0
             redeemed_amount = 0.0
+            SIP_TX_KEYS = ["SIP", "SYSTEMATIC", "RECURRING", "AUTO DEBIT", "E-DEBIT", "ECS", "MANDATE", "AUTO"]
             for tx in transactions:
                 amount = abs(float(tx.get("amount", 0.0)))
                 txn_type = str(tx.get("type", "")).upper()
                 description = str(tx.get("description", "")).upper()
                 is_buy = any(k in txn_type or k in description for k in ["PURCHASE", "REINVEST", "SIP", "STP-IN"])
                 is_sell = any(k in txn_type or k in description for k in ["REDEMPTION", "PAYOUT", "WITHDRAWAL", "STP-OUT"])
+                is_sip_tx = any(k in txn_type or k in description for k in SIP_TX_KEYS)
 
                 if is_buy:
                     invested += amount
+                    if is_sip_tx:
+                        sip_invested += amount
+                    else:
+                        lumpsum_invested += amount
                 if is_sell:
                     redeemed_amount += amount
                     try:
@@ -625,6 +637,8 @@ def process(raw):
                 result["redeemed"].append({
                     "scheme": scheme_name,
                     "invested": invested,
+                    "sip_invested": sip_invested,
+                    "lumpsum_invested": lumpsum_invested,
                     "redeemed": redeemed_amount,
                     "profit": profit,
                 })
@@ -648,6 +662,8 @@ def process(raw):
                 "amfi": scheme.get("amfi"),
                 "units": units,
                 "invested": cost,
+                "sip_invested": sip_invested,
+                "lumpsum_invested": lumpsum_invested,
                 "value": value,
                 "pnl": pnl,
                 "xirr": xirr_value,
@@ -695,6 +711,8 @@ def process(raw):
 
     result["total_value"] = total_val
     result["total_invested"] = total_inv
+    result["total_sip_invested"] = sum(h["sip_invested"] for h in result["holdings"])
+    result["total_lumpsum_invested"] = sum(h["lumpsum_invested"] for h in result["holdings"])
     result["unrealized_pnl"] = total_val - total_inv
     result["alloc_values"] = type_map
     result["alloc_pct"] = {k: (v / total_val) * 100 for k, v in type_map.items()} if total_val else {}
@@ -977,6 +995,48 @@ def render_dashboard(data):
             fmt_inr(sip_monthly),
             delta=f"{len(data['live_sips'])} active",
         )
+
+    # ── SIP vs Lumpsum split ──
+    total_sip = data.get("total_sip_invested", 0.0)
+    total_lump = data.get("total_lumpsum_invested", 0.0)
+    total_for_pct = (total_sip + total_lump) or 1.0
+    sip_pct = total_sip / total_for_pct * 100
+    lump_pct = total_lump / total_for_pct * 100
+
+    st.markdown(
+        f"""
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;
+                    padding:18px 22px;margin-bottom:10px;">
+          <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--accent);
+                      text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;">
+            Investment Mode Split — SIP vs Lump Sum
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;">
+            <div style="background:#111627;border:1px solid rgba(99,179,237,0.15);border-radius:10px;padding:14px 18px;">
+              <div style="font-size:10px;color:#718096;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">🔄 SIP Invested</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:#63b3ed;">{fmt_inr(total_sip)}</div>
+              <div style="font-size:11px;color:#4a5568;margin-top:3px;">{sip_pct:.1f}% of total invested</div>
+            </div>
+            <div style="background:#111627;border:1px solid rgba(159,122,234,0.15);border-radius:10px;padding:14px 18px;">
+              <div style="font-size:10px;color:#718096;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">💰 Lump Sum Invested</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:#9f7aea;">{fmt_inr(total_lump)}</div>
+              <div style="font-size:11px;color:#4a5568;margin-top:3px;">{lump_pct:.1f}% of total invested</div>
+            </div>
+          </div>
+          <div style="background:#0c0f1a;border-radius:8px;height:10px;overflow:hidden;position:relative;">
+            <div style="position:absolute;left:0;top:0;height:100%;width:{sip_pct:.1f}%;
+                        background:linear-gradient(90deg,#2b6cb0,#63b3ed);border-radius:8px 0 0 8px;transition:width .6s ease;"></div>
+            <div style="position:absolute;right:0;top:0;height:100%;width:{lump_pct:.1f}%;
+                        background:linear-gradient(90deg,#553c9a,#9f7aea);border-radius:0 8px 8px 0;transition:width .6s ease;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px;">
+            <div style="font-size:10px;color:#63b3ed;font-family:'IBM Plex Mono',monospace;">● SIP {sip_pct:.1f}%</div>
+            <div style="font-size:10px;color:#9f7aea;font-family:'IBM Plex Mono',monospace;">Lump Sum {lump_pct:.1f}% ●</div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
     st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
@@ -1266,7 +1326,9 @@ def render_my_portfolio(data):
             current_pnl = live_value - item["invested"]
             rows.append({
                 "Scheme": clean_name(scheme_name) + badge,
-                "Invested": fmt_inr(item["invested"]),
+                "SIP Invested": fmt_inr(item.get("sip_invested", 0.0)),
+                "Lump Sum": fmt_inr(item.get("lumpsum_invested", 0.0)),
+                "Total Invested": fmt_inr(item["invested"]),
                 "CAS Value": fmt_inr(cas_value),
                 "Live Value": fmt_inr(live_value) if badge else "—",
                 "NAV": f"₹{show_nav:,.4f}" if show_nav else "—",
@@ -1450,7 +1512,9 @@ def render_transactions(data):
     performance = [
         {
             "Scheme": clean_name(item["scheme"]),
-            "Invested": fmt_inr(item["invested"]),
+            "SIP Invested": fmt_inr(item.get("sip_invested", 0.0)),
+            "Lump Sum": fmt_inr(item.get("lumpsum_invested", 0.0)),
+            "Total Invested": fmt_inr(item["invested"]),
             "Value": fmt_inr(item["value"]),
             "P&L": (f"▲ {fmt_inr(item['pnl'])}" if item["pnl"] >= 0 else f"▼ {fmt_inr(item['pnl'])}"),
             "XIRR %": f"{item['xirr']:.2f}%",
