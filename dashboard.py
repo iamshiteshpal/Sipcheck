@@ -906,6 +906,8 @@ def initialize_session_state():
         "switch_target": None,
         "live_data": {},
         "live_last_updated": None,
+        "family_filter": [],
+        "view_family": False,
     }
     for key, value in defaults.items():
         if key not in st.session_state:
@@ -983,9 +985,13 @@ def build_sidebar(data):
         )
 
         if data:
+            profiles_count = len(st.session_state.profiles)
+            nav_items = ["Dashboard", "My Portfolio", "SIP Center", "Transactions", "Alerts"]
+            if profiles_count > 1:
+                nav_items = ["👨‍👩‍👧‍👦 Family"] + nav_items
             menu = st.radio(
                 "nav",
-                ["Dashboard", "My Portfolio", "SIP Center", "Transactions", "Alerts"],
+                nav_items,
                 label_visibility="collapsed",
             )
             st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
@@ -1022,9 +1028,16 @@ def build_sidebar(data):
 
             if len(st.session_state.profiles) > 1:
                 st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+                # Member count badge
+                mc = len(st.session_state.profiles)
+                st.markdown(
+                    f"<div style='font-size:10px;color:#718096;text-transform:uppercase;"
+                    f"letter-spacing:1.2px;margin-bottom:6px;'>👨‍👩‍👧‍👦 {mc} Family Members</div>",
+                    unsafe_allow_html=True,
+                )
                 keys = list(st.session_state.profiles.keys())
                 index = keys.index(st.session_state.active) if st.session_state.active in keys else 0
-                selected = st.selectbox("Switch Profile", keys, index=index, label_visibility="collapsed")
+                selected = st.selectbox("Switch Member", keys, index=index, label_visibility="collapsed")
                 if selected != st.session_state.active:
                     st.session_state.switch_target = selected
                     st.session_state.pin_ok = False
@@ -2716,6 +2729,289 @@ def render_alerts(data):
         )
 
 
+
+# ─────────────────────────────────────────────
+# FAMILY OVERVIEW
+# ─────────────────────────────────────────────
+
+def render_family_overview():
+    """Consolidated view across ALL loaded profiles."""
+    profiles = st.session_state.profiles
+    names    = list(profiles.keys())
+
+    st.markdown('<div class="page-title">👨‍👩‍👧‍👦 Family Portfolio</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="page-sub">{len(names)} members loaded — consolidated view across all portfolios</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ── Member filter pills ────────────────────────────────────────────────
+    member_colors = ["#63b3ed","#9f7aea","#48bb78","#f6ad55","#fc8181","#4fd1c5","#ed8936","#fbb6ce"]
+    if "family_filter" not in st.session_state:
+        st.session_state.family_filter = names[:]
+
+    pills_html = "<div style='display:flex;flex-wrap:wrap;gap:8px;margin-bottom:20px;'>"
+    for i, name in enumerate(names):
+        c = member_colors[i % len(member_colors)]
+        active_filter = name in st.session_state.family_filter
+        bg  = f"{c}22" if active_filter else "rgba(255,255,255,0.03)"
+        brd = f"{c}55" if active_filter else "rgba(255,255,255,0.08)"
+        pills_html += (
+            f'<span style="background:{bg};border:1px solid {brd};color:{"#f7fafc" if active_filter else "#718096"};'
+            f'font-size:11px;font-weight:{"700" if active_filter else "500"};padding:5px 14px;'
+            f'border-radius:20px;cursor:pointer;">{"✓ " if active_filter else ""}{name}</span>'
+        )
+    pills_html += "</div>"
+    st.markdown(pills_html, unsafe_allow_html=True)
+
+    # Toggle buttons for each member
+    fc = st.columns(min(len(names), 6))
+    for i, name in enumerate(names):
+        c = member_colors[i % len(member_colors)]
+        with fc[i % len(fc)]:
+            label = f"✓ {name}" if name in st.session_state.family_filter else f"+ {name}"
+            if st.button(label, key=f"filt_{name}", use_container_width=True):
+                if name in st.session_state.family_filter:
+                    if len(st.session_state.family_filter) > 1:
+                        st.session_state.family_filter.remove(name)
+                else:
+                    st.session_state.family_filter.append(name)
+                st.rerun()
+
+    selected = [n for n in names if n in st.session_state.family_filter]
+    if not selected:
+        st.warning("Select at least one family member above.")
+        return
+
+    sel_profiles = {n: profiles[n] for n in selected}
+
+    # ── Aggregate numbers ─────────────────────────────────────────────────
+    fam_wealth    = sum(p["total_value"]    for p in sel_profiles.values())
+    fam_invested  = sum(p["total_invested"] for p in sel_profiles.values())
+    fam_pnl       = fam_wealth - fam_invested
+    fam_pnl_pct   = (fam_pnl / fam_invested * 100) if fam_invested else 0
+    fam_sip       = sum(sum(s["amount"] for s in p.get("live_sips",[])) for p in sel_profiles.values())
+    fam_realized  = sum(p.get("realized_pnl", 0) for p in sel_profiles.values())
+    pnl_color     = "#48bb78" if fam_pnl >= 0 else "#fc8181"
+    pnl_arrow     = "▲" if fam_pnl >= 0 else "▼"
+
+    # ── Animated family KPI cards ─────────────────────────────────────────
+    fam_kpi = (
+        "<style>@keyframes famIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}"
+        "@keyframes famGlow{0%,100%{box-shadow:0 0 0 transparent;}60%{box-shadow:0 0 20px rgba(99,179,237,0.12);}}"
+        ".fk{background:linear-gradient(135deg,#0c0f1a,#111627);border-radius:16px;padding:20px 22px;"
+        "animation:famIn .5s ease forwards,famGlow 4s ease infinite;"
+        "transition:transform .2s,border-color .25s;cursor:default;}"
+        ".fk:hover{transform:translateY(-4px);}"
+        ".fl{font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1.6px;font-weight:700;"
+        "margin-bottom:10px;display:flex;align-items:center;gap:6px;}"
+        ".fv{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:20px;letter-spacing:-.5px;}"
+        ".fs{font-size:10px;color:#4a5568;margin-top:6px;}"
+        "</style>"
+        "<div style='display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;'>"
+
+        f"<div class='fk' style='border:1px solid rgba(99,179,237,0.25);animation-delay:.0s;'>"
+        f"<div class='fl'><span style='width:6px;height:6px;border-radius:50%;background:#63b3ed;"
+        f"box-shadow:0 0 6px #63b3ed;display:inline-block;'></span>Family Wealth</div>"
+        f"<div class='fv' style='color:#63b3ed;'>{fmt_inr(fam_wealth)}</div>"
+        f"<div class='fs'>{len(selected)} members combined</div></div>"
+
+        f"<div class='fk' style='border:1px solid rgba(159,122,234,0.25);animation-delay:.08s;'>"
+        f"<div class='fl'><span style='width:6px;height:6px;border-radius:50%;background:#9f7aea;"
+        f"box-shadow:0 0 6px #9f7aea;display:inline-block;'></span>Total Invested</div>"
+        f"<div class='fv' style='color:#9f7aea;'>{fmt_inr(fam_invested)}</div>"
+        f"<div class='fs'>Across all portfolios</div></div>"
+
+        f"<div class='fk' style='border:1px solid rgba({'72,187,120' if fam_pnl>=0 else '252,129,129'},0.25);animation-delay:.16s;'>"
+        f"<div class='fl'><span style='width:6px;height:6px;border-radius:50%;background:{pnl_color};"
+        f"box-shadow:0 0 6px {pnl_color};display:inline-block;'></span>Unrealized P&L</div>"
+        f"<div class='fv' style='color:{pnl_color};'>{pnl_arrow} {fmt_inr(fam_pnl)}</div>"
+        f"<div class='fs'>{pnl_arrow} {abs(fam_pnl_pct):.2f}% all-time</div></div>"
+
+        f"<div class='fk' style='border:1px solid rgba(72,187,120,0.25);animation-delay:.24s;'>"
+        f"<div class='fl'><span style='width:6px;height:6px;border-radius:50%;background:#48bb78;"
+        f"box-shadow:0 0 6px #48bb78;display:inline-block;'></span>Monthly SIP</div>"
+        f"<div class='fv' style='color:#48bb78;'>{fmt_inr(fam_sip)}</div>"
+        f"<div class='fs'>Combined family SIP</div></div>"
+
+        f"<div class='fk' style='border:1px solid rgba(246,173,85,0.25);animation-delay:.32s;'>"
+        f"<div class='fl'><span style='width:6px;height:6px;border-radius:50%;background:#f6ad55;"
+        f"box-shadow:0 0 6px #f6ad55;display:inline-block;'></span>Realized P&L</div>"
+        f"<div class='fv' style='color:#f6ad55;'>{fmt_inr(fam_realized)}</div>"
+        f"<div class='fs'>Fully exited positions</div></div>"
+        "</div>"
+    )
+    st.markdown(fam_kpi, unsafe_allow_html=True)
+
+    # ── Per-member wealth cards row ───────────────────────────────────────
+    st.markdown(
+        '<div class="section-sep" style="margin:8px 0 16px;">Member-wise Breakdown</div>',
+        unsafe_allow_html=True,
+    )
+    mem_cols = st.columns(len(selected))
+    for i, (name, p) in enumerate(sel_profiles.items()):
+        c       = member_colors[i % len(member_colors)]
+        wealth  = p["total_value"]
+        inv     = p["total_invested"]
+        pnl     = wealth - inv
+        pnl_c   = "#48bb78" if pnl >= 0 else "#fc8181"
+        pnl_ar  = "▲" if pnl >= 0 else "▼"
+        share   = (wealth / fam_wealth * 100) if fam_wealth else 0
+        live_s  = len(p.get("live_sips", []))
+        sip_amt = sum(s["amount"] for s in p.get("live_sips", []))
+        try:
+            stmt = to_date(p["statement_date"]).strftime("%d %b %Y")
+        except Exception:
+            stmt = "—"
+        with mem_cols[i]:
+            st.markdown(
+                f'<div style="background:linear-gradient(135deg,#0c0f1a,#111627);border:1px solid {c}33;border-top:3px solid {c};'
+                f'border-radius:14px;padding:18px 16px;margin-bottom:12px;">'
+                f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">'
+                f'<div style="width:32px;height:32px;border-radius:50%;background:{c}22;'
+                f'border:2px solid {c}55;display:flex;align-items:center;justify-content:center;">'
+                f'<span style="font-size:14px;font-weight:800;color:{c};">{name[0].upper()}</span></div>'
+                f'<div><div style="font-size:13px;font-weight:700;color:#f7fafc;">{name}</div>'
+                f'<div style="font-size:10px;color:#4a5568;">{stmt}</div></div></div>'
+                f'<div style="font-family:IBM Plex Mono,monospace;font-size:20px;font-weight:700;'
+                f'color:{c};margin-bottom:4px;">{fmt_inr(wealth)}</div>'
+                f'<div style="font-size:11px;color:{pnl_c};margin-bottom:12px;">'
+                f'{pnl_ar} {fmt_inr(pnl)} &nbsp;·&nbsp; {pnl_ar} {abs((pnl/inv*100) if inv else 0):.1f}%</div>'
+                # Share bar
+                f'<div style="background:#0a0d14;border-radius:4px;height:6px;overflow:hidden;margin-bottom:4px;">'
+                f'<div style="height:100%;width:{share:.1f}%;background:{c};border-radius:4px;"></div></div>'
+                f'<div style="font-size:10px;color:#4a5568;margin-bottom:10px;">{share:.1f}% of family wealth</div>'
+                # SIP info
+                f'<div style="border-top:1px solid rgba(255,255,255,0.05);padding-top:10px;">'
+                f'<div style="font-size:10px;color:#718096;">Monthly SIP</div>'
+                f'<div style="font-family:IBM Plex Mono,monospace;font-size:13px;font-weight:600;'
+                f'color:#48bb78;">{fmt_inr(sip_amt)}</div>'
+                f'<div style="font-size:10px;color:#4a5568;">{live_s} active SIPs</div></div>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+    # ── Family wealth distribution donut ─────────────────────────────────
+    import math
+    fa1, fa2 = st.columns([1, 1])
+    with fa1:
+        st.markdown(
+            '<div class="section-sep" style="margin:8px 0 16px;">Wealth Distribution</div>',
+            unsafe_allow_html=True,
+        )
+        items_fam = [(n, sel_profiles[n]["total_value"]) for n in selected]
+        total_fam = sum(v for _, v in items_fam) or 1
+        cx_f, cy_f, ro_f, ri_f = 110, 110, 88, 54
+        segs_f = ""; leg_f = ""; ang_f = 0.0
+        kf_f   = ""
+        for i, (name, val) in enumerate(items_fam):
+            c_f   = member_colors[i % len(member_colors)]
+            pct_f = val / total_fam * 100
+            sw_f  = (pct_f/100)*360 - 2.0
+            if sw_f <= 0: ang_f += (pct_f/100)*360; continue
+            sr_f  = math.radians(ang_f - 90); er_f = math.radians(ang_f + sw_f - 90)
+            x1of  = cx_f+ro_f*math.cos(sr_f); y1of = cy_f+ro_f*math.sin(sr_f)
+            x2of  = cx_f+ro_f*math.cos(er_f); y2of = cy_f+ro_f*math.sin(er_f)
+            x1if  = cx_f+ri_f*math.cos(er_f); y1if = cy_f+ri_f*math.sin(er_f)
+            x2if  = cx_f+ri_f*math.cos(sr_f); y2if = cy_f+ri_f*math.sin(sr_f)
+            lf_f  = 1 if sw_f > 180 else 0
+            path_f= (f"M {x1of:.1f} {y1of:.1f} A {ro_f} {ro_f} 0 {lf_f} 1 {x2of:.1f} {y2of:.1f} "
+                     f"L {x1if:.1f} {y1if:.1f} A {ri_f} {ri_f} 0 {lf_f} 0 {x2if:.1f} {y2if:.1f} Z")
+            kf_f  += (f"@keyframes fSeg{i}{{from{{opacity:0;transform:scale(.78);transform-origin:{cx_f}px {cy_f}px;}}"
+                      f"to{{opacity:1;transform:scale(1);transform-origin:{cx_f}px {cy_f}px;}}}}")
+            segs_f += (f'<path d="{path_f}" fill="{c_f}" opacity="0" '
+                       f'style="animation:fSeg{i} .55s ease {i*.15:.2f}s forwards;cursor:pointer;transition:filter .2s;" '
+                       f'onmouseover="this.style.filter=\'brightness(1.3) drop-shadow(0 0 6px {c_f})\'" '
+                       f'onmouseout="this.style.filter=\'brightness(1)\'">'
+                       f'<title>{name}: {fmt_inr(val)} ({pct_f:.1f}%)</title></path>')
+            leg_f  += (f'<div style="display:flex;justify-content:space-between;align-items:center;'
+                       f'padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);">'
+                       f'<div style="display:flex;align-items:center;gap:8px;">'
+                       f'<span style="width:10px;height:10px;border-radius:50%;background:{c_f};'
+                       f'box-shadow:0 0 6px {c_f}88;display:inline-block;"></span>'
+                       f'<span style="font-size:12px;color:#e2e8f0;font-weight:600;">{name}</span></div>'
+                       f'<div style="text-align:right;">'
+                       f'<div style="font-family:IBM Plex Mono,monospace;font-size:12px;font-weight:700;color:#f7fafc;">{fmt_inr(val)}</div>'
+                       f'<div style="font-size:10px;color:#4a5568;">{pct_f:.1f}%</div></div></div>')
+            ang_f  += (pct_f/100)*360
+
+        fam_donut = (
+            f"<style>{kf_f}@keyframes fcF{{from{{opacity:0;}}to{{opacity:1;}}}}</style>"
+            "<div style='background:linear-gradient(135deg,#0c0f1a,#111627);"
+            "border:1px solid rgba(99,179,237,0.12);border-radius:16px;padding:20px;'>"
+            "<div style='display:flex;align-items:center;gap:18px;'>"
+            f"<svg width='220' height='220' viewBox='0 0 220 220' style='flex-shrink:0;'>"
+            f"{segs_f}"
+            f"<circle cx='{cx_f}' cy='{cy_f}' r='{ri_f-3}' fill='#07090f'/>"
+            f"<text x='{cx_f}' y='{cy_f-8}' text-anchor='middle' style='font-family:IBM Plex Mono,monospace;"
+            f"font-size:12px;font-weight:700;fill:#f7fafc;animation:fcF 1s .8s forwards;opacity:0;'>{len(selected)}</text>"
+            f"<text x='{cx_f}' y='{cy_f+8}' text-anchor='middle' style='font-size:10px;fill:#718096;"
+            f"animation:fcF 1s .9s forwards;opacity:0;'>members</text>"
+            f"</svg><div style='flex:1;'>{leg_f}</div></div></div>"
+        )
+        components.html(fam_donut, height=260, scrolling=True)
+
+    with fa2:
+        st.markdown(
+            '<div class="section-sep" style="margin:8px 0 16px;">Member Comparison</div>',
+            unsafe_allow_html=True,
+        )
+        # Grouped bar: Invested vs Wealth per member
+        fig_fam = go.Figure()
+        member_names = [n for n in selected]
+        inv_vals  = [sel_profiles[n]["total_invested"] for n in member_names]
+        wlth_vals = [sel_profiles[n]["total_value"]    for n in member_names]
+        sip_vals  = [sum(s["amount"] for s in sel_profiles[n].get("live_sips", [])) for n in member_names]
+
+        fig_fam.add_trace(go.Bar(
+            name="Invested", x=member_names, y=inv_vals,
+            marker_color="#9f7aea",
+            text=[fmt_inr(v) for v in inv_vals],
+            textposition="outside", textfont=dict(size=9, color="#718096"),
+        ))
+        fig_fam.add_trace(go.Bar(
+            name="Current Value", x=member_names, y=wlth_vals,
+            marker_color="#63b3ed",
+            text=[fmt_inr(v) for v in wlth_vals],
+            textposition="outside", textfont=dict(size=9, color="#718096"),
+        ))
+        fig_fam.update_layout(
+            barmode="group", height=240,
+            legend=dict(font=dict(size=10, color="#718096"), bgcolor="rgba(0,0,0,0)",
+                        orientation="h", x=0.5, xanchor="center", y=1.1),
+            xaxis=dict(tickfont=dict(size=11, color="#718096")),
+            yaxis=dict(showgrid=True, gridcolor=GRID, tickfont=dict(size=10, color="#718096"), visible=False),
+            **PLOT_BASE,
+        )
+        st.plotly_chart(fig_fam, use_container_width=True, config={"displayModeBar": False})
+
+    # ── Combined holdings table ───────────────────────────────────────────
+    st.markdown(
+        '<div class="section-sep" style="margin:8px 0 16px;">All Holdings — Combined View</div>',
+        unsafe_allow_html=True,
+    )
+    all_holdings = []
+    for name, p in sel_profiles.items():
+        for h in p.get("holdings", []):
+            all_holdings.append({
+                "Member":    name,
+                "Scheme":    clean_name(h["scheme"]),
+                "Invested":  fmt_inr(h["invested"]),
+                "Value":     fmt_inr(h["value"]),
+                "P&L":       (f"▲ {fmt_inr(h['pnl'])}" if h["pnl"] >= 0 else f"▼ {fmt_inr(h['pnl'])}"),
+                "XIRR %":   f"{h['xirr']:.2f}%",
+                "Category":  h["category"],
+            })
+    if all_holdings:
+        st.dataframe(
+            pd.DataFrame(all_holdings),
+            use_container_width=True,
+            hide_index=True,
+        )
+
+
+
+
 # ─────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────
@@ -2729,7 +3025,9 @@ def run_app():
     if not active:
         show_upload()
         st.stop()
-    if menu == "Dashboard":
+    if menu == "👨‍👩‍👧‍👦 Family":
+        render_family_overview()
+    elif menu == "Dashboard":
         render_dashboard(active)
     elif menu == "My Portfolio":
         render_my_portfolio(active)
