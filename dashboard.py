@@ -1172,62 +1172,117 @@ def render_dashboard(data):
         display_pnl = display_wealth - data["total_invested"]
         pnl_pct     = (display_pnl / data["total_invested"] * 100) if data["total_invested"] else 0.0
         sip_monthly = sum(s["amount"] for s in data["live_sips"])
-
-        m1, m2, m3, m4 = st.columns(4)
-        with m1: st.metric("Total Wealth",    fmt_inr(display_wealth))
-        with m2: st.metric("Invested",        fmt_inr(data["total_invested"]))
-        with m3: st.metric("Unrealized P&L",  fmt_inr(display_pnl),
-                            delta=f"{gain_arrow(display_pnl)} {abs(pnl_pct):.2f}% all-time")
-        with m4: st.metric("Monthly SIP",     fmt_inr(sip_monthly),
-                            delta=f"{len(data['live_sips'])} active")
-
-        # SIP vs Lump bar
-        total_sip  = data.get("total_sip_invested", 0.0)
-        total_lump = data.get("total_lumpsum_invested", 0.0)
+        total_sip   = data.get("total_sip_invested", 0.0)
+        total_lump  = data.get("total_lumpsum_invested", 0.0)
         total_for_pct = (total_sip + total_lump) or 1.0
-        sip_pct  = total_sip  / total_for_pct * 100
-        lump_pct = total_lump / total_for_pct * 100
+        sip_pct   = total_sip  / total_for_pct * 100
+        lump_pct  = total_lump / total_for_pct * 100
+        profitable = sum(1 for h in data["holdings"] if h["pnl"] >= 0)
+        losing     = sum(1 for h in data["holdings"] if h["pnl"] < 0)
 
-        st.markdown(
-            f"""<div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;
-                    padding:18px 22px;margin:14px 0 10px;">
-              <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;color:var(--accent);
-                          text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;">
-                Investment Mode Split — SIP vs Lump Sum</div>
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;">
-                <div style="background:#111627;border:1px solid rgba(99,179,237,0.15);border-radius:10px;padding:14px 18px;">
-                  <div style="font-size:10px;color:#718096;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">🔄 SIP Invested</div>
-                  <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:#63b3ed;">{fmt_inr(total_sip)}</div>
-                  <div style="font-size:11px;color:#4a5568;margin-top:3px;">{sip_pct:.1f}% of total invested</div>
-                </div>
-                <div style="background:#111627;border:1px solid rgba(159,122,234,0.15);border-radius:10px;padding:14px 18px;">
-                  <div style="font-size:10px;color:#718096;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">💰 Lump Sum Invested</div>
-                  <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:700;color:#9f7aea;">{fmt_inr(total_lump)}</div>
-                  <div style="font-size:11px;color:#4a5568;margin-top:3px;">{lump_pct:.1f}% of total invested</div>
-                </div>
-              </div>
-              <div style="background:#0c0f1a;border-radius:8px;height:10px;overflow:hidden;position:relative;">
-                <div style="position:absolute;left:0;top:0;height:100%;width:{sip_pct:.1f}%;
-                            background:linear-gradient(90deg,#2b6cb0,#63b3ed);border-radius:8px 0 0 8px;"></div>
-                <div style="position:absolute;right:0;top:0;height:100%;width:{lump_pct:.1f}%;
-                            background:linear-gradient(90deg,#553c9a,#9f7aea);border-radius:0 8px 8px 0;"></div>
-              </div>
-              <div style="display:flex;justify-content:space-between;margin-top:6px;">
-                <div style="font-size:10px;color:#63b3ed;font-family:'IBM Plex Mono',monospace;">● SIP {sip_pct:.1f}%</div>
-                <div style="font-size:10px;color:#9f7aea;font-family:'IBM Plex Mono',monospace;">Lump Sum {lump_pct:.1f}% ●</div>
-              </div>
-            </div>""",
-            unsafe_allow_html=True,
+        # ── SIP HEALTH SCORE ────────────────────────────────────────────────
+        live_count    = len(data.get("live_sips", []))
+        dead_count    = len(data.get("dead_sips", []))
+        sip_rev_count = sum(1 for t in data.get("special_transactions", []) if t["Type"] == "SIP Reversal")
+        holding_count = len(data["holdings"])
+        score = 100
+        if live_count == 0:             score -= 30
+        elif dead_count > live_count:   score -= 20
+        if sip_rev_count > 2:           score -= 15
+        elif sip_rev_count > 0:         score -= 5
+        if holding_count < 3:           score -= 10
+        if display_pnl < 0:             score -= 10
+        score = max(0, min(100, score))
+        score_color = "#48bb78" if score >= 75 else "#f6ad55" if score >= 50 else "#fc8181"
+        score_label = "Excellent" if score >= 80 else "Good" if score >= 65 else "Fair" if score >= 45 else "Needs Work"
+        score_dash  = int(283 * (1 - score / 100))
+
+        # ── ANIMATED KPI CARDS ───────────────────────────────────────────────
+        pnl_color  = "#48bb78" if display_pnl >= 0 else "#fc8181"
+        pnl_border = "rgba(72,187,120,0.2)" if display_pnl >= 0 else "rgba(252,129,129,0.2)"
+        pnl_arrow  = "▲" if display_pnl >= 0 else "▼"
+        kpi_html = (
+            "<style>"
+            "@keyframes kpiIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}"
+            "@keyframes glowP{0%,100%{box-shadow:0 0 0 rgba(99,179,237,0);}50%{box-shadow:0 0 16px rgba(99,179,237,0.14);}}"
+            ".kbox{background:#0c0f1a;border-radius:14px;padding:16px 18px;"
+            "animation:kpiIn .5s ease forwards,glowP 3s ease infinite;"
+            "transition:border-color .25s,transform .2s;cursor:default;}"
+            ".kbox:hover{transform:translateY(-3px);}"
+            ".klbl{font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1.4px;"
+            "font-weight:600;margin-bottom:8px;}"
+            ".kval{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:700;"
+            "letter-spacing:-0.5px;line-height:1.2;}"
+            ".ksub{font-size:10px;color:#4a5568;margin-top:5px;}"
+            ".sring{display:flex;align-items:center;gap:10px;}"
+            "</style>"
+            "<div style='display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px;'>"
+            f"<div class='kbox' style='border:1px solid rgba(99,179,237,0.2);animation-delay:.0s;'>"
+            f"<div class='klbl'>Total Wealth</div>"
+            f"<div class='kval' style='color:#63b3ed;'>{fmt_inr(display_wealth)}</div>"
+            f"<div class='ksub'>Portfolio value</div></div>"
+            f"<div class='kbox' style='border:1px solid rgba(159,122,234,0.2);animation-delay:.08s;'>"
+            f"<div class='klbl'>Total Invested</div>"
+            f"<div class='kval' style='color:#9f7aea;'>{fmt_inr(data['total_invested'])}</div>"
+            f"<div class='ksub'>Cost basis (CAS)</div></div>"
+            f"<div class='kbox' style='border:1px solid {pnl_border};animation-delay:.16s;'>"
+            f"<div class='klbl'>Unrealized P&L</div>"
+            f"<div class='kval' style='color:{pnl_color};'>{pnl_arrow} {fmt_inr(display_pnl)}</div>"
+            f"<div class='ksub'>{pnl_arrow} {abs(pnl_pct):.2f}% all-time</div></div>"
+            f"<div class='kbox' style='border:1px solid rgba(72,187,120,0.2);animation-delay:.24s;'>"
+            f"<div class='klbl'>Monthly SIP</div>"
+            f"<div class='kval' style='color:#48bb78;'>{fmt_inr(sip_monthly)}</div>"
+            f"<div class='ksub'>{live_count} active &nbsp;·&nbsp; {dead_count} stopped</div></div>"
+            f"<div class='kbox' style='border:1px solid {score_color}44;animation-delay:.32s;'>"
+            f"<div class='klbl'>SIP Health Score</div>"
+            f"<div class='sring'>"
+            f"<svg width='48' height='48' viewBox='0 0 100 100'>"
+            f"<circle cx='50' cy='50' r='45' fill='none' stroke='#1a202c' stroke-width='10'/>"
+            f"<circle cx='50' cy='50' r='45' fill='none' stroke='{score_color}' stroke-width='10'"
+            f" stroke-dasharray='283' stroke-dashoffset='{score_dash}'"
+            f" stroke-linecap='round' transform='rotate(-90 50 50)'"
+            f" style='transition:stroke-dashoffset 1.2s ease;'/>"
+            f"</svg>"
+            f"<div><div style='font-family:IBM Plex Mono,monospace;font-size:20px;font-weight:700;color:{score_color};'>{score}</div>"
+            f"<div style='font-size:10px;color:{score_color};font-weight:600;'>{score_label}</div></div>"
+            f"</div></div></div>"
         )
+        components.html(kpi_html, height=128, scrolling=False)
 
+        # ── ANIMATED SIP vs LUMP BAR ─────────────────────────────────────────
+        split_html = (
+            "<style>@keyframes bSlide{from{width:0;}to{width:var(--w);}}.bfill{animation:bSlide 1.2s cubic-bezier(.4,0,.2,1) forwards;}</style>"
+            "<div style='background:#0c0f1a;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px 22px;margin-bottom:16px;'>"
+            "<div style='font-family:Syne,sans-serif;font-size:11px;font-weight:700;color:#63b3ed;"
+            "text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;'>Investment Mode Split — SIP vs Lump Sum</div>"
+            "<div style='display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;'>"
+            "<div style='background:#111627;border:1px solid rgba(99,179,237,0.15);border-radius:10px;padding:14px 18px;'>"
+            "<div style='font-size:10px;color:#718096;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;'>🔄 SIP Invested</div>"
+            f"<div style='font-family:IBM Plex Mono,monospace;font-size:20px;font-weight:700;color:#63b3ed;'>{fmt_inr(total_sip)}</div>"
+            f"<div style='font-size:11px;color:#4a5568;margin-top:3px;'>{sip_pct:.1f}% of total invested</div></div>"
+            "<div style='background:#111627;border:1px solid rgba(159,122,234,0.15);border-radius:10px;padding:14px 18px;'>"
+            "<div style='font-size:10px;color:#718096;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;'>💰 Lump Sum Invested</div>"
+            f"<div style='font-family:IBM Plex Mono,monospace;font-size:20px;font-weight:700;color:#9f7aea;'>{fmt_inr(total_lump)}</div>"
+            f"<div style='font-size:11px;color:#4a5568;margin-top:3px;'>{lump_pct:.1f}% of total invested</div></div></div>"
+            "<div style='background:#07090f;border-radius:8px;height:12px;overflow:hidden;display:flex;'>"
+            f"<div class='bfill' style='--w:{sip_pct:.1f}%;height:100%;background:linear-gradient(90deg,#2b6cb0,#63b3ed);border-radius:8px 0 0 8px;'></div>"
+            f"<div class='bfill' style='--w:{lump_pct:.1f}%;height:100%;background:linear-gradient(90deg,#553c9a,#9f7aea);border-radius:0 8px 8px 0;'></div></div>"
+            "<div style='display:flex;justify-content:space-between;margin-top:6px;'>"
+            f"<div style='font-size:10px;color:#63b3ed;font-family:IBM Plex Mono,monospace;'>● SIP {sip_pct:.1f}%</div>"
+            f"<div style='font-size:10px;color:#9f7aea;font-family:IBM Plex Mono,monospace;'>Lump Sum {lump_pct:.1f}% ●</div></div></div>"
+        )
+        components.html(split_html, height=185, scrolling=False)
+
+        # ── WEALTH CHART ─────────────────────────────────────────────────────
         ch, al = st.columns([3, 2])
         with ch:
             st.markdown('<div class="card">', unsafe_allow_html=True)
             st.markdown('<div class="card-title">Wealth Journey</div>', unsafe_allow_html=True)
+            pill_cls = "pill-gain" if display_pnl >= 0 else "pill-loss"
             st.markdown(
-                f"""<div style="font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:700;
-                    color:#f7fafc;letter-spacing:-1px;margin-bottom:8px;">{fmt_inr(display_wealth)}</div>
-                    <span class="{'pill-gain' if display_pnl>=0 else 'pill-loss'}">{gain_arrow(display_pnl)} {fmt_inr(display_pnl)}</span>""",
+                f'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:26px;font-weight:700;'
+                f'color:#f7fafc;letter-spacing:-1px;margin-bottom:8px;">{fmt_inr(display_wealth)}</div>'
+                f'<span class="{pill_cls}">{gain_arrow(display_pnl)} {fmt_inr(display_pnl)}</span>',
                 unsafe_allow_html=True,
             )
             tf = st.segmented_control("tf_overall", ["1M","6M","1Y","3Y","ALL"], default="1Y", label_visibility="collapsed")
@@ -1252,128 +1307,214 @@ def render_dashboard(data):
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
             st.markdown('</div>', unsafe_allow_html=True)
 
+        # ── ANIMATED SVG DONUT ───────────────────────────────────────────────
         with al:
-            st.markdown('<div class="card" style="height:100%;">', unsafe_allow_html=True)
-            st.markdown('<div class="card-title">Asset Allocation</div>', unsafe_allow_html=True)
-            if data["alloc_pct"]:
-                df_pie = pd.DataFrame({"Class": list(data["alloc_pct"].keys()), "Pct": list(data["alloc_pct"].values())})
-                fig_pie = px.pie(df_pie, names="Class", values="Pct", hole=0.7,
-                    color_discrete_sequence=[C_ACCENT,"#f6ad55",C_GAIN,C_ACCENT2])
-                fig_pie.update_traces(textinfo="none", hovertemplate="<b>%{label}</b><br>%{value:.1f}%<extra></extra>")
-                fig_pie.update_layout(height=170, showlegend=False, **PLOT_BASE)
-                st.plotly_chart(fig_pie, use_container_width=True, config={"displayModeBar": False})
-            colors = {"Equity Funds": C_ACCENT, "Debt Funds": "#f6ad55", "Gold Funds": C_GAIN, "International": C_ACCENT2}
-            for ac, pct in data["alloc_pct"].items():
-                val = data["alloc_values"].get(ac, 0.0)
-                c = colors.get(ac, C_ACCENT2)
-                st.markdown(
-                    f"""<div class="alloc-row">
-                      <div style="display:flex;align-items:center;flex:1;">
-                        <span class="alloc-dot" style="background:{c};box-shadow:0 0 5px {c}55;"></span>
-                        <span style="font-size:13px;font-weight:500;color:#e2e8f0;">{ac}</span>
-                      </div>
-                      <div style="text-align:right;min-width:110px;">
-                        <div style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;color:#f7fafc;">₹{val:,.0f}</div>
-                        <div style="font-size:11px;color:#4a5568;">{pct:.1f}%</div>
-                      </div>
-                    </div>""",
-                    unsafe_allow_html=True,
+            alloc_colors_map = {"Equity Funds": "#63b3ed", "Debt Funds": "#f6ad55",
+                                 "Gold Funds": "#48bb78", "International": "#9f7aea"}
+            alloc_items = list(data["alloc_pct"].items())
+            cx, cy, r_out, r_in = 100, 100, 80, 52
+            seg_angle = 0.0
+            segments_svg = ""
+            legend_html  = ""
+            gap_deg = 3.0
+            for idx, (label, pct) in enumerate(alloc_items):
+                color = alloc_colors_map.get(label, "#9f7aea")
+                sweep = (pct / 100) * 360 - gap_deg
+                if sweep <= 0:
+                    seg_angle += (pct / 100) * 360
+                    continue
+                import math
+                sr = math.radians(seg_angle - 90)
+                er = math.radians(seg_angle + sweep - 90)
+                x1o = cx + r_out * math.cos(sr); y1o = cy + r_out * math.sin(sr)
+                x2o = cx + r_out * math.cos(er); y2o = cy + r_out * math.sin(er)
+                x1i = cx + r_in  * math.cos(er); y1i = cy + r_in  * math.sin(er)
+                x2i = cx + r_in  * math.cos(sr); y2i = cy + r_in  * math.sin(sr)
+                lf  = 1 if sweep > 180 else 0
+                delay = idx * 0.15
+                path = (f"M {x1o:.1f} {y1o:.1f} A {r_out} {r_out} 0 {lf} 1 {x2o:.1f} {y2o:.1f} "
+                        f"L {x1i:.1f} {y1i:.1f} A {r_in} {r_in} 0 {lf} 0 {x2i:.1f} {y2i:.1f} Z")
+                segments_svg += (f'<path d="{path}" fill="{color}" opacity="0" '
+                    f'style="animation:segIn .55s ease {delay:.2f}s forwards;cursor:pointer;'
+                    f'transition:filter .2s;" onmouseover="this.style.filter=\'brightness(1.3)\'"'
+                    f' onmouseout="this.style.filter=\'brightness(1)\'">'
+                    f'<title>{label}: {pct:.1f}%</title></path>')
+                val = data["alloc_values"].get(label, 0.0)
+                legend_html += (
+                    f'<div style="display:flex;justify-content:space-between;align-items:center;'
+                    f'padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);">'
+                    f'<div style="display:flex;align-items:center;gap:8px;">'
+                    f'<span style="width:8px;height:8px;border-radius:50%;background:{color};'
+                    f'box-shadow:0 0 6px {color}88;display:inline-block;"></span>'
+                    f'<span style="font-size:12px;color:#e2e8f0;font-weight:500;">{label}</span></div>'
+                    f'<div style="text-align:right;">'
+                    f'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:600;color:#f7fafc;">&#8377;{val:,.0f}</div>'
+                    f'<div style="font-size:10px;color:#4a5568;">{pct:.1f}%</div></div></div>'
                 )
-            st.markdown('</div>', unsafe_allow_html=True)
+                seg_angle += (pct / 100) * 360
+
+            donut_html = (
+                "<style>@keyframes segIn{from{opacity:0;transform:scale(.82);transform-origin:100px 100px;}"
+                "to{opacity:1;transform:scale(1);transform-origin:100px 100px;}}"
+                "@keyframes cIn{from{opacity:0;}to{opacity:1;}}</style>"
+                "<div style='background:#0c0f1a;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px 20px;'>"
+                "<div style='font-family:Syne,sans-serif;font-size:11px;font-weight:700;color:#63b3ed;"
+                "text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;'>Asset Allocation</div>"
+                "<div style='display:flex;align-items:center;gap:14px;'>"
+                f"<svg width='200' height='200' viewBox='0 0 200 200' style='flex-shrink:0;'>"
+                f"{segments_svg}"
+                f"<circle cx='{cx}' cy='{cy}' r='{r_in-3}' fill='#07090f'/>"
+                f"<text x='{cx}' y='{cy-8}' text-anchor='middle' style='font-family:IBM Plex Mono,monospace;"
+                f"font-size:13px;font-weight:700;fill:#f7fafc;animation:cIn 1s .6s ease forwards;opacity:0;'>"
+                f"{len(alloc_items)}</text>"
+                f"<text x='{cx}' y='{cy+10}' text-anchor='middle' style='font-size:10px;fill:#718096;"
+                f"animation:cIn 1s .7s ease forwards;opacity:0;'>classes</text>"
+                f"</svg>"
+                f"<div style='flex:1;'>{legend_html}</div>"
+                "</div></div>"
+            )
+            components.html(donut_html, height=268, scrolling=False)
 
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
+        # ── HOLDINGS HEATMAP + TOP GAINERS/LOSERS ───────────────────────────
         r1, r2 = st.columns(2)
         with r1:
-            st.markdown('<div class="card-title">Performance Breakdown</div>', unsafe_allow_html=True)
-            profitable = sum(1 for h in data["holdings"] if h["pnl"] >= 0)
-            losing = sum(1 for h in data["holdings"] if h["pnl"] < 0)
-            fig_perf = go.Figure(go.Pie(
-                labels=["Profitable","In Loss"], values=[profitable, losing],
-                hole=0.65, marker_colors=[C_GAIN, C_LOSS], textinfo="none"))
-            fig_perf.update_layout(height=120, showlegend=True,
-                legend=dict(font=dict(size=11,color="#718096"), bgcolor="rgba(0,0,0,0)",
-                            orientation="h", x=0.5, xanchor="center", y=-0.2), **PLOT_BASE)
-            st.plotly_chart(fig_perf, use_container_width=True, config={"displayModeBar": False})
-            _dash_section("Top Gainers")
-            top_gainers = sorted([h for h in data["holdings"] if h["pnl"] > 0], key=lambda x: x["pnl"], reverse=True)[:3]
-            if top_gainers:
-                st.dataframe(pd.DataFrame([
-                    {"Scheme": clean_name(h["scheme"]), "P&L": fmt_inr(h["pnl"]), "XIRR": f"{h['xirr']:.1f}%"}
-                    for h in top_gainers
-                ]), use_container_width=True, hide_index=True)
+            _dash_section("📊 Holdings Profit / Loss Heatmap")
+            holdings_sorted = sorted(data["holdings"], key=lambda x: x["pnl"], reverse=True)
+            if holdings_sorted:
+                heat_html = '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px;">'
+                for h in holdings_sorted:
+                    pnl = h["pnl"]
+                    pct_h = (pnl / h["invested"] * 100) if h["invested"] else 0
+                    intensity = min(abs(pct_h) / 30, 1.0)
+                    if pnl >= 0:
+                        bg = f"rgba(72,187,120,{0.07 + intensity*0.22:.2f})"
+                        br = f"rgba(72,187,120,{0.18 + intensity*0.4:.2f})"
+                        vc = "#48bb78"; ar = "▲"
+                    else:
+                        bg = f"rgba(252,129,129,{0.07 + intensity*0.22:.2f})"
+                        br = f"rgba(252,129,129,{0.18 + intensity*0.4:.2f})"
+                        vc = "#fc8181"; ar = "▼"
+                    name = clean_name(h["scheme"])
+                    short = name[:18] + "…" if len(name) > 18 else name
+                    heat_html += (
+                        f'<div style="background:{bg};border:1px solid {br};border-radius:10px;'
+                        f'padding:10px 12px;" title="{name}">'
+                        f'<div style="font-size:10px;color:#718096;margin-bottom:5px;'
+                        f'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{short}</div>'
+                        f'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;'
+                        f'font-weight:700;color:{vc};">{ar} {abs(pct_h):.1f}%</div>'
+                        f'<div style="font-size:10px;color:{vc};margin-top:2px;opacity:.8;">'
+                        f'{ar} {fmt_inr(pnl)}</div></div>'
+                    )
+                heat_html += '</div>'
+                st.markdown(heat_html, unsafe_allow_html=True)
 
         with r2:
+            _dash_section("🏆 Top Gainers vs Losers")
+            top_g = sorted([h for h in data["holdings"] if h["pnl"] > 0], key=lambda x: x["pnl"], reverse=True)[:4]
+            top_l = sorted([h for h in data["holdings"] if h["pnl"] < 0], key=lambda x: x["pnl"])[:4]
+            if top_g:
+                st.markdown('<div style="font-size:11px;color:#48bb78;font-weight:600;margin-bottom:6px;">✅ Top Gainers</div>', unsafe_allow_html=True)
+                st.dataframe(pd.DataFrame([
+                    {"Scheme": clean_name(h["scheme"]), "P&L": fmt_inr(h["pnl"]), "XIRR": f"{h['xirr']:.1f}%"}
+                    for h in top_g
+                ]), use_container_width=True, hide_index=True)
+            if top_l:
+                st.markdown('<div style="font-size:11px;color:#fc8181;font-weight:600;margin:10px 0 6px;">⚠️ In Loss</div>', unsafe_allow_html=True)
+                st.dataframe(pd.DataFrame([
+                    {"Scheme": clean_name(h["scheme"]), "P&L": fmt_inr(h["pnl"]), "XIRR": f"{h['xirr']:.1f}%"}
+                    for h in top_l
+                ]), use_container_width=True, hide_index=True)
+
+        # ── SIP COUNTDOWN + CAPITAL CONCENTRATION ───────────────────────────
+        r3, r4 = st.columns(2)
+        with r3:
             st.markdown('<div class="card-title">⏱ SIP Countdown</div>', unsafe_allow_html=True)
             sorted_sips = sorted(data["live_sips"], key=lambda x: x["next_iso"])
             if sorted_sips:
                 ticker_html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">'
                 for idx, sip in enumerate(sorted_sips[:4]):
                     sn = clean_name(sip["scheme"]); ti = sip["next_iso"]; did = f"sip_{idx}"
-                    ticker_html += f"""<div style="background:#111627;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:10px 12px;">
-                      <div style="font-size:11px;color:#718096;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px;" title="{sn}">{sn[:26]}…</div>
-                      <div id="{did}" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:#63b3ed;">—</div></div>
-                    <script>(function(){{var t=new Date("{ti}T00:00:00").getTime();function tick(){{var diff=t-Date.now();var el=document.getElementById("{did}");if(!el)return;if(isNaN(t)||diff<=0){{el.textContent="DUE TODAY";return;}}var d=Math.floor(diff/86400000);var h=Math.floor(diff%86400000/3600000);var m=Math.floor(diff%3600000/60000);el.textContent=d+"d "+h+"h "+m+"m";}}setInterval(tick,30000);tick();}})();</script>"""
+                    ticker_html += (
+                        f'<div style="background:#111627;border:1px solid rgba(255,255,255,0.06);'
+                        f'border-radius:8px;padding:10px 12px;">'
+                        f'<div style="font-size:11px;color:#718096;overflow:hidden;text-overflow:ellipsis;'
+                        f'white-space:nowrap;margin-bottom:4px;" title="{sn}">{sn[:26]}…</div>'
+                        f'<div id="{did}" style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;'
+                        f'font-weight:700;color:#63b3ed;">—</div></div>'
+                        f'<script>(function(){{var t=new Date("{ti}T00:00:00").getTime();'
+                        f'function tick(){{var diff=t-Date.now();var el=document.getElementById("{did}");'
+                        f'if(!el)return;if(isNaN(t)||diff<=0){{el.textContent="DUE TODAY";return;}}'
+                        f'var d=Math.floor(diff/86400000);var h=Math.floor(diff%86400000/3600000);'
+                        f'var m=Math.floor(diff%3600000/60000);el.textContent=d+"d "+h+"h "+m+"m";}}'
+                        f'setInterval(tick,30000);tick();}})();</script>'
+                    )
                 ticker_html += "</div>"
                 components.html(ticker_html, height=130, scrolling=False)
                 st.dataframe(pd.DataFrame([
-                    {"Scheme": clean_name(s["scheme"]), "Amount": fmt_inr(s["amount"]), "Day": s["day_label"], "Next": s["next_date"]}
+                    {"Scheme": clean_name(s["scheme"]), "Amount": fmt_inr(s["amount"]),
+                     "Day": s["day_label"], "Next": s["next_date"]}
                     for s in sorted_sips[:4]
                 ]), use_container_width=True, hide_index=True)
             else:
                 st.info("No live SIPs detected.")
 
-        r3, r4 = st.columns(2)
-        with r3:
+        with r4:
             st.markdown('<div class="card-title">Capital Concentration</div>', unsafe_allow_html=True)
             top5 = sorted(data["holdings"], key=lambda x: x["value"], reverse=True)[:5]
             if top5:
                 df_c = pd.DataFrame([{"Scheme": clean_name(h["scheme"]), "Value": h["value"],
-                    "Pct": h["value"]/(display_wealth or 1)*100} for h in top5])
+                    "Pct": h["value"] / (display_wealth or 1) * 100} for h in top5])
                 fig_c = px.bar(df_c, x="Value", y="Scheme", orientation="h", color="Pct",
                     color_continuous_scale=["#1a365d", C_ACCENT, "#bee3f8"])
-                fig_c.update_layout(height=180, xaxis=dict(visible=False),
-                    yaxis=dict(tickfont=dict(size=10,color="#718096"),title=""),
+                fig_c.update_layout(height=200, xaxis=dict(visible=False),
+                    yaxis=dict(tickfont=dict(size=10, color="#718096"), title=""),
                     coloraxis_showscale=False, **PLOT_BASE)
                 st.plotly_chart(fig_c, use_container_width=True, config={"displayModeBar": False})
 
-        with r4:
-            st.markdown('<div class="card-title">⚡ Special Activity</div>', unsafe_allow_html=True)
-            activity = [t for t in data.get("special_transactions",[]) if t["Type"] in SPECIAL_TX_TYPES]
-            if activity:
-                tc = _Counter(t["Type"] for t in activity)
-                pills = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">'
-                for tx_type, cnt in sorted(tc.items(), key=lambda x: -x[1]):
-                    meta = TX_META.get(tx_type, TX_META["Other"])
-                    pills += (f'<span style="background:{meta["color"]}18;border:1px solid {meta["color"]}44;'
-                        f'color:{meta["color"]};font-size:10px;font-family:\'IBM Plex Mono\',monospace;'
-                        f'font-weight:600;padding:2px 9px;border-radius:20px;">{meta["icon"]} {tx_type} ×{cnt}</span>')
-                pills += '</div>'
-                st.markdown(pills, unsafe_allow_html=True)
-                for t in activity[:5]:
-                    meta = TX_META.get(t["Type"], TX_META["Other"])
-                    units_str = f'{t["Units"]:+.3f} units' if t["Units"] != 0 else ""
+        # ── SPECIAL ACTIVITY (3-column grid) ─────────────────────────────────
+        _dash_section("⚡ Special Activity")
+        activity = [t for t in data.get("special_transactions", []) if t["Type"] in SPECIAL_TX_TYPES]
+        if activity:
+            tc = _Counter(t["Type"] for t in activity)
+            pills = '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px;">'
+            for tx_type, cnt in sorted(tc.items(), key=lambda x: -x[1]):
+                meta = TX_META.get(tx_type, TX_META["Other"])
+                pills += (f'<span style="background:{meta["color"]}18;border:1px solid {meta["color"]}44;'
+                    f'color:{meta["color"]};font-size:10px;font-family:\'IBM Plex Mono\',monospace;'
+                    f'font-weight:600;padding:2px 9px;border-radius:20px;">'
+                    f'{meta["icon"]} {tx_type} ×{cnt}</span>')
+            pills += '</div>'
+            st.markdown(pills, unsafe_allow_html=True)
+            act_cols = st.columns(3)
+            for i, t in enumerate(activity[:6]):
+                meta = TX_META.get(t["Type"], TX_META["Other"])
+                units_str = f'{t["Units"]:+.3f} units' if t["Units"] != 0 else ""
+                with act_cols[i % 3]:
                     st.markdown(
-                        f"""<div style="background:#0c0f1a;border:1px solid rgba(255,255,255,0.05);
-                            border-left:3px solid {meta['color']};border-radius:0 8px 8px 0;padding:8px 12px;margin-bottom:6px;">
-                          <div style="display:flex;justify-content:space-between;align-items:center;">
-                            <div>
-                              <span style="font-size:10px;font-weight:700;color:{meta['color']};font-family:'IBM Plex Mono',monospace;">{meta['icon']} {t['Type']}</span>
-                              <div style="font-size:12px;color:#e2e8f0;font-weight:500;margin-top:2px;">{t['Scheme']}</div>
-                              <div style="font-size:10px;color:#4a5568;margin-top:1px;">{t['Date']} &nbsp;·&nbsp; {units_str}</div>
-                            </div>
-                            <div style="font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;color:{meta['color']};text-align:right;">{fmt_inr(t['Amount'])}</div>
-                          </div>
-                        </div>""",
+                        f'<div style="background:#0c0f1a;border:1px solid rgba(255,255,255,0.05);'
+                        f'border-left:3px solid {meta["color"]};border-radius:0 8px 8px 0;'
+                        f'padding:8px 12px;margin-bottom:8px;">'
+                        f'<span style="font-size:10px;font-weight:700;color:{meta["color"]};'
+                        f'font-family:\'IBM Plex Mono\',monospace;">{meta["icon"]} {t["Type"]}</span>'
+                        f'<div style="font-size:11px;color:#e2e8f0;font-weight:500;margin-top:2px;">{t["Scheme"]}</div>'
+                        f'<div style="font-size:10px;color:#4a5568;margin-top:1px;">{t["Date"]} · {units_str}</div>'
+                        f'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;'
+                        f'font-weight:700;color:{meta["color"]};margin-top:3px;">{fmt_inr(t["Amount"])}</div>'
+                        f'</div>',
                         unsafe_allow_html=True,
                     )
-                if len(activity) > 5:
-                    st.markdown(f'<div style="font-size:11px;color:#4a5568;text-align:center;padding:4px 0;">+ {len(activity)-5} more — see My Portfolio</div>', unsafe_allow_html=True)
-            else:
-                st.info("No special transactions detected.")
+            if len(activity) > 6:
+                st.markdown(
+                    f'<div style="font-size:11px;color:#4a5568;text-align:center;padding:4px 0;">'
+                    f'+ {len(activity)-6} more — see My Portfolio</div>',
+                    unsafe_allow_html=True,
+                )
+        else:
+            st.info("No special transactions detected.")
 
-    # ─────────────────────────────────────────────────────────────────────────
-    # ── SIP VIEW ─────────────────────────────────────────────────────────────
-    # ─────────────────────────────────────────────────────────────────────────
     elif view_mode == "🔄 SIP":
         all_tx = data.get("special_transactions", [])
         sip_txs    = [t for t in all_tx if t["Type"] == "SIP"]
