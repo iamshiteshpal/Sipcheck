@@ -1,4 +1,4 @@
-import streamlit as st
+﻿import streamlit as st
 import streamlit.components.v1 as components
 import pandas as pd
 import plotly.express as px
@@ -1077,90 +1077,109 @@ def setup_sheet_headers():
 
 def _request_cas_from_cams(email: str, password: str) -> str:
     """
-    Submit CAS request to CAMS on behalf of client.
-    Returns reference number (e.g. CP213107356) on success, or "ERROR".
-    Settings: Detailed, 01-Jan-1991 to today, with zero balance folios.
+    Submit CAS request to CAMS using Playwright headless browser.
+    Returns reference number on success, or "ERROR".
+    Falls back gracefully if Playwright is not installed.
     """
     import datetime as _dt
     import re as _re
 
-    today    = _dt.date.today().strftime("%d-%b-%Y")   # e.g. 31-May-2026
-    from_dt  = "01-Jan-1991"
-
-    session = requests.Session()
-    session.headers.update({
-        "User-Agent": (
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-            "AppleWebKit/537.36 (KHTML, like Gecko) "
-            "Chrome/124.0.0.0 Safari/537.36"
-        ),
-        "Referer": "https://www.camsonline.com/",
-        "Origin":  "https://www.camsonline.com",
-    })
+    today = _dt.date.today().strftime("%d-%b-%Y")
+    url   = "https://www.camsonline.com/Investors/Statements/Consolidated-Account-Statement"
 
     try:
-        # Step 1 — Load the form page to get any hidden tokens/cookies
-        page = session.get(
-            "https://www.camsonline.com/Investors/Statements/Consolidated-Account-Statement",
-            timeout=15,
-        )
-        if page.status_code != 200:
-            return "ERROR"
-
-        # Step 2 — Extract hidden CSRF / viewstate tokens if present
-        hidden = {}
-        for inp in _re.findall(r"<input[^>]+>", page.text, _re.I):
-            name_m  = _re.search(r"name=[^>]+", inp, _re.I)
-            value_m = _re.search(r"value=[^>]+", inp, _re.I)
-            # value extracted above
-            if name_m:
-                hidden[name_m.group(1)] = value_m.group(1) if value_m else ""
-
-        # Step 3 — Build the POST payload
-        payload = {
-            **hidden,
-            "statementType":     "D",           # Detailed
-            "period":            "S",            # Specific period
-            "fromDate":          from_dt,
-            "toDate":            today,
-            "folioListing":      "Z",            # With zero balance folios
-            "email":             email,
-            "pan":               "",
-            "password":          password,
-            "confirmPassword":   password,
-        }
-
-        # Step 4 — Submit
-        resp = session.post(
-            "https://www.camsonline.com/Investors/Statements/Consolidated-Account-Statement",
-            data=payload,
-            timeout=20,
-        )
-
-        # Step 5 — Extract reference number from response
-        # CAMS shows: "Your reference number is CP213107356"
-        ref_match = _re.search(r"reference.{0,20}([A-Z]{2}[0-9]{7,12})", resp.text, _re.I)
-        if ref_match:
-            return ref_match.group(1).upper()
-
-        # Also try just the pattern CP/CK followed by digits
-        ref_match2 = _re.search(r'(CP\d{7,12}|CK\d{7,12})', resp.text, _re.I)
-        if ref_match2:
-            return ref_match2.group(1).upper()
-
-        # If success page is shown but no ref number found
-        if "success" in resp.text.lower() or "will be sent" in resp.text.lower():
-            return "SUCCESS"
-
+        from playwright.sync_api import sync_playwright
+    except ImportError:
         return "ERROR"
+
+    try:
+        with sync_playwright() as pw:
+            browser = pw.chromium.launch(headless=True)
+            ctx     = browser.new_context(
+                user_agent=(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/124.0.0.0 Safari/537.36"
+                ),
+                viewport={"width": 1280, "height": 900},
+            )
+            pg = ctx.new_page()
+            pg.goto(url, wait_until="networkidle", timeout=30000)
+
+            # Detailed statement
+            try:
+                pg.locator("label:has-text('Detailed')").first.click(timeout=5000)
+            except Exception:
+                pg.locator("input[value='D']").first.click()
+
+            # Specific period
+            try:
+                pg.locator("label:has-text('Specific')").first.click(timeout=5000)
+            except Exception:
+                pass
+
+            # From date
+            try:
+                fd = pg.locator("input#txtFromDate").first
+                fd.triple_click()
+                fd.fill("01-Jan-1991")
+            except Exception:
+                pass
+
+            # To date
+            try:
+                td = pg.locator("input#txtToDate").first
+                td.triple_click()
+                td.fill(today)
+            except Exception:
+                pass
+
+            # Zero balance folios
+            try:
+                pg.locator("label:has-text('zero balance')").first.click(timeout=5000)
+            except Exception:
+                try:
+                    pg.locator("input[value='Z']").first.click()
+                except Exception:
+                    pass
+
+            # Email
+            try:
+                pg.locator("input#txtEmail").first.fill(email)
+            except Exception:
+                pg.locator("input[type='email']").first.fill(email)
+
+            # Password
+            try:
+                pg.locator("input#txtPassword").first.fill(password)
+                pg.locator("input#txtConfirmPassword").first.fill(password)
+            except Exception:
+                pass
+
+            # Submit
+            try:
+                pg.locator("input[type='submit']").first.click()
+            except Exception:
+                pg.locator("button[type='submit']").first.click()
+
+            pg.wait_for_load_state("networkidle", timeout=20000)
+            html = pg.content()
+            browser.close()
+
+            # Extract reference number
+            m1 = _re.search(r"reference.{0,30}(CP[0-9]{6,12}|CK[0-9]{6,12})", html, _re.I)
+            if m1:
+                return m1.group(1).upper()
+            m2 = _re.search(r"(CP[0-9]{6,12}|CK[0-9]{6,12})", html)
+            if m2:
+                return m2.group(1).upper()
+            if "success" in html.lower() or "will be sent" in html.lower():
+                return "SUCCESS"
+            return "ERROR"
 
     except Exception:
         return "ERROR"
 
-
-# ─────────────────────────────────────────────
-# UPLOAD SCREEN
-# ─────────────────────────────────────────────
 
 def show_upload():
     # ── Gate check ────────────────────────────────────────────────────────
