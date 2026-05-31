@@ -941,6 +941,114 @@ VALID_COUPONS = {
 
 
 # ─────────────────────────────────────────────
+# GOOGLE SHEETS INTEGRATION
+# ─────────────────────────────────────────────
+# Setup steps (one-time, done by you):
+# 1. Go to console.cloud.google.com
+# SETUP: Add these to Streamlit Cloud > Settings > Secrets:
+#   [gcp_service_account]
+#   type = service_account
+#   (paste your full service account JSON here)
+#   SHEET_ID = your_google_sheet_id
+#   Share the sheet with your service account email as Editor
+
+import json
+
+def _get_sheets_client():
+    """Return an authenticated Google Sheets API session."""
+    try:
+        import google.oauth2.service_account as sa
+        import googleapiclient.discovery as gd
+        creds_dict = dict(st.secrets["gcp_service_account"])
+        creds = sa.Credentials.from_service_account_info(
+            creds_dict,
+            scopes=["https://www.googleapis.com/auth/spreadsheets"],
+        )
+        service = gd.build("sheets", "v4", credentials=creds, cache_discovery=False)
+        return service
+    except Exception:
+        return None
+
+
+def _get_sheet_id():
+    try:
+        return st.secrets["SHEET_ID"]
+    except Exception:
+        return None
+
+
+def log_signup_to_sheet(name, email, coupon):
+    """Append a new row: Timestamp | Name | Email | Coupon | Status."""
+    try:
+        service  = _get_sheets_client()
+        sheet_id = _get_sheet_id()
+        if not service or not sheet_id:
+            return False
+        import datetime as _dt
+        ts = _dt.datetime.now().strftime("%d-%m-%Y %H:%M:%S")
+        body = {"values": [[ts, name, email, coupon, "ACTIVE"]]}
+        service.spreadsheets().values().append(
+            spreadsheetId=sheet_id,
+            range="Sheet1!A:E",
+            valueInputOption="RAW",
+            insertDataOption="INSERT_ROWS",
+            body=body,
+        ).execute()
+        return True
+    except Exception:
+        return False
+
+
+def check_coupon_in_sheet(coupon):
+    """
+    Returns: "ACTIVE" | "DISABLED" | "NOT_FOUND" | "SHEET_UNAVAILABLE"
+    Reads column D (coupon) and E (status) to check if coupon is disabled.
+    """
+    try:
+        service  = _get_sheets_client()
+        sheet_id = _get_sheet_id()
+        if not service or not sheet_id:
+            return "SHEET_UNAVAILABLE"
+        result = service.spreadsheets().values().get(
+            spreadsheetId=sheet_id,
+            range="Sheet1!D:E",
+        ).execute()
+        rows = result.get("values", [])
+        # rows = [[coupon, status], ...]
+        for row in rows:
+            if len(row) >= 1 and row[0].strip().upper() == coupon.upper():
+                status = row[1].strip().upper() if len(row) >= 2 else "ACTIVE"
+                if status == "DISABLED":
+                    return "DISABLED"
+        return "ACTIVE"
+    except Exception:
+        return "SHEET_UNAVAILABLE"
+
+
+def setup_sheet_headers():
+    """Create header row if sheet is empty."""
+    try:
+        service  = _get_sheets_client()
+        sheet_id = _get_sheet_id()
+        if not service or not sheet_id:
+            return
+        result = service.spreadsheets().values().get(
+            spreadsheetId=sheet_id,
+            range="Sheet1!A1:E1",
+        ).execute()
+        if not result.get("values"):
+            body = {"values": [["Timestamp", "Name", "Email", "Coupon Code", "Status"]]}
+            service.spreadsheets().values().update(
+                spreadsheetId=sheet_id,
+                range="Sheet1!A1:E1",
+                valueInputOption="RAW",
+                body=body,
+            ).execute()
+    except Exception:
+        pass
+
+
+# ─────────────────────────────────────────────
 # UPLOAD SCREEN
 # ─────────────────────────────────────────────
 
@@ -1190,14 +1298,45 @@ def show_upload():
             st.markdown("</div>", unsafe_allow_html=True)
 
             if st.button("🔓 Unlock Access", use_container_width=True, type="primary", key="unlock_btn"):
-                if coupon_input in VALID_COUPONS:
-                    st.session_state.coupon_ok     = True
-                    st.session_state.coupon_used   = coupon_input
-                    st.success(f"✅ Code accepted! Welcome to CAS 360 View, {reg_name.split()[0]}.")
-                    st.balloons()
-                    st.rerun()
-                else:
+                if not coupon_input:
+                    st.error("Please enter your access code.")
+                elif coupon_input not in VALID_COUPONS:
                     st.error("❌ Invalid code. Please check and try again.")
+                else:
+                    # Check if coupon has been disabled in Google Sheet
+                    with st.spinner("Verifying your code..."):
+                        sheet_status = check_coupon_in_sheet(coupon_input)
+
+                    if sheet_status == "DISABLED":
+                        st.error(
+                            "⛔ This access code has been deactivated. "
+                            "Please contact us for a new code."
+                        )
+                    else:
+                        # Valid + not disabled → log it + grant access
+                        reg_name_val  = st.session_state.get("reg_name", "")
+                        reg_email_val = st.session_state.get("reg_email", "")
+
+                        with st.spinner("Setting up your access..."):
+                            setup_sheet_headers()
+                            logged = log_signup_to_sheet(reg_name_val, reg_email_val, coupon_input)
+
+                        st.session_state["coupon_ok"]   = True
+                        st.session_state["coupon_used"] = coupon_input
+
+                        if logged:
+                            st.success(
+                                f"✅ Access granted! Welcome to CAS 360 View, "
+                                f"{reg_name_val.split()[0] if reg_name_val else 'there'}."
+                            )
+                        else:
+                            # Sheet not configured — still allow access
+                            st.success(
+                                f"✅ Code accepted! Welcome, "
+                                f"{reg_name_val.split()[0] if reg_name_val else 'there'}."
+                            )
+                        st.balloons()
+                        st.rerun()
 
             st.markdown(
                 """
@@ -1265,13 +1404,78 @@ def show_upload():
 
 def build_sidebar(data):
     with st.sidebar:
+
+        # ── Premium CSS overrides ──────────────────────────────────────────
+        st.markdown("""
+        <style>
+        [data-testid="stSidebar"] {
+            background: linear-gradient(180deg, #07090f 0%, #0a0d18 100%) !important;
+            border-right: 1px solid rgba(99,179,237,0.08) !important;
+        }
+        [data-testid="stSidebar"] > div:first-child { padding: 0 !important; }
+
+        /* Nav radio — hide default bullets, style as custom pills */
+        [data-testid="stSidebar"] [role="radiogroup"] { gap: 2px !important; }
+        [data-testid="stSidebar"] [data-testid="stRadio"] label {
+            display: flex !important;
+            align-items: center !important;
+            padding: 9px 14px !important;
+            border-radius: 10px !important;
+            font-size: 13px !important;
+            font-weight: 500 !important;
+            color: #718096 !important;
+            cursor: pointer !important;
+            transition: background .15s, color .15s !important;
+            margin: 0 !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
+            background: rgba(99,179,237,0.06) !important;
+            color: #e2e8f0 !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stRadio"] label[data-checked="true"],
+        [data-testid="stSidebar"] [data-testid="stRadio"] [aria-checked="true"] + div label {
+            background: rgba(99,179,237,0.1) !important;
+            color: #63b3ed !important;
+            font-weight: 600 !important;
+        }
+        /* Hide the radio dot */
+        [data-testid="stSidebar"] [data-testid="stRadio"] [data-baseweb="radio"] > div:first-child {
+            display: none !important;
+        }
+        /* Sidebar buttons */
+        [data-testid="stSidebar"] button[kind="secondary"] {
+            background: rgba(255,255,255,0.03) !important;
+            border: 1px solid rgba(255,255,255,0.07) !important;
+            color: #718096 !important;
+            border-radius: 10px !important;
+            font-size: 12px !important;
+            transition: all .2s !important;
+        }
+        [data-testid="stSidebar"] button[kind="secondary"]:hover {
+            background: rgba(99,179,237,0.07) !important;
+            border-color: rgba(99,179,237,0.2) !important;
+            color: #e2e8f0 !important;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+
+        # ── Logo block ─────────────────────────────────────────────────────
         st.markdown(
             """
-            <div style="padding:6px 0 20px;">
-              <div style="font-family:'Syne',sans-serif;font-size:21px;font-weight:800;
-    color:#f7fafc;letter-spacing:-0.5px;">CAS 360 <span style="color:#63b3ed;">View</span></div>
-              <div style="font-size:10px;color:#2d3748;text-transform:uppercase;letter-spacing:2px;
-    font-weight:600;margin-top:2px;">Portfolio Intelligence</div>
+            <div style="padding:22px 20px 16px;">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+                <div style="width:32px;height:32px;background:linear-gradient(135deg,#1a365d,#2b6cb0);
+                            border-radius:10px;display:flex;align-items:center;justify-content:center;
+                            font-size:16px;box-shadow:0 0 12px rgba(99,179,237,0.2);">◈</div>
+                <div>
+                  <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;
+                              color:#f7fafc;letter-spacing:-0.5px;line-height:1;">
+                    CAS 360 <span style="color:#63b3ed;">View</span></div>
+                  <div style="font-size:9px;color:#2d3748;text-transform:uppercase;
+                              letter-spacing:2.5px;font-weight:600;margin-top:1px;">
+                    Portfolio Intelligence</div>
+                </div>
+              </div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1279,58 +1483,113 @@ def build_sidebar(data):
 
         if data:
             profiles_count = len(st.session_state.profiles)
-            nav_items = ["Dashboard", "💰 P&L Summary", "📄 Report Builder", "My Portfolio", "SIP Center", "Transactions", "Alerts"]
+
+            # ── NAV section label ─────────────────────────────────────────
+            st.markdown(
+                "<div style='font-size:9px;color:#2d3748;text-transform:uppercase;"
+                "letter-spacing:2px;font-weight:700;padding:0 20px;margin-bottom:4px;'>Navigate</div>",
+                unsafe_allow_html=True,
+            )
+
+            nav_items = ["Dashboard", "💰 P&L Summary", "📄 Report Builder",
+                         "My Portfolio", "SIP Center", "Transactions", "Alerts"]
             if profiles_count > 1:
                 nav_items = ["👨‍👩‍👧‍👦 Family"] + nav_items
-            menu = st.radio(
-                "nav",
-                nav_items,
-                label_visibility="collapsed",
-            )
-            st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
 
+            menu = st.radio("nav", nav_items, label_visibility="collapsed")
+
+            # ── Divider ───────────────────────────────────────────────────
+            st.markdown(
+                "<div style='height:1px;background:rgba(255,255,255,0.05);margin:12px 0;'></div>",
+                unsafe_allow_html=True,
+            )
+
+            # ── Investor profile card ─────────────────────────────────────
             email_display = data["investor_email"] if st.session_state.show_email else "••••••••••"
+            try:
+                statement_date = to_date(data["statement_date"]).strftime("%d %b %Y")
+            except Exception:
+                statement_date = "—"
+
+            initials = "".join(w[0].upper() for w in data["investor_name"].split()[:2])
+            pnl      = data["total_value"] - data["total_invested"]
+            pnl_c    = "#48bb78" if pnl >= 0 else "#fc8181"
+            pnl_ar   = "▲" if pnl >= 0 else "▼"
+            pnl_pct  = abs(pnl / data["total_invested"] * 100) if data["total_invested"] else 0
+
             st.markdown(
                 f"""
-                <div style="background:rgba(99,179,237,0.04);border:1px solid rgba(99,179,237,0.12);
-                            border-radius:10px;padding:12px 14px;margin-bottom:10px;">
-                  <div style="font-size:13px;font-weight:600;color:#f7fafc;margin-bottom:2px;">
-                    {data['investor_name'].title()}</div>
+                <div style="background:linear-gradient(135deg,#0c0f1a,#0d1020);
+                            border:1px solid rgba(99,179,237,0.12);border-radius:14px;
+                            padding:14px 16px;margin:0 4px 6px;">
+                  <!-- Avatar + name row -->
+                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                    <div style="width:36px;height:36px;border-radius:50%;
+                                background:linear-gradient(135deg,#1a365d,#553c9a);
+                                border:2px solid rgba(99,179,237,0.25);
+                                display:flex;align-items:center;justify-content:center;
+                                font-family:'Syne',sans-serif;font-size:13px;
+                                font-weight:800;color:#f7fafc;flex-shrink:0;">
+                      {initials}</div>
+                    <div style="min-width:0;">
+                      <div style="font-size:13px;font-weight:700;color:#f7fafc;
+                                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                        {data['investor_name'].title()}</div>
+                      <div style="font-size:10px;color:#4a5568;margin-top:1px;">
+                        📅 {statement_date}</div>
+                    </div>
+                  </div>
+                  <!-- Wealth mini stats -->
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
+                    <div style="background:#07090f;border-radius:8px;padding:8px 10px;">
+                      <div style="font-size:9px;color:#4a5568;text-transform:uppercase;
+                                  letter-spacing:1px;margin-bottom:3px;">Wealth</div>
+                      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;
+                                  font-weight:700;color:#63b3ed;">
+                        {fmt_inr_short(data['total_value'])}</div>
+                    </div>
+                    <div style="background:#07090f;border-radius:8px;padding:8px 10px;">
+                      <div style="font-size:9px;color:#4a5568;text-transform:uppercase;
+                                  letter-spacing:1px;margin-bottom:3px;">P&L</div>
+                      <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;
+                                  font-weight:700;color:{pnl_c};">
+                        {pnl_ar} {pnl_pct:.1f}%</div>
+                    </div>
+                  </div>
                 """,
                 unsafe_allow_html=True,
             )
 
+            # Email row with eye toggle
             ec1, ec2 = st.columns([5, 1])
             with ec1:
-                st.markdown(f"<div style='font-size:11px;color:#4a5568;'>{email_display}</div>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<div style='font-size:10px;color:#4a5568;padding:0 2px;"
+                    f"overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>"
+                    f"{email_display}</div>",
+                    unsafe_allow_html=True,
+                )
             with ec2:
                 if st.button("👁" if st.session_state.show_email else "🙈", key="eye"):
                     st.session_state.show_email = not st.session_state.show_email
                     st.rerun()
 
-            try:
-                statement_date = to_date(data["statement_date"]).strftime("%d %b %Y")
-            except Exception:
-                statement_date = "—"
-            st.markdown(
-                f"""
-                <div style="font-size:10px;color:#2d3748;margin-top:6px;">STATEMENT · {statement_date}</div>
-                </div>""",
-                unsafe_allow_html=True,
-            )
+            st.markdown("</div>", unsafe_allow_html=True)
 
+            # ── Family switcher ───────────────────────────────────────────
             if len(st.session_state.profiles) > 1:
-                st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-                # Member count badge
-                mc = len(st.session_state.profiles)
-                st.markdown(
-                    f"<div style='font-size:10px;color:#718096;text-transform:uppercase;"
-                    f"letter-spacing:1.2px;margin-bottom:6px;'>👨‍👩‍👧‍👦 {mc} Family Members</div>",
-                    unsafe_allow_html=True,
-                )
+                mc   = len(st.session_state.profiles)
                 keys = list(st.session_state.profiles.keys())
                 index = keys.index(st.session_state.active) if st.session_state.active in keys else 0
-                selected = st.selectbox("Switch Member", keys, index=index, label_visibility="collapsed")
+                st.markdown(
+                    f"<div style='font-size:9px;color:#2d3748;text-transform:uppercase;"
+                    f"letter-spacing:2px;font-weight:700;padding:0 4px;margin-bottom:4px;"
+                    f"display:flex;align-items:center;gap:6px;'>"
+                    f"👨‍👩‍👧‍👦 <span>{mc} Members</span></div>",
+                    unsafe_allow_html=True,
+                )
+                selected = st.selectbox("Switch Member", keys, index=index,
+                                        label_visibility="collapsed")
                 if selected != st.session_state.active:
                     st.session_state.switch_target = selected
                     st.session_state.pin_ok = False
@@ -1343,21 +1602,27 @@ def build_sidebar(data):
                         st.rerun()
                     elif len(pin) == 4:
                         st.error("Wrong PIN")
+                st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
 
-            st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-            if st.button("＋ Add Another CAS", use_container_width=True):
+            # ── Action buttons ────────────────────────────────────────────
+            st.markdown(
+                "<div style='height:1px;background:rgba(255,255,255,0.05);margin:8px 0;'></div>",
+                unsafe_allow_html=True,
+            )
+            if st.button("＋ Add Another CAS", use_container_width=True, key="add_cas_btn"):
                 st.session_state.active = None
                 st.session_state.pin_ok = False
                 st.rerun()
 
-            st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
-            if st.button("🚪 Logout & Clear Data", use_container_width=True):
+            if st.button("🚪 Logout & Clear Data", use_container_width=True, key="logout_btn"):
                 st.session_state.clear()
                 st.rerun()
 
-            st.markdown("<hr>", unsafe_allow_html=True)
+            # ── Export section ────────────────────────────────────────────
             st.markdown(
-                "<div style='font-size:10px;color:#2d3748;text-transform:uppercase;letter-spacing:1.5px;font-weight:600;margin-bottom:8px;'>Export</div>",
+                "<div style='height:1px;background:rgba(255,255,255,0.05);margin:10px 0 8px;'></div>"
+                "<div style='font-size:9px;color:#2d3748;text-transform:uppercase;"
+                "letter-spacing:2px;font-weight:700;margin-bottom:8px;'>Export</div>",
                 unsafe_allow_html=True,
             )
 
@@ -1365,13 +1630,12 @@ def build_sidebar(data):
             xls = generate_excel(data, live_data)
             if xls:
                 st.download_button(
-                    "📊 Excel",
+                    "📊 Download Excel",
                     data=xls,
                     file_name=f"CAS360_{data['investor_name']}.xlsx",
                     mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     use_container_width=True,
                 )
-
             st.download_button(
                 "📄 Full HTML Report",
                 data=generate_html(data, live_data),
@@ -1379,14 +1643,26 @@ def build_sidebar(data):
                 mime="text/html",
                 use_container_width=True,
             )
-            if st.button("🎨 Custom Report Builder", use_container_width=True, key="sidebar_report_btn"):
+            if st.button("🎨 Custom Report Builder", use_container_width=True,
+                         key="sidebar_report_btn"):
                 st.session_state["nav_override"] = "📄 Report Builder"
                 st.rerun()
+
+            # ── Version watermark ─────────────────────────────────────────
+            st.markdown(
+                "<div style='text-align:center;padding:16px 0 4px;'>"
+                "<div style='font-size:9px;color:#1a202c;letter-spacing:1.5px;"
+                "text-transform:uppercase;font-weight:600;'>CAS 360 View v4</div>"
+                "</div>",
+                unsafe_allow_html=True,
+            )
+
         else:
             menu = "upload"
             if st.session_state.profiles:
                 keys = list(st.session_state.profiles.keys())
-                selected = st.selectbox("Return to", ["— select —"] + keys, label_visibility="collapsed")
+                selected = st.selectbox("Return to", ["— select —"] + keys,
+                                        label_visibility="collapsed")
                 if selected != "— select —":
                     st.session_state.active = selected
                     st.session_state.pin_ok = True
