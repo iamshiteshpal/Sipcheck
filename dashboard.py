@@ -948,16 +948,45 @@ def show_upload():
     # ── Gate check ────────────────────────────────────────────────────────
     is_unlocked = st.session_state.get("coupon_ok", False)
 
-    # ── Page header ───────────────────────────────────────────────────────
+    # ── Premium Page header ───────────────────────────────────────────────
     st.markdown(
         """
-        <div style="display:flex;flex-direction:column;align-items:center;padding-top:36px;">
-          <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;
-                      color:#f7fafc;letter-spacing:-0.5px;margin-bottom:6px;text-align:center;">
-            CAS 360 <span style="color:#63b3ed;">View</span>
+        <style>
+        @keyframes heroIn{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);}}
+        @keyframes shimmer{0%{background-position:200% center;}100%{background-position:-200% center;}}
+        .hero-title{
+          font-family:'Syne',sans-serif;font-size:38px;font-weight:800;letter-spacing:-1px;
+          background:linear-gradient(135deg,#f7fafc 30%,#63b3ed 60%,#9f7aea 90%);
+          -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+          background-clip:text;background-size:200% auto;
+          animation:heroIn .7s ease forwards,shimmer 4s linear infinite;
+          margin-bottom:8px;text-align:center;
+        }
+        .hero-sub{
+          font-size:12px;color:#4a5568;text-transform:uppercase;letter-spacing:3px;
+          font-weight:600;margin-bottom:8px;text-align:center;
+          animation:heroIn .7s ease .15s forwards;opacity:0;
+        }
+        .hero-pills{
+          display:flex;gap:8px;justify-content:center;flex-wrap:wrap;
+          margin-bottom:32px;animation:heroIn .7s ease .3s forwards;opacity:0;
+        }
+        .hero-pill{
+          background:rgba(99,179,237,0.06);border:1px solid rgba(99,179,237,0.15);
+          color:#718096;font-size:10px;padding:4px 12px;border-radius:20px;
+          font-weight:600;letter-spacing:.5px;
+        }
+        </style>
+        <div style="padding-top:32px;margin-bottom:28px;">
+          <div class="hero-title">CAS 360 View</div>
+          <div class="hero-sub">Portfolio Intelligence</div>
+          <div class="hero-pills">
+            <span class="hero-pill">📊 Live NAV</span>
+            <span class="hero-pill">🔄 SIP Tracker</span>
+            <span class="hero-pill">💰 P&L Analytics</span>
+            <span class="hero-pill">👨‍👩‍👧‍👦 Family View</span>
+            <span class="hero-pill">🔒 100% Private</span>
           </div>
-          <div style="font-size:13px;color:#4a5568;text-transform:uppercase;letter-spacing:2.5px;
-                      font-weight:600;margin-bottom:32px;">Portfolio Intelligence</div>
         </div>
         """,
         unsafe_allow_html=True,
@@ -967,65 +996,85 @@ def show_upload():
     left, right = st.columns([1, 1], gap="large")
 
     # ────────────────────────────────────────────
-    # LEFT: How to get your CAS
+    # LEFT: Premium How-to Guide
     # ────────────────────────────────────────────
     with left:
-        st.markdown(
-            """
-            <div style="background:linear-gradient(135deg,#0c0f1a,#0d1020);
-                        border:1px solid rgba(99,179,237,0.15);border-radius:18px;padding:28px 26px;">
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;">
-                <div style="width:32px;height:32px;background:rgba(99,179,237,0.12);
-                            border:1px solid rgba(99,179,237,0.25);border-radius:10px;
-                            display:flex;align-items:center;justify-content:center;font-size:16px;">ℹ️</div>
-                <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;
-                            color:#63b3ed;text-transform:uppercase;letter-spacing:1.5px;">
-                  How to get your CAS PDF</div>
-              </div>
-            """,
-            unsafe_allow_html=True,
-        )
-
+        steps_html = ""
         steps = [
-            ("1", "#63b3ed", "Visit camsonline.com",
-             "Go to <b>MF Investor Services → Statements → CAS</b>"),
-            ("2", "#9f7aea", "Configure the statement",
-             'Select <b>Statement Type: Detailed</b><br>'
-             'Set date range: <b>01/01/1991 → Today</b><br>'
-             'Check <b>"Zero balance folios"</b>'),
-            ("3", "#48bb78", "Check your email",
-             "You'll receive the <b>password-protected PDF</b> in your inbox within minutes."),
-            ("4", "#f6ad55", "Upload here",
-             "Come back and upload the PDF. Use your <b>PAN number or date of birth</b> as the password."),
+            ("01", "#63b3ed",
+             "camsonline.com",
+             "Visit camsonline.com",
+             "Navigate to <b>MF Investor Services → Statements → CAS</b>",
+             "rgba(99,179,237,0.08)"),
+            ("02", "#9f7aea",
+             "Configure",
+             "Set up your statement",
+             "Type: <b>Detailed</b> &nbsp;·&nbsp; Date: <b>01/01/1991 → Today</b><br>Enable <b>'Zero balance folios'</b>",
+             "rgba(159,122,234,0.08)"),
+            ("03", "#48bb78",
+             "Check inbox",
+             "Get the PDF in email",
+             "You'll receive a <b>password-protected PDF</b> within a few minutes.",
+             "rgba(72,187,120,0.08)"),
+            ("04", "#f6ad55",
+             "Upload",
+             "Upload & unlock insights",
+             "Use your <b>PAN number</b> or <b>Date of Birth (DDMMYYYY)</b> as the PDF password.",
+             "rgba(246,173,85,0.08)"),
         ]
-
-        for num, color, title, body in steps:
-            st.markdown(
-                f"""
-                <div style="display:flex;gap:14px;margin-bottom:18px;">
-                  <div style="flex-shrink:0;width:28px;height:28px;background:{color}18;
-                              border:1px solid {color}44;border-radius:50%;display:flex;
-                              align-items:center;justify-content:center;
-                              font-family:'IBM Plex Mono',monospace;font-size:11px;
-                              font-weight:700;color:{color};">{num}</div>
-                  <div>
-                    <div style="font-size:13px;font-weight:700;color:#f7fafc;margin-bottom:3px;">{title}</div>
-                    <div style="font-size:12px;color:#718096;line-height:1.6;">{body}</div>
-                  </div>
+        for num, color, tag, title, body, bg in steps:
+            steps_html += f"""
+            <div style="display:flex;gap:16px;margin-bottom:20px;position:relative;">
+              <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:0;">
+                <div style="width:42px;height:42px;background:{bg};border:1px solid {color}44;
+                            border-radius:14px;display:flex;align-items:center;justify-content:center;
+                            font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:800;
+                            color:{color};letter-spacing:.5px;">{num}</div>
+                <div style="width:1px;flex:1;background:linear-gradient({color}44,transparent);
+                            margin-top:4px;min-height:20px;"></div>
+              </div>
+              <div style="padding-top:8px;padding-bottom:16px;">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+                  <span style="font-size:9px;font-weight:700;color:{color};text-transform:uppercase;
+                               letter-spacing:1.5px;background:{bg};border:1px solid {color}33;
+                               padding:2px 8px;border-radius:20px;">{tag}</span>
                 </div>
-                """,
-                unsafe_allow_html=True,
-            )
+                <div style="font-size:14px;font-weight:700;color:#f7fafc;margin-bottom:5px;">{title}</div>
+                <div style="font-size:12px;color:#718096;line-height:1.7;">{body}</div>
+              </div>
+            </div>"""
 
         st.markdown(
-            """
-              <div style="background:rgba(246,173,85,0.06);border:1px solid rgba(246,173,85,0.2);
-                          border-radius:10px;padding:10px 14px;margin-top:4px;">
-                <div style="font-size:11px;color:#f6ad55;font-weight:600;margin-bottom:3px;">
-                  💡 Need help?</div>
-                <div style="font-size:11px;color:#718096;line-height:1.6;">
-                  Your data is processed entirely on your device — nothing is stored on any server.
-                  We never see your portfolio data.
+            f"""
+            <style>
+            @keyframes guideIn{{from{{opacity:0;transform:translateX(-12px);}}to{{opacity:1;transform:translateX(0);}}}}
+            .guide-card{{background:linear-gradient(145deg,#0c0f1a,#0a0d18);
+              border:1px solid rgba(99,179,237,0.12);border-radius:20px;
+              padding:30px 26px;animation:guideIn .6s ease forwards;}}
+            </style>
+            <div class="guide-card">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:26px;">
+                <div style="width:36px;height:36px;background:rgba(99,179,237,0.1);
+                            border:1px solid rgba(99,179,237,0.25);border-radius:12px;
+                            display:flex;align-items:center;justify-content:center;font-size:18px;">📋</div>
+                <div>
+                  <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;
+                               color:#63b3ed;text-transform:uppercase;letter-spacing:2px;">
+                    How to get your CAS PDF</div>
+                  <div style="font-size:11px;color:#4a5568;margin-top:1px;">4 simple steps · takes 2 minutes</div>
+                </div>
+              </div>
+              {steps_html}
+              <div style="background:linear-gradient(135deg,rgba(246,173,85,0.06),rgba(246,173,85,0.02));
+                          border:1px solid rgba(246,173,85,0.18);border-radius:12px;
+                          padding:12px 16px;margin-top:4px;display:flex;gap:10px;align-items:flex-start;">
+                <div style="font-size:16px;margin-top:1px;">🔐</div>
+                <div>
+                  <div style="font-size:11px;color:#f6ad55;font-weight:700;margin-bottom:2px;">
+                    Your data is completely private</div>
+                  <div style="font-size:11px;color:#718096;line-height:1.6;">
+                    All processing happens on your device. No data is ever sent to or stored on any server.
+                  </div>
                 </div>
               </div>
             </div>
@@ -1039,34 +1088,68 @@ def show_upload():
     with right:
 
         # ── STEP A: Sign up ────────────────────────────────────────────────
-        if "user_registered" not in st.session_state:
-            st.session_state.user_registered = False
+        if not st.session_state.get("user_registered", False):
 
-        if not st.session_state.user_registered:
+            # premium signup card
             st.markdown(
                 """
-                <div style="background:linear-gradient(135deg,#0c0f1a,#0d1020);
-                            border:1px solid rgba(159,122,234,0.2);border-radius:18px;
-                            padding:28px 26px;margin-bottom:0;">
-                  <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;
-                              color:#f7fafc;margin-bottom:6px;">Create your account</div>
-                  <div style="font-size:12px;color:#718096;margin-bottom:20px;">
-                    Free to start — no credit card needed</div>
+                <style>
+                @keyframes cardIn{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
+                @keyframes borderGlow{0%,100%{box-shadow:0 0 0 rgba(159,122,234,0);}
+                                       50%{box-shadow:0 0 28px rgba(159,122,234,0.18);}}
+                .signup-card{background:linear-gradient(145deg,#0c0f1a 60%,#120d1f);
+                  border:1px solid rgba(159,122,234,0.25);border-radius:20px;
+                  padding:32px 28px;animation:cardIn .6s ease forwards,borderGlow 4s ease infinite;}
+                .su-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;
+                  color:#f7fafc;letter-spacing:-0.5px;margin-bottom:6px;}
+                .su-sub{font-size:12px;color:#4a5568;margin-bottom:24px;line-height:1.6;}
+                .su-badge{display:inline-flex;align-items:center;gap:6px;
+                  background:rgba(72,187,120,0.08);border:1px solid rgba(72,187,120,0.2);
+                  color:#48bb78;font-size:10px;font-weight:700;padding:3px 10px;
+                  border-radius:20px;margin-bottom:20px;letter-spacing:1px;}
+                .su-feature{display:flex;align-items:center;gap:10px;padding:8px 0;
+                  border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px;color:#718096;}
+                .su-icon{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;
+                  justify-content:center;font-size:13px;flex-shrink:0;}
+                </style>
+                <div class="signup-card">
+                  <div class="su-badge">✦ FREE ACCESS</div>
+                  <div class="su-title">Start your portfolio<br>intelligence journey</div>
+                  <div class="su-sub">Upload your CAS PDF and get a complete<br>360° view of all your mutual fund investments.</div>
+                  <div class="su-feature">
+                    <div class="su-icon" style="background:rgba(99,179,237,0.1);">📊</div>
+                    Live NAV tracking & XIRR calculation
+                  </div>
+                  <div class="su-feature">
+                    <div class="su-icon" style="background:rgba(159,122,234,0.1);">🔄</div>
+                    SIP health score & bounce alerts
+                  </div>
+                  <div class="su-feature">
+                    <div class="su-icon" style="background:rgba(72,187,120,0.1);">👨‍👩‍👧‍👦</div>
+                    Family portfolio view
+                  </div>
+                  <div class="su-feature" style="border:none;">
+                    <div class="su-icon" style="background:rgba(246,173,85,0.1);">🔒</div>
+                    Your data never leaves your device
+                  </div>
+                  <div style="height:20px;"></div>
                 """,
                 unsafe_allow_html=True,
             )
-            name  = st.text_input("Your Name", placeholder="Rahul Sharma", key="reg_name")
-            email = st.text_input("Email Address", placeholder="rahul@gmail.com", key="reg_email")
+
+            # ── inputs use different keys to avoid session_state conflict ──
+            name_input  = st.text_input("Your Name",      placeholder="Rahul Sharma",    key="_reg_name_input")
+            email_input = st.text_input("Email Address",  placeholder="rahul@gmail.com", key="_reg_email_input")
             st.markdown("</div>", unsafe_allow_html=True)
 
             if st.button("Continue →", use_container_width=True, type="primary", key="reg_btn"):
-                if name.strip() and email.strip() and "@" in email:
-                    st.session_state.user_registered = True
-                    st.session_state.reg_name  = name.strip()
-                    st.session_state.reg_email = email.strip()
+                if name_input.strip() and email_input.strip() and "@" in email_input:
+                    st.session_state["user_registered"] = True
+                    st.session_state["reg_name"]        = name_input.strip()
+                    st.session_state["reg_email"]       = email_input.strip()
                     st.rerun()
                 else:
-                    st.error("Please enter a valid name and email.")
+                    st.error("Please enter a valid name and email address.")
             st.stop()
 
         # ── STEP B: Coupon gate ────────────────────────────────────────────
