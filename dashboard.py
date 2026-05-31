@@ -163,6 +163,14 @@ def inject_global_styles():
         /* Hide keyboard shortcut tooltip */
         [data-testid="stTooltipHoverTarget"] { display: none !important; }
         .stDeployButton { display: none !important; }
+        /* Hide the leaked "nav" radio label */
+        [data-testid="stSidebar"] [data-testid="stRadio"] > label:first-child {
+            display: none !important;
+        }
+        /* Hide keyboard shortcut overlay completely */
+        [data-testid="stShortcuts"] { display: none !important; }
+        div[class*="shortcut"] { display: none !important; }
+        .keyboard_doub { display: none !important; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -1507,7 +1515,7 @@ def build_sidebar(data):
             if profiles_count > 1:
                 nav_items = ["👨‍👩‍👧‍👦 Family"] + nav_items
 
-            menu = st.radio("nav", nav_items, label_visibility="collapsed")
+            menu = st.radio("", nav_items, label_visibility="hidden")
 
             # ── Divider ───────────────────────────────────────────────────
             st.markdown(
