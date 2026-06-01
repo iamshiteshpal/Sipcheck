@@ -1329,56 +1329,42 @@ def show_upload():
               </div>
             </div>"""
 
-        st.markdown(
-            f"""
-            <style>
-            @keyframes stepIn{{
-              from{{opacity:0;transform:translateY(10px);}}
-              to{{opacity:1;transform:translateY(0);}}
-            }}
-            @keyframes guideIn{{
-              from{{opacity:0;transform:translateX(-14px);}}
-              to{{opacity:1;transform:translateX(0);}}
-            }}
-            </style>
-            <div style="background:linear-gradient(145deg,#0c0f1a,#080b14);
-                        border:1px solid rgba(99,179,237,0.12);border-radius:20px;
-                        padding:24px 22px;animation:guideIn .6s ease forwards;">
-              <!-- Header -->
-              <div style="display:flex;align-items:center;justify-content:space-between;
-                          margin-bottom:22px;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                  <div style="width:34px;height:34px;background:rgba(99,179,237,0.1);
-                              border:1px solid rgba(99,179,237,0.25);border-radius:10px;
-                              display:flex;align-items:center;justify-content:center;
-                              font-size:16px;">📋</div>
-                  <div>
-                    <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;
-                                color:#63b3ed;text-transform:uppercase;letter-spacing:2px;">
-                      How to get your CAS</div>
-                    <div style="font-size:10px;color:#4a5568;margin-top:1px;">
-                      4 steps · 2 minutes · one time only</div>
-                  </div>
-                </div>
-                <div style="background:rgba(72,187,120,0.08);border:1px solid rgba(72,187,120,0.2);
-                            border-radius:20px;padding:4px 10px;font-size:9px;font-weight:700;
-                            color:#48bb78;letter-spacing:1px;">FREE</div>
-              </div>
-              {steps_html}
-              <!-- Privacy note -->
-              <div style="background:linear-gradient(135deg,rgba(99,179,237,0.05),rgba(99,179,237,0.02));
-                          border:1px solid rgba(99,179,237,0.12);border-radius:10px;
-                          padding:10px 14px;display:flex;gap:8px;align-items:center;margin-top:6px;">
-                <div style="font-size:14px;flex-shrink:0;">🔐</div>
-                <div style="font-size:10px;color:#4a5568;line-height:1.6;">
-                  <span style="color:#63b3ed;font-weight:600;">100% Private</span> —
-                  Your data is processed on your device only. Nothing is stored on any server.
-                </div>
+        full_guide_html = f"""
+        <style>
+        @keyframes stepIn{{from{{opacity:0;transform:translateY(10px);}}to{{opacity:1;transform:translateY(0);}}}}
+        @keyframes guideIn{{from{{opacity:0;transform:translateX(-14px);}}to{{opacity:1;transform:translateX(0);}}}}
+        </style>
+        <div style="background:linear-gradient(145deg,#0c0f1a,#080b14);
+                    border:1px solid rgba(99,179,237,0.12);border-radius:20px;
+                    padding:24px 22px;animation:guideIn .6s ease forwards;
+                    font-family:Instrument Sans,sans-serif;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:34px;height:34px;background:rgba(99,179,237,0.1);
+                          border:1px solid rgba(99,179,237,0.25);border-radius:10px;
+                          display:flex;align-items:center;justify-content:center;font-size:16px;">📋</div>
+              <div>
+                <div style="font-size:13px;font-weight:700;color:#63b3ed;
+                            text-transform:uppercase;letter-spacing:2px;">How to get your CAS</div>
+                <div style="font-size:10px;color:#4a5568;margin-top:1px;">4 steps · 2 minutes · one time only</div>
               </div>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            <div style="background:rgba(72,187,120,0.08);border:1px solid rgba(72,187,120,0.2);
+                        border-radius:20px;padding:4px 10px;font-size:9px;font-weight:700;
+                        color:#48bb78;letter-spacing:1px;">FREE</div>
+          </div>
+          {steps_html}
+          <div style="background:rgba(99,179,237,0.05);border:1px solid rgba(99,179,237,0.12);
+                      border-radius:10px;padding:10px 14px;display:flex;gap:8px;
+                      align-items:center;margin-top:6px;">
+            <div style="font-size:14px;flex-shrink:0;">🔐</div>
+            <div style="font-size:10px;color:#4a5568;line-height:1.6;">
+              <span style="color:#63b3ed;font-weight:600;">100% Private</span> —
+              Your data is processed on your device only. Nothing stored on any server.
+            </div>
+          </div>
+        </div>"""
+        components.html(full_guide_html, height=820, scrolling=True)
 
     # ────────────────────────────────────────────
     # RIGHT: Sign-up + Coupon gate + Upload
@@ -1450,83 +1436,23 @@ def show_upload():
                     st.error("Please enter a valid name and email address.")
             st.stop()
 
-        # ── STEP B: Coupon gate ────────────────────────────────────────────
+        # ── STEP B: Auto-unlock after signup (coupon system removed for now) ──
         reg_name = st.session_state.get("reg_name", "there")
-
+        # Auto-grant access immediately after signup — no coupon needed
         if not is_unlocked:
-            st.markdown(
-                f"""
-                <div style="background:linear-gradient(135deg,#0c0f1a,#0d1020);
-                            border:1px solid rgba(99,179,237,0.15);border-radius:18px;
-                            padding:28px 26px;">
-                  <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-                    <div style="font-size:20px;">👋</div>
-                    <div style="font-family:'Syne',sans-serif;font-size:16px;font-weight:700;color:#f7fafc;">
-                      Welcome, {reg_name.split()[0]}!</div>
-                  </div>
-                  <div style="font-size:12px;color:#718096;margin-bottom:24px;">
-                    Enter your access code to unlock the portfolio analyser.</div>
-
-                  <div style="background:#07090f;border:2px dashed rgba(99,179,237,0.2);
-                              border-radius:14px;padding:28px;text-align:center;margin-bottom:20px;">
-                    <div style="font-size:36px;margin-bottom:8px;">🔒</div>
-                    <div style="font-family:'Syne',sans-serif;font-size:14px;font-weight:700;
-                                color:#f7fafc;margin-bottom:4px;">Upload Locked</div>
-                    <div style="font-size:12px;color:#4a5568;">Enter your coupon code below to unlock</div>
-                  </div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-            coupon_input = st.text_input(
-                "Access Code",
-                placeholder="CAS360-XXXXXX",
-                key="coupon_field",
-                help="You should have received this code from us",
-            ).strip().upper()
-
-            st.markdown("</div>", unsafe_allow_html=True)
-
-            if st.button("🔓 Unlock Access", use_container_width=True, type="primary", key="unlock_btn"):
-                if not coupon_input:
-                    st.error("Please enter your access code.")
-                elif coupon_input not in VALID_COUPONS:
-                    st.error("❌ Invalid code. Please check and try again.")
-                else:
-                    # Check if coupon has been disabled in Google Sheet
-                    with st.spinner("Verifying your code..."):
-                        sheet_status = check_coupon_in_sheet(coupon_input)
-
-                    if sheet_status == "DISABLED":
-                        st.error(
-                            "⛔ This access code has been deactivated. "
-                            "Please contact us for a new code."
-                        )
-                    else:
-                        # Valid + not disabled → log it + grant access
-                        reg_name_val  = st.session_state.get("reg_name", "")
-                        reg_email_val = st.session_state.get("reg_email", "")
-
-                        with st.spinner("Setting up your access..."):
-                            setup_sheet_headers()
-                            logged = log_signup_to_sheet(reg_name_val, reg_email_val, coupon_input)
-
-                        st.session_state["coupon_ok"]   = True
-                        st.session_state["coupon_used"] = coupon_input
-
-                        if logged:
-                            st.success(
-                                f"✅ Access granted! Welcome to CAS 360 View, "
-                                f"{reg_name_val.split()[0] if reg_name_val else 'there'}."
-                            )
-                        else:
-                            # Sheet not configured — still allow access
-                            st.success(
-                                f"✅ Code accepted! Welcome, "
-                                f"{reg_name_val.split()[0] if reg_name_val else 'there'}."
-                            )
-                        st.balloons()
-                        st.rerun()
+            st.session_state["coupon_ok"]   = True
+            st.session_state["coupon_used"] = "DIRECT"
+            # Log signup to sheet if configured
+            try:
+                setup_sheet_headers()
+                log_signup_to_sheet(
+                    st.session_state.get("reg_name",""),
+                    st.session_state.get("reg_email",""),
+                    "DIRECT_ACCESS"
+                )
+            except Exception:
+                pass
+            st.rerun()
 
             st.markdown(
                 """
