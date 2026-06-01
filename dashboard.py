@@ -2478,6 +2478,146 @@ def render_dashboard(data):
                     unsafe_allow_html=True,
                 )
 
+        # ── NEW FEATURE 1: MISSED SIPs LAST MONTH ─────────────────────────────
+        # Check which live SIPs did NOT deduct in the last calendar month
+        import datetime as _dt
+        import collections as _col
+
+        today_dt       = _dt.date.today()
+        last_month     = (today_dt.replace(day=1) - _dt.timedelta(days=1))
+        last_month_yr  = last_month.year
+        last_month_mo  = last_month.month
+        last_month_lbl = last_month.strftime("%B %Y")   # e.g. "May 2026"
+
+        # Build set of schemes that DID deduct last month
+        deducted_last_month = set()
+        for t in sip_txs:
+            try:
+                td = t["date_obj"]
+                if td.year == last_month_yr and td.month == last_month_mo:
+                    deducted_last_month.add(t["Scheme"])
+            except Exception:
+                pass
+
+        # Find live SIPs that did NOT appear in last month
+        missed_sips = []
+        for s in live_sips:
+            scheme_clean = s["scheme"]
+            # Check if any SIP tx in last month matches this scheme
+            matched = any(
+                scheme_clean in k or k in scheme_clean
+                for k in deducted_last_month
+            )
+            if not matched:
+                missed_sips.append(s)
+
+        if missed_sips:
+            _dash_section(f"⚠️ Missed Last Month — {last_month_lbl}")
+            st.markdown(
+                f'<div style="background:rgba(252,129,129,0.05);border:1px solid rgba(252,129,129,0.2);'
+                f'border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:center;">'
+                f'<div style="font-size:18px;">🚨</div>'
+                f'<div style="font-size:12px;color:#fc8181;line-height:1.6;">'
+                f'<b>{len(missed_sips)} SIP(s)</b> did not deduct in <b>{last_month_lbl}</b>. '
+                f'These may have been paused, bounced, or missed. Please check with your bank.</div></div>',
+                unsafe_allow_html=True,
+            )
+            for s in missed_sips:
+                sn = clean_name(s["scheme"])
+                st.markdown(
+                    f'<div style="background:linear-gradient(135deg,#1a0a0a,#0c0f1a);'
+                    f'border:1px solid rgba(252,129,129,0.3);border-radius:14px;'
+                    f'padding:16px 18px;margin-bottom:8px;">'
+                    f'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">'
+                    f'<div style="font-size:12px;color:#e2e8f0;font-weight:600;line-height:1.4;">{sn}</div>'
+                    f'<span style="background:rgba(252,129,129,0.15);border:1px solid rgba(252,129,129,0.4);'
+                    f'color:#fc8181;font-size:9px;font-weight:800;padding:3px 8px;'
+                    f'border-radius:20px;letter-spacing:1px;white-space:nowrap;">'
+                    f'❌ MISSED {last_month_lbl.upper()}</span></div>'
+                    f'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">'
+                    f'<div><div style="font-size:9px;color:#718096;text-transform:uppercase;'
+                    f'letter-spacing:1px;margin-bottom:3px;">SIP Amount</div>'
+                    f'<div style="font-family:IBM Plex Mono,monospace;font-size:13px;'
+                    f'font-weight:700;color:#fc8181;">{fmt_inr(s["amount"])}</div></div>'
+                    f'<div><div style="font-size:9px;color:#718096;text-transform:uppercase;'
+                    f'letter-spacing:1px;margin-bottom:3px;">Last Deducted</div>'
+                    f'<div style="font-size:12px;color:#e2e8f0;font-weight:600;">{s["last_date"]}</div></div>'
+                    f'<div><div style="font-size:9px;color:#718096;text-transform:uppercase;'
+                    f'letter-spacing:1px;margin-bottom:3px;">Due Day</div>'
+                    f'<div style="font-size:12px;color:#f6ad55;font-weight:600;">{s["day_label"]} every month</div></div>'
+                    f'</div></div>',
+                    unsafe_allow_html=True,
+                )
+
+        # ── NEW FEATURE 2: MULTIPLE DEDUCTIONS IN SAME MONTH ──────────────────
+        # Detect schemes where 2+ SIPs hit in the same calendar month
+        # This is NORMAL for dual-mandate schemes but should be highlighted
+
+        # Group SIP transactions by (scheme, year, month)
+        sip_month_count = _col.defaultdict(list)
+        for t in sip_txs:
+            try:
+                td  = t["date_obj"]
+                key = (t["Scheme"], td.year, td.month)
+                sip_month_count[key].append(t)
+            except Exception:
+                pass
+
+        # Find months where same scheme had 2+ deductions
+        multi_deduction_schemes = {}  # scheme → list of (month_label, count, total_amount)
+        for (scheme, yr, mo), txs in sip_month_count.items():
+            if len(txs) >= 2:
+                mo_lbl = _dt.date(yr, mo, 1).strftime("%b %Y")
+                if scheme not in multi_deduction_schemes:
+                    multi_deduction_schemes[scheme] = []
+                multi_deduction_schemes[scheme].append({
+                    "month":  mo_lbl,
+                    "count":  len(txs),
+                    "total":  sum(t["Amount"] for t in txs),
+                    "dates":  ", ".join(sorted(set(t["Date"] for t in txs))),
+                })
+
+        if multi_deduction_schemes:
+            _dash_section("⚡ Multiple Deductions — Same Month (Normal for Dual Mandates)")
+            st.markdown(
+                '<div style="background:rgba(246,173,85,0.05);border:1px solid rgba(246,173,85,0.2);'
+                'border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:center;">'
+                '<div style="font-size:18px;">ℹ️</div>'
+                '<div style="font-size:12px;color:#f6ad55;line-height:1.6;">'
+                'These schemes had <b>2 or more SIP deductions in the same month</b>. '
+                'This is <b>normal if you have multiple mandates</b> (e.g. Physical + Multi SIP). '
+                'Review if unexpected.</div></div>',
+                unsafe_allow_html=True,
+            )
+            for scheme, months in sorted(multi_deduction_schemes.items()):
+                sn = clean_name(scheme)
+                # Show last 3 months only
+                recent = sorted(months, key=lambda x: x["month"], reverse=True)[:3]
+                months_html = ""
+                for m in recent:
+                    badge_color = "#fc8181" if m["count"] >= 3 else "#f6ad55"
+                    months_html += (
+                        f'<div style="display:flex;justify-content:space-between;'
+                        f'align-items:center;padding:8px 0;'
+                        f'border-bottom:1px solid rgba(255,255,255,0.04);">'
+                        f'<div>'
+                        f'<span style="background:{badge_color}18;border:1px solid {badge_color}44;'
+                        f'color:{badge_color};font-size:9px;font-weight:800;padding:2px 8px;'
+                        f'border-radius:20px;margin-right:8px;">{m["count"]}x IN {m["month"].upper()}</span>'
+                        f'<span style="font-size:11px;color:#718096;">{m["dates"]}</span>'
+                        f'</div>'
+                        f'<span style="font-family:IBM Plex Mono,monospace;font-size:12px;'
+                        f'font-weight:700;color:{badge_color};">{fmt_inr(m["total"])}</span>'
+                        f'</div>'
+                    )
+                st.markdown(
+                    f'<div style="background:#0c0f1a;border:1px solid rgba(246,173,85,0.2);'
+                    f'border-radius:14px;padding:16px 18px;margin-bottom:8px;">'
+                    f'<div style="font-size:13px;font-weight:700;color:#f7fafc;margin-bottom:12px;">{sn}</div>'
+                    f'{months_html}</div>',
+                    unsafe_allow_html=True,
+                )
+
     # ─────────────────────────────────────────────────────────────────────────
     # ── LUMPSUM VIEW ─────────────────────────────────────────────────────────
     # ─────────────────────────────────────────────────────────────────────────
