@@ -804,31 +804,84 @@ def process(raw):
             sip_transactions = [
                 t for t in transactions
                 if any(k in str(t.get("description", "")).upper() or k in str(t.get("type", "")).upper() for k in sip_keywords)
+                and float(t.get("units") or 0.0) > 0   # only real SIP transactions (positive units)
+                and float(t.get("amount") or 0.0) > 0  # only positive amounts
             ]
 
             if sip_transactions:
-                days = [to_date(t.get("date")).day for t in sip_transactions]
-                dom = Counter(days).most_common(1)[0][0] if days else 1
+                # ── DETECT MULTIPLE SIP MANDATES ON SAME SCHEME ──────────────
+                # Problem: Same scheme can have 2 mandates (e.g. Physical + Multi SIP)
+                # both deducting on same date. We need to detect each mandate separately.
+                #
+                # Solution: Group by (date, amount) — transactions on same date with
+                # same amount = same mandate installment. Different amounts = different mandates.
+                # We identify unique mandates by their instalment series in description.
 
-                sorted_sip = sorted(sip_transactions, key=lambda x: to_date(x.get("date")))
-                latest_tx = sorted_sip[-1]
-                amount_sip = float(latest_tx.get("amount", 0.0))
+                # Extract instalment number from description to identify unique mandates
+                # e.g. "Instalment 61/62" → series ending at 62
+                # e.g. "Instalment 56/57 Multi SIP" → different series
+                import re as _re
 
-                if amount_sip > 0:
-                    last_date = to_date(latest_tx.get("date"))
-                    statement_date_obj = to_date(valuation_date)
-                    cutoff = statement_date_obj - datetime.timedelta(days=90)
-                    next_due = next_due_date(dom)
+                def _get_mandate_key(tx):
+                    """Extract a unique key per mandate series from description."""
+                    desc = str(tx.get("description", "")).upper()
+                    # Try to find "X/Y" instalment pattern
+                    m = _re.search(r"(\d+)/(\d+)", desc)
+                    if m:
+                        total = m.group(2)  # total instalments = unique per mandate
+                        # Also check if Multi SIP is in description
+                        is_multi = "MULTI" in desc
+                        return f"{total}_{'MULTI' if is_multi else 'SINGLE'}"
+                    # Fallback: use amount as mandate key
+                    return str(abs(float(tx.get("amount") or 0)))
+
+                # Group transactions by mandate key
+                mandate_groups = {}
+                for tx in sip_transactions:
+                    key = _get_mandate_key(tx)
+                    if key not in mandate_groups:
+                        mandate_groups[key] = []
+                    mandate_groups[key].append(tx)
+
+                statement_date_obj = to_date(valuation_date)
+                cutoff = statement_date_obj - datetime.timedelta(days=90)
+
+                # Create one SIP record per unique mandate
+                for mandate_key, mandate_txs in mandate_groups.items():
+                    sorted_mandate = sorted(mandate_txs, key=lambda x: to_date(x.get("date")))
+                    latest_tx     = sorted_mandate[-1]
+                    amount_sip    = float(latest_tx.get("amount", 0.0))
+
+                    if amount_sip <= 0:
+                        continue
+
+                    # Most common deduction day for this mandate
+                    days = [to_date(t.get("date")).day for t in mandate_txs]
+                    dom  = Counter(days).most_common(1)[0][0] if days else 1
+
+                    last_date      = to_date(latest_tx.get("date"))
+                    next_due       = next_due_date(dom)
                     next_due_label = next_due.strftime("%d %b %Y")
-                    next_due_iso = next_due.isoformat()
+                    next_due_iso   = next_due.isoformat()
+
+                    # SIP label — append mandate info if multiple mandates
+                    sip_label = scheme_name
+                    if len(mandate_groups) > 1:
+                        # Multiple mandates on same scheme — label them
+                        desc = str(latest_tx.get("description",""))
+                        if "MULTI" in desc.upper():
+                            sip_label = scheme_name + " (Multi SIP)"
+                        else:
+                            sip_label = scheme_name + " (Physical)"
 
                     sip_record = {
-                        "scheme": scheme_name,
-                        "amount": amount_sip,
+                        "scheme":    sip_label,
+                        "amount":    amount_sip,
                         "day_label": ordinal(dom),
                         "last_date": last_date.strftime("%d %b %Y"),
                         "next_date": next_due_label,
-                        "next_iso": next_due_iso,
+                        "next_iso":  next_due_iso,
+                        "installments": len(mandate_txs),
                         "status": "Live" if last_date >= cutoff and units > 0.01 else "Inactive",
                     }
 
@@ -1071,116 +1124,6 @@ def setup_sheet_headers():
         pass
 
 
-# ─────────────────────────────────────────────
-# AUTO CAS REQUEST — CAMS
-# ─────────────────────────────────────────────
-
-def _request_cas_from_cams(email: str, password: str) -> str:
-    """
-    Submit CAS request to CAMS using Playwright headless browser.
-    Returns reference number on success, or "ERROR".
-    Falls back gracefully if Playwright is not installed.
-    """
-    import datetime as _dt
-    import re as _re
-
-    today = _dt.date.today().strftime("%d-%b-%Y")
-    url   = "https://www.camsonline.com/Investors/Statements/Consolidated-Account-Statement"
-
-    try:
-        from playwright.sync_api import sync_playwright
-    except ImportError:
-        return "ERROR"
-
-    try:
-        with sync_playwright() as pw:
-            browser = pw.chromium.launch(headless=True)
-            ctx     = browser.new_context(
-                user_agent=(
-                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                    "AppleWebKit/537.36 (KHTML, like Gecko) "
-                    "Chrome/124.0.0.0 Safari/537.36"
-                ),
-                viewport={"width": 1280, "height": 900},
-            )
-            pg = ctx.new_page()
-            pg.goto(url, wait_until="networkidle", timeout=30000)
-
-            # Detailed statement
-            try:
-                pg.locator("label:has-text('Detailed')").first.click(timeout=5000)
-            except Exception:
-                pg.locator("input[value='D']").first.click()
-
-            # Specific period
-            try:
-                pg.locator("label:has-text('Specific')").first.click(timeout=5000)
-            except Exception:
-                pass
-
-            # From date
-            try:
-                fd = pg.locator("input#txtFromDate").first
-                fd.triple_click()
-                fd.fill("01-Jan-1991")
-            except Exception:
-                pass
-
-            # To date
-            try:
-                td = pg.locator("input#txtToDate").first
-                td.triple_click()
-                td.fill(today)
-            except Exception:
-                pass
-
-            # Zero balance folios
-            try:
-                pg.locator("label:has-text('zero balance')").first.click(timeout=5000)
-            except Exception:
-                try:
-                    pg.locator("input[value='Z']").first.click()
-                except Exception:
-                    pass
-
-            # Email
-            try:
-                pg.locator("input#txtEmail").first.fill(email)
-            except Exception:
-                pg.locator("input[type='email']").first.fill(email)
-
-            # Password
-            try:
-                pg.locator("input#txtPassword").first.fill(password)
-                pg.locator("input#txtConfirmPassword").first.fill(password)
-            except Exception:
-                pass
-
-            # Submit
-            try:
-                pg.locator("input[type='submit']").first.click()
-            except Exception:
-                pg.locator("button[type='submit']").first.click()
-
-            pg.wait_for_load_state("networkidle", timeout=20000)
-            html = pg.content()
-            browser.close()
-
-            # Extract reference number
-            m1 = _re.search(r"reference.{0,30}(CP[0-9]{6,12}|CK[0-9]{6,12})", html, _re.I)
-            if m1:
-                return m1.group(1).upper()
-            m2 = _re.search(r"(CP[0-9]{6,12}|CK[0-9]{6,12})", html)
-            if m2:
-                return m2.group(1).upper()
-            if "success" in html.lower() or "will be sent" in html.lower():
-                return "SUCCESS"
-            return "ERROR"
-
-    except Exception:
-        return "ERROR"
-
-
 def show_upload():
     # ── Gate check ────────────────────────────────────────────────────────
     is_unlocked = st.session_state.get("coupon_ok", False)
@@ -1233,85 +1176,203 @@ def show_upload():
     left, right = st.columns([1, 1], gap="large")
 
     # ────────────────────────────────────────────
-    # LEFT: Premium How-to Guide
+    # LEFT: Beautiful Animated CAS Guide
     # ────────────────────────────────────────────
     with left:
-        steps_html = ""
-        steps = [
-            ("01", "#63b3ed",
-             "camsonline.com",
-             "Visit camsonline.com",
-             "Navigate to <b>MF Investor Services → Statements → CAS</b>",
-             "rgba(99,179,237,0.08)"),
-            ("02", "#9f7aea",
-             "Configure",
-             "Set up your statement",
-             "Type: <b>Detailed</b> &nbsp;·&nbsp; Date: <b>01/01/1991 → Today</b><br>Enable <b>'Zero balance folios'</b>",
-             "rgba(159,122,234,0.08)"),
-            ("03", "#48bb78",
-             "Check inbox",
-             "Get the PDF in email",
-             "You'll receive a <b>password-protected PDF</b> within a few minutes.",
-             "rgba(72,187,120,0.08)"),
-            ("04", "#f6ad55",
-             "Upload",
-             "Upload & unlock insights",
-             "Use your <b>PAN number</b> or <b>Date of Birth (DDMMYYYY)</b> as the PDF password.",
-             "rgba(246,173,85,0.08)"),
+        # Build each step as a mock browser screenshot card
+        steps_data = [
+            {
+                "num": "01", "color": "#63b3ed", "bg": "rgba(99,179,237,0.08)",
+                "tag": "STEP 1", "emoji": "🌐",
+                "title": "Visit camsonline.com",
+                "desc": "Go to MF Investor Services → Statements → CAS",
+                "mock_title": "camsonline.com",
+                "mock_content": """
+                  <div style="display:flex;gap:8px;margin-bottom:10px;">
+                    <div style="background:#1a365d;border-radius:6px;padding:6px 14px;font-size:11px;
+                                font-weight:700;color:#63b3ed;border:1px solid rgba(99,179,237,0.3);">
+                      MF Investors ▾</div>
+                    <div style="background:rgba(99,179,237,0.15);border-radius:6px;padding:6px 14px;
+                                font-size:11px;font-weight:700;color:#63b3ed;
+                                border:1px solid rgba(99,179,237,0.4);">
+                      ✦ Statements</div>
+                    <div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:6px 14px;
+                                font-size:11px;color:#4a5568;">Transactions</div>
+                  </div>
+                  <div style="background:rgba(99,179,237,0.06);border:1px solid rgba(99,179,237,0.2);
+                              border-radius:8px;padding:10px 14px;font-size:11px;color:#718096;">
+                    📄 CAS - CAMS+KFintech &nbsp;→&nbsp;
+                    <span style="color:#63b3ed;font-weight:600;">Click here</span>
+                  </div>""",
+            },
+            {
+                "num": "02", "color": "#9f7aea", "bg": "rgba(159,122,234,0.08)",
+                "tag": "STEP 2", "emoji": "⚙️",
+                "title": "Configure the form",
+                "desc": "Select Detailed · Date 01/01/1991 to today · Zero balance folios ✓",
+                "mock_title": "CAS Statement Form",
+                "mock_content": """
+                  <div style="display:flex;flex-direction:column;gap:7px;">
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div style="width:14px;height:14px;border-radius:50%;
+                                  background:#9f7aea;border:2px solid #9f7aea;flex-shrink:0;"></div>
+                      <span style="font-size:11px;color:#e2e8f0;font-weight:600;">
+                        Detailed <span style="color:#4a5568;font-weight:400;">(includes transactions)</span></span>
+                    </div>
+                    <div style="display:flex;gap:6px;">
+                      <div style="flex:1;background:#0c0f1a;border:1px solid rgba(159,122,234,0.3);
+                                  border-radius:6px;padding:5px 8px;font-size:10px;color:#9f7aea;">
+                        📅 01-Jan-1991</div>
+                      <div style="flex:1;background:#0c0f1a;border:1px solid rgba(159,122,234,0.3);
+                                  border-radius:6px;padding:5px 8px;font-size:10px;color:#9f7aea;">
+                        📅 Today</div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                      <div style="width:14px;height:14px;border-radius:3px;
+                                  background:#9f7aea;flex-shrink:0;display:flex;align-items:center;
+                                  justify-content:center;font-size:9px;color:#fff;">✓</div>
+                      <span style="font-size:11px;color:#e2e8f0;">With zero balance folios</span>
+                    </div>
+                  </div>""",
+            },
+            {
+                "num": "03", "color": "#48bb78", "bg": "rgba(72,187,120,0.08)",
+                "tag": "STEP 3", "emoji": "🔑",
+                "title": "Enter email & set password",
+                "desc": "Enter your email · Set a password like Rahul@1234 · Click Submit",
+                "mock_title": "Enter Details",
+                "mock_content": """
+                  <div style="display:flex;flex-direction:column;gap:7px;">
+                    <div style="background:#0c0f1a;border:1px solid rgba(72,187,120,0.3);
+                                border-radius:6px;padding:6px 10px;font-size:10px;color:#718096;">
+                      📧 rahul@gmail.com</div>
+                    <div style="background:#0c0f1a;border:1px solid rgba(72,187,120,0.3);
+                                border-radius:6px;padding:6px 10px;font-size:10px;color:#718096;">
+                      🔒 ••••••••••</div>
+                    <div style="background:#48bb78;border-radius:6px;padding:7px 10px;
+                                font-size:11px;font-weight:700;color:#07090f;text-align:center;">
+                      Submit →</div>
+                  </div>""",
+            },
+            {
+                "num": "04", "color": "#f6ad55", "bg": "rgba(246,173,85,0.08)",
+                "tag": "STEP 4", "emoji": "📬",
+                "title": "Check email & upload",
+                "desc": "PDF arrives in 2 mins · Come back here · Upload it with your password",
+                "mock_title": "Your Inbox",
+                "mock_content": """
+                  <div style="display:flex;flex-direction:column;gap:6px;">
+                    <div style="background:rgba(246,173,85,0.08);border:1px solid rgba(246,173,85,0.25);
+                                border-radius:8px;padding:8px 10px;display:flex;gap:8px;align-items:center;">
+                      <div style="font-size:16px;flex-shrink:0;">📩</div>
+                      <div>
+                        <div style="font-size:10px;font-weight:700;color:#f6ad55;">
+                          CAS-CAMS+KFintech.pdf</div>
+                        <div style="font-size:9px;color:#4a5568;margin-top:1px;">
+                          From: noreply@camsonline.com</div>
+                      </div>
+                    </div>
+                    <div style="font-size:9px;color:#4a5568;text-align:center;">
+                      ↓ Download & upload to CAS 360 View</div>
+                  </div>""",
+            },
         ]
-        for num, color, tag, title, body, bg in steps:
+
+        # Build animated steps HTML
+        steps_html = ""
+        for i, s in enumerate(steps_data):
+            delay = i * 0.15
             steps_html += f"""
-            <div style="display:flex;gap:16px;margin-bottom:20px;position:relative;">
-              <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;gap:0;">
-                <div style="width:42px;height:42px;background:{bg};border:1px solid {color}44;
-                            border-radius:14px;display:flex;align-items:center;justify-content:center;
-                            font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:800;
-                            color:{color};letter-spacing:.5px;">{num}</div>
-                <div style="width:1px;flex:1;background:linear-gradient({color}44,transparent);
-                            margin-top:4px;min-height:20px;"></div>
-              </div>
-              <div style="padding-top:8px;padding-bottom:16px;">
-                <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-                  <span style="font-size:9px;font-weight:700;color:{color};text-transform:uppercase;
-                               letter-spacing:1.5px;background:{bg};border:1px solid {color}33;
-                               padding:2px 8px;border-radius:20px;">{tag}</span>
+            <div style="animation:stepIn .5s ease {delay:.2f}s both;opacity:0;margin-bottom:18px;">
+              <div style="display:flex;gap:14px;">
+                <!-- Step number + connector -->
+                <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;">
+                  <div style="width:36px;height:36px;background:{s['bg']};
+                              border:1.5px solid {s['color']}55;border-radius:12px;
+                              display:flex;align-items:center;justify-content:center;
+                              font-size:16px;">{s['emoji']}</div>
+                  {"<div style='width:1px;flex:1;min-height:16px;margin-top:4px;background:linear-gradient(" + s['color'] + "44,transparent);'></div>" if i < 3 else ""}
                 </div>
-                <div style="font-size:14px;font-weight:700;color:#f7fafc;margin-bottom:5px;">{title}</div>
-                <div style="font-size:12px;color:#718096;line-height:1.7;">{body}</div>
+                <!-- Content -->
+                <div style="flex:1;padding-top:4px;">
+                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+                    <span style="font-size:9px;font-weight:800;color:{s['color']};
+                                 text-transform:uppercase;letter-spacing:2px;
+                                 background:{s['bg']};border:1px solid {s['color']}33;
+                                 padding:2px 8px;border-radius:20px;">{s['tag']}</span>
+                  </div>
+                  <div style="font-size:13px;font-weight:700;color:#f7fafc;margin-bottom:3px;">
+                    {s['title']}</div>
+                  <div style="font-size:11px;color:#718096;margin-bottom:10px;line-height:1.6;">
+                    {s['desc']}</div>
+                  <!-- Mock screenshot card -->
+                  <div style="background:#07090f;border:1px solid rgba(255,255,255,0.06);
+                              border-radius:10px;overflow:hidden;">
+                    <!-- Browser bar -->
+                    <div style="background:#0c0f1a;border-bottom:1px solid rgba(255,255,255,0.05);
+                                padding:7px 12px;display:flex;align-items:center;gap:8px;">
+                      <div style="display:flex;gap:4px;">
+                        <div style="width:8px;height:8px;border-radius:50%;background:#fc8181;opacity:.5;"></div>
+                        <div style="width:8px;height:8px;border-radius:50%;background:#f6ad55;opacity:.5;"></div>
+                        <div style="width:8px;height:8px;border-radius:50%;background:#48bb78;opacity:.5;"></div>
+                      </div>
+                      <div style="flex:1;background:#07090f;border-radius:4px;padding:3px 8px;
+                                  font-size:9px;color:#4a5568;font-family:monospace;">
+                        {s['mock_title']}</div>
+                    </div>
+                    <!-- Content area -->
+                    <div style="padding:12px 14px;">
+                      {s['mock_content']}
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>"""
 
         st.markdown(
             f"""
             <style>
-            @keyframes guideIn{{from{{opacity:0;transform:translateX(-12px);}}to{{opacity:1;transform:translateX(0);}}}}
-            .guide-card{{background:linear-gradient(145deg,#0c0f1a,#0a0d18);
-              border:1px solid rgba(99,179,237,0.12);border-radius:20px;
-              padding:30px 26px;animation:guideIn .6s ease forwards;}}
+            @keyframes stepIn{{
+              from{{opacity:0;transform:translateY(10px);}}
+              to{{opacity:1;transform:translateY(0);}}
+            }}
+            @keyframes guideIn{{
+              from{{opacity:0;transform:translateX(-14px);}}
+              to{{opacity:1;transform:translateX(0);}}
+            }}
             </style>
-            <div class="guide-card">
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:26px;">
-                <div style="width:36px;height:36px;background:rgba(99,179,237,0.1);
-                            border:1px solid rgba(99,179,237,0.25);border-radius:12px;
-                            display:flex;align-items:center;justify-content:center;font-size:18px;">📋</div>
-                <div>
-                  <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;
-                               color:#63b3ed;text-transform:uppercase;letter-spacing:2px;">
-                    How to get your CAS PDF</div>
-                  <div style="font-size:11px;color:#4a5568;margin-top:1px;">4 simple steps · takes 2 minutes</div>
+            <div style="background:linear-gradient(145deg,#0c0f1a,#080b14);
+                        border:1px solid rgba(99,179,237,0.12);border-radius:20px;
+                        padding:24px 22px;animation:guideIn .6s ease forwards;">
+              <!-- Header -->
+              <div style="display:flex;align-items:center;justify-content:space-between;
+                          margin-bottom:22px;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <div style="width:34px;height:34px;background:rgba(99,179,237,0.1);
+                              border:1px solid rgba(99,179,237,0.25);border-radius:10px;
+                              display:flex;align-items:center;justify-content:center;
+                              font-size:16px;">📋</div>
+                  <div>
+                    <div style="font-family:'Syne',sans-serif;font-size:13px;font-weight:700;
+                                color:#63b3ed;text-transform:uppercase;letter-spacing:2px;">
+                      How to get your CAS</div>
+                    <div style="font-size:10px;color:#4a5568;margin-top:1px;">
+                      4 steps · 2 minutes · one time only</div>
+                  </div>
                 </div>
+                <div style="background:rgba(72,187,120,0.08);border:1px solid rgba(72,187,120,0.2);
+                            border-radius:20px;padding:4px 10px;font-size:9px;font-weight:700;
+                            color:#48bb78;letter-spacing:1px;">FREE</div>
               </div>
               {steps_html}
-              <div style="background:linear-gradient(135deg,rgba(246,173,85,0.06),rgba(246,173,85,0.02));
-                          border:1px solid rgba(246,173,85,0.18);border-radius:12px;
-                          padding:12px 16px;margin-top:4px;display:flex;gap:10px;align-items:flex-start;">
-                <div style="font-size:16px;margin-top:1px;">🔐</div>
-                <div>
-                  <div style="font-size:11px;color:#f6ad55;font-weight:700;margin-bottom:2px;">
-                    Your data is completely private</div>
-                  <div style="font-size:11px;color:#718096;line-height:1.6;">
-                    All processing happens on your device. No data is ever sent to or stored on any server.
-                  </div>
+              <!-- Privacy note -->
+              <div style="background:linear-gradient(135deg,rgba(99,179,237,0.05),rgba(99,179,237,0.02));
+                          border:1px solid rgba(99,179,237,0.12);border-radius:10px;
+                          padding:10px 14px;display:flex;gap:8px;align-items:center;margin-top:6px;">
+                <div style="font-size:14px;flex-shrink:0;">🔐</div>
+                <div style="font-size:10px;color:#4a5568;line-height:1.6;">
+                  <span style="color:#63b3ed;font-weight:600;">100% Private</span> —
+                  Your data is processed on your device only. Nothing is stored on any server.
                 </div>
               </div>
             </div>
@@ -1501,180 +1562,33 @@ def show_upload():
         )
 
         # ── Mode tabs ──────────────────────────────────────────────────────
-        tab_auto, tab_upload = st.tabs(["📬 Request CAS Automatically", "📁 Upload PDF Manually"])
-
-        # ════════════════════════════════════════════
-        # TAB 1 — AUTO REQUEST
-        # ════════════════════════════════════════════
-        with tab_auto:
-
-            # Show success screen if already requested
-            if st.session_state.get("cas_requested"):
-                ref_no   = st.session_state.get("cas_ref_no", "—")
-                req_email= st.session_state.get("cas_req_email", "")
-                st.markdown(
-                    f"""
-                    <div style="background:linear-gradient(135deg,#0a1f15,#0c0f1a);
-                                border:1px solid rgba(72,187,120,0.3);border-radius:16px;
-                                padding:24px;text-align:center;margin-bottom:16px;">
-                      <div style="font-size:40px;margin-bottom:10px;">✅</div>
-                      <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;
-                                  color:#48bb78;margin-bottom:6px;">CAS Request Sent!</div>
-                      <div style="font-size:12px;color:#718096;">
-                        PDF will arrive at <b style="color:#f7fafc;">{req_email}</b> within 2 minutes</div>
-                    </div>
-                    <div style="background:#0c0f1a;border:1px solid rgba(99,179,237,0.2);
-                                border-radius:14px;padding:16px 20px;margin-bottom:14px;">
-                      <div style="font-size:10px;color:#718096;text-transform:uppercase;
-                                  letter-spacing:1.2px;margin-bottom:8px;">Reference Number</div>
-                      <div style="display:flex;align-items:center;justify-content:space-between;">
-                        <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;
-                                    font-weight:700;color:#63b3ed;letter-spacing:2px;">{ref_no}</div>
-                        <div style="font-size:10px;color:#4a5568;">Save this number</div>
-                      </div>
-                    </div>
-                    <div style="background:#0c0f1a;border:1px solid rgba(255,255,255,0.06);
-                                border-radius:14px;padding:14px 18px;margin-bottom:14px;">
-                      <div style="font-size:12px;font-weight:700;color:#f7fafc;margin-bottom:10px;">
-                        What to do next:</div>
-                      <div style="display:flex;gap:10px;margin-bottom:8px;">
-                        <div style="width:22px;height:22px;border-radius:50%;
-                                    background:rgba(99,179,237,0.15);display:flex;align-items:center;
-                                    justify-content:center;font-size:10px;font-weight:700;
-                                    color:#63b3ed;flex-shrink:0;">1</div>
-                        <div style="font-size:12px;color:#718096;">
-                          Check your inbox for the PDF from CAMS</div>
-                      </div>
-                      <div style="display:flex;gap:10px;margin-bottom:8px;">
-                        <div style="width:22px;height:22px;border-radius:50%;
-                                    background:rgba(99,179,237,0.15);display:flex;align-items:center;
-                                    justify-content:center;font-size:10px;font-weight:700;
-                                    color:#63b3ed;flex-shrink:0;">2</div>
-                        <div style="font-size:12px;color:#718096;">
-                          Click the <b style="color:#f7fafc;">"Upload PDF Manually"</b> tab above</div>
-                      </div>
-                      <div style="display:flex;gap:10px;">
-                        <div style="width:22px;height:22px;border-radius:50%;
-                                    background:rgba(99,179,237,0.15);display:flex;align-items:center;
-                                    justify-content:center;font-size:10px;font-weight:700;
-                                    color:#63b3ed;flex-shrink:0;">3</div>
-                        <div style="font-size:12px;color:#718096;">
-                          Upload PDF · enter the password you just set · done!</div>
-                      </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-                if st.button("🔄 Request another CAS", use_container_width=True):
-                    st.session_state.cas_requested = False
+        # ── Clean Upload Section ───────────────────────────────────────────
+        st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
+        uploaded = st.file_uploader(
+            "CAS PDF", type=["pdf"], label_visibility="collapsed")
+        password = st.text_input(
+            "PDF Password",
+            type="password",
+            placeholder="PAN number or Date of Birth (DDMMYYYY)",
+            key="pdf_password",
+        )
+        if uploaded and password:
+            if st.button("🚀 Analyse Portfolio →",
+                         use_container_width=True, type="primary"):
+                with st.spinner("Parsing your CAS…"):
+                    data, error = parse_pdf(uploaded.read(), password)
+                if error == "wrong_password":
+                    st.error("Wrong password. Try your PAN number or date of birth (DDMMYYYY).")
+                elif error:
+                    st.error(f"Parse error: {error}")
+                else:
+                    portfolio     = process(data)
+                    investor_name = portfolio["investor_name"].title()
+                    st.session_state.profiles[investor_name] = portfolio
+                    st.session_state.active  = investor_name
+                    st.session_state.pin_ok  = True
+                    st.success(f"✅ Portfolio loaded — {investor_name}")
                     st.rerun()
-
-            else:
-                # ── Request form ───────────────────────────────────────────
-                st.markdown(
-                    """
-                    <div style="background:rgba(99,179,237,0.06);border:1px solid rgba(99,179,237,0.15);
-                                border-radius:12px;padding:12px 16px;margin-bottom:16px;
-                                display:flex;gap:10px;align-items:flex-start;">
-                      <div style="font-size:18px;flex-shrink:0;">📬</div>
-                      <div style="font-size:12px;color:#718096;line-height:1.7;">
-                        We'll request your CAS from CAMS automatically —
-                        <b style="color:#f7fafc;">Detailed</b> · from
-                        <b style="color:#f7fafc;">01 Jan 1991</b> to today ·
-                        with <b style="color:#f7fafc;">zero balance folios</b>.
-                        PDF arrives in your inbox within 2 minutes.
-                      </div>
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-                cas_email = st.text_input(
-                    "Your email address",
-                    placeholder="rahul@gmail.com",
-                    key="_cas_email",
-                    help="CAMS will send the PDF to this email",
-                )
-                cas_pwd = st.text_input(
-                    "Set a password for the PDF",
-                    placeholder="e.g. Rahul@1234",
-                    key="_cas_pwd",
-                    help="You will need this password to open the PDF",
-                )
-                cas_pwd2 = st.text_input(
-                    "Confirm password",
-                    placeholder="Re-enter same password",
-                    key="_cas_pwd2",
-                )
-
-                st.markdown(
-                    """
-                    <div style="font-size:10px;color:#4a5568;margin:8px 0 12px;
-                                display:flex;align-items:center;gap:6px;">
-                      🔐 Your email and password go directly to CAMS — we never store them
-                    </div>
-                    """,
-                    unsafe_allow_html=True,
-                )
-
-                if st.button("📬 Send my CAS Request →",
-                             use_container_width=True, type="primary", key="cas_req_btn"):
-                    if not cas_email or "@" not in cas_email:
-                        st.error("Please enter a valid email address.")
-                    elif not cas_pwd:
-                        st.error("Please set a password for the PDF.")
-                    elif cas_pwd != cas_pwd2:
-                        st.error("Passwords do not match. Please try again.")
-                    else:
-                        with st.spinner("Sending your CAS request to CAMS..."):
-                            ref_no = _request_cas_from_cams(cas_email, cas_pwd)
-                        if ref_no and ref_no != "ERROR":
-                            st.session_state["cas_requested"]  = True
-                            st.session_state["cas_ref_no"]     = ref_no
-                            st.session_state["cas_req_email"]  = cas_email
-                            st.session_state["cas_req_pwd"]    = cas_pwd
-                            st.rerun()
-                        else:
-                            st.error(
-                                "Could not submit to CAMS automatically. "
-                                "Please use the 'Upload PDF Manually' tab and follow the steps on the left."
-                            )
-
-        # ════════════════════════════════════════════
-        # TAB 2 — MANUAL UPLOAD
-        # ════════════════════════════════════════════
-        with tab_upload:
-            st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
-
-            # Pre-fill password hint if they used auto-request
-            pwd_hint = st.session_state.get("cas_req_pwd", "")
-            pwd_placeholder = f"Password you set: {pwd_hint}" if pwd_hint else "PAN number or password you set"
-
-            uploaded = st.file_uploader(
-                "CAS PDF", type=["pdf"], label_visibility="collapsed")
-            password = st.text_input(
-                "PDF Password",
-                type="password",
-                placeholder=pwd_placeholder,
-                key="pdf_password",
-            )
-            if uploaded and password:
-                if st.button("🚀 Analyse Portfolio →",
-                             use_container_width=True, type="primary"):
-                    with st.spinner("Parsing your CAS…"):
-                        data, error = parse_pdf(uploaded.read(), password)
-                    if error == "wrong_password":
-                        st.error("Wrong password. Try the password you set, your PAN, or date of birth.")
-                    elif error:
-                        st.error(f"Parse error: {error}")
-                    else:
-                        portfolio     = process(data)
-                        investor_name = portfolio["investor_name"].title()
-                        st.session_state.profiles[investor_name] = portfolio
-                        st.session_state.active  = investor_name
-                        st.session_state.pin_ok  = True
-                        st.success(f"✅ Portfolio loaded — {investor_name}")
-                        st.rerun()
 
 
 # ─────────────────────────────────────────────
