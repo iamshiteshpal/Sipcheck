@@ -1813,6 +1813,17 @@ def build_sidebar(data):
                 st.session_state["nav_override"] = "📄 Report Builder"
                 st.rerun()
 
+            # ── PDF Print tip ──────────────────────────────────────────────
+            st.markdown(
+                '<div style="background:rgba(99,179,237,0.05);border:1px solid rgba(99,179,237,0.12);' +
+                'border-radius:8px;padding:8px 10px;margin-top:4px;">' +
+                '<div style="font-size:9px;color:#63b3ed;font-weight:700;margin-bottom:3px;">'  +
+                '💡 To save as PDF:</div>' +
+                '<div style="font-size:9px;color:#4a5568;line-height:1.6;">' +
+                '1. Download HTML Report<br>2. Open in Chrome<br>3. Ctrl+P → Save as PDF</div></div>',
+                unsafe_allow_html=True,
+            )
+
             # ── Version watermark ─────────────────────────────────────────
             st.markdown(
                 "<div style='text-align:center;padding:16px 0 4px;'>"
@@ -3692,33 +3703,49 @@ def render_my_portfolio(data):
 # ─────────────────────────────────────────────
 
 def render_sip_center(data):
+    import datetime as _dtsc
     st.markdown('<div class="page-title">SIP Center</div>', unsafe_allow_html=True)
     live_sips = data.get("live_sips", [])
     dead_sips = data.get("dead_sips", [])
 
+    # Filter inactive: only show within 1 year
+    stmt_dt      = to_date(data.get("statement_date", str(date.today())))
+    one_yr_ago   = stmt_dt - _dtsc.timedelta(days=365)
+    recent_dead  = []
+    old_dead     = []
+    for s in dead_sips:
+        try:
+            ld = s.get("last_date_obj") or to_date(s["last_date"])
+            (recent_dead if ld >= one_yr_ago else old_dead).append(s)
+        except Exception:
+            recent_dead.append(s)
+
     tab = st.segmented_control(
         "sip_tab",
-        [f"🟢 Live ({len(live_sips)})", f"🔴 Inactive ({len(dead_sips)})"],
+        [f"🟢 Live ({len(live_sips)})", f"🔴 Inactive ({len(recent_dead)})"],
         default=f"🟢 Live ({len(live_sips)})",
         label_visibility="collapsed",
     )
-    target_list = live_sips if "Live" in tab else dead_sips
-    total_outflow = sum(item["amount"] for item in target_list)
-    status_label = "LIVE" if "Live" in tab else "INACTIVE"
+    is_live      = "Live" in tab
+    target_list  = live_sips if is_live else recent_dead
+    total_outflow= sum(item["amount"] for item in target_list)
+    status_label = "LIVE" if is_live else "INACTIVE"
 
     st.markdown(
         f"""
         <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;
-    padding:20px 24px;display:flex;justify-content:space-between;
+                    padding:20px 24px;display:flex;justify-content:space-between;
                     align-items:center;margin-bottom:16px;">
           <div>
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;
-    letter-spacing:1.5px;margin-bottom:4px;">Total Monthly Outflow</div>
+                        letter-spacing:1.5px;margin-bottom:4px;">Total Monthly Outflow</div>
             <div style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:700;
-    color:#f7fafc;letter-spacing:-1px;">{fmt_inr(total_outflow)}</div>
+                        color:#f7fafc;letter-spacing:-1px;">{fmt_inr(total_outflow)}</div>
           </div>
-          <div style="font-size:12px;font-weight:700;color:{'#48bb78' if 'Live' in tab else '#fc8181'};">
-            {len(target_list)} {status_label}
+          <div>
+            <div style="font-size:12px;font-weight:700;color:'{'#48bb78' if is_live else '#fc8181'}';">
+              {len(target_list)} {status_label}</div>
+            {f'<div style="font-size:10px;color:#4a5568;margin-top:3px;">{len(old_dead)} older stopped SIPs hidden</div>' if not is_live and old_dead else ''}
           </div>
         </div>
         """,
@@ -3726,42 +3753,45 @@ def render_sip_center(data):
     )
 
     if target_list:
-        rows = [
-            {
-                "Scheme": clean_name(item["scheme"]),
-                "Amount": fmt_inr(item["amount"]),
-                "Day": item["day_label"],
+        rows = []
+        for item in sorted(target_list,
+            key=lambda x: x.get("last_date_obj", to_date(x["last_date"])), reverse=True):
+            rows.append({
+                "Scheme":    clean_name(item["scheme"]),
+                "Amount":    fmt_inr(item["amount"]),
+                "Day":       item["day_label"],
                 "Last Date": item["last_date"],
-                "Next Due": item["next_date"],
-                "Status": item["status"],
-            }
-            for item in target_list
-        ]
+                "Next Due":  item["next_date"],
+                "Status":    item["status"],
+            })
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
     else:
         st.info("No SIPs in this category.")
 
-    all_sips = live_sips + dead_sips
-    if all_sips:
-        st.markdown('<div class="section-sep">Monthly Outflow by Scheme</div>', unsafe_allow_html=True)
+    # Show old stopped in expander
+    if not is_live and old_dead:
+        with st.expander(f"🗂️ Older Stopped SIPs — {len(old_dead)} (stopped 1+ year ago)"):
+            st.dataframe(pd.DataFrame([{
+                "Scheme":    clean_name(s["scheme"]),
+                "Amount":    fmt_inr(s["amount"]),
+                "Last Date": s["last_date"],
+            } for s in old_dead]), use_container_width=True, hide_index=True)
+
+    # Bar chart — only live SIPs
+    if live_sips:
+        st.markdown('<div class="section-sep">Monthly Outflow by Scheme (Live SIPs)</div>',
+            unsafe_allow_html=True)
         df_bar = pd.DataFrame([
             {"Scheme": clean_name(item["scheme"]), "Amount": item["amount"]}
-            for item in all_sips
+            for item in live_sips
         ])
-        fig_bar = px.bar(
-            df_bar,
-            x="Amount",
-            y="Scheme",
-            orientation="h",
-            color="Amount",
-            color_continuous_scale=["#1a365d", C_ACCENT, "#bee3f8"],
-        )
+        fig_bar = px.bar(df_bar, x="Amount", y="Scheme", orientation="h",
+            color="Amount", color_continuous_scale=["#1a365d", C_ACCENT, "#bee3f8"])
         fig_bar.update_layout(
-            height=max(200, len(all_sips) * 30),
+            height=max(200, len(live_sips) * 35),
             xaxis=dict(visible=False),
             yaxis=dict(tickfont=dict(size=11, color="#718096"), title=""),
-            coloraxis_showscale=False,
-            **PLOT_BASE,
+            coloraxis_showscale=False, **PLOT_BASE,
         )
         st.plotly_chart(fig_bar, use_container_width=True, config={"displayModeBar": False})
 
@@ -3779,24 +3809,46 @@ def render_transactions(data):
         st.warning("No transaction data found.")
         return
 
-    selected_scheme = st.selectbox("Select Scheme", list(tx_map.keys()), label_visibility="visible")
-    totals = agg_map.get(selected_scheme, {"cost": 0.0, "units": 0.0, "value": 0.0})
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Book Cost", fmt_inr(totals["cost"]))
-    c2.metric("Units", f"{totals['units']:.3f}")
-    c3.metric("Current Value", fmt_inr(totals["value"]))
+    # Clean scheme names for display, map back to original
+    scheme_display_map = {clean_name(k): k for k in tx_map.keys()}
+    scheme_display_list = sorted(scheme_display_map.keys())
 
-    rows = []
-    for transaction in tx_map.get(selected_scheme, []):
-        rows.append({
-            "Date": to_date(transaction.get("date")).strftime("%d %b %Y") if transaction.get("date") else "—",
-            "Description": transaction.get("description", "—"),
-            "Amount": fmt_inr(float(transaction["amount"])) if transaction.get("amount") else "—",
-            "NAV": f"₹{float(transaction['nav']):,.4f}" if transaction.get("nav") else "—",
-            "Units": f"{float(transaction['units']):,.3f}" if transaction.get("units") else "—",
-            "Type": transaction.get("type", "—"),
-        })
-    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    selected_display = st.selectbox(
+        "Select Scheme",
+        scheme_display_list,
+        label_visibility="visible",
+        key="tx_scheme_select",
+    )
+    selected_scheme = scheme_display_map.get(selected_display, list(tx_map.keys())[0])
+    totals = agg_map.get(selected_scheme, {"cost": 0.0, "units": 0.0, "value": 0.0})
+
+    c1, c2, c3 = st.columns(3)
+    c1.metric("Book Cost",      fmt_inr(totals["cost"]))
+    c2.metric("Units",          f"{totals['units']:.3f}")
+    c3.metric("Current Value",  fmt_inr(totals["value"]))
+
+    txs = tx_map.get(selected_scheme, [])
+    if not txs:
+        st.info("No transactions found for this scheme.")
+    else:
+        rows = []
+        for transaction in sorted(txs,
+            key=lambda x: to_date(x.get("date")), reverse=True):
+            try:
+                amt = float(transaction["amount"]) if transaction.get("amount") else 0
+                nav = float(transaction["nav"])     if transaction.get("nav")    else 0
+                unt = float(transaction["units"])   if transaction.get("units")  else 0
+                rows.append({
+                    "Date":        to_date(transaction.get("date")).strftime("%d %b %Y"),
+                    "Description": transaction.get("description", "—"),
+                    "Amount":      fmt_inr(amt) if amt else "—",
+                    "NAV":         f"₹{nav:,.4f}" if nav else "—",
+                    "Units":       f"{unt:+,.3f}" if unt else "—",
+                    "Type":        transaction.get("type", "—"),
+                })
+            except Exception:
+                continue
+        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
     st.markdown('<div class="section-sep" style="margin-top:28px;">All Holdings — XIRR Table</div>', unsafe_allow_html=True)
     performance = [
@@ -4175,11 +4227,23 @@ def render_pnl_summary(data, live_data=None):
     rc = "#48bb78" if realised_pnl   >= 0 else "#fc8181"
     tc = "#48bb78" if total_pnl      >= 0 else "#fc8181"
 
-    st.markdown('<div class="page-title">💰 P&L Summary</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="page-sub">Complete picture of unrealised gains, realised profits and total return</div>',
-        unsafe_allow_html=True,
-    )
+    tc1, tc2 = st.columns([3,1])
+    with tc1:
+        st.markdown('<div class="page-title">💰 P&L Summary</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="page-sub">Complete picture of unrealised gains, realised profits and total return</div>',
+            unsafe_allow_html=True,
+        )
+    with tc2:
+        pnl_html = generate_html(data, live_data)
+        st.download_button(
+            "📄 Download as PDF",
+            data=pnl_html,
+            file_name=f"PnL_{data['investor_name'].replace(' ','_')}.html",
+            mime="text/html",
+            use_container_width=True,
+            help="Download HTML → Open in Chrome → Ctrl+P → Save as PDF",
+        )
 
     # ── Hero KPI row ──────────────────────────────────────────────────────
     k1, k2, k3, k4, k5 = st.columns(5)
@@ -4668,11 +4732,23 @@ def render_returns_analysis(data, live_data=None):
 
     live_data = live_data or {}
 
-    st.markdown('<div class="page-title">📈 Returns Analysis</div>', unsafe_allow_html=True)
-    st.markdown(
-        '<div class="page-sub">See how each scheme performed — yearly, quarterly and monthly</div>',
-        unsafe_allow_html=True,
-    )
+    rc1, rc2 = st.columns([3,1])
+    with rc1:
+        st.markdown('<div class="page-title">📈 Returns Analysis</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="page-sub">See how each scheme performed — yearly, quarterly and monthly</div>',
+            unsafe_allow_html=True,
+        )
+    with rc2:
+        ret_html = generate_html(data, live_data or {})
+        st.download_button(
+            "📄 Download as PDF",
+            data=ret_html,
+            file_name=f"Returns_{data['investor_name'].replace(' ','_')}.html",
+            mime="text/html",
+            use_container_width=True,
+            help="Download HTML → Open in Chrome → Ctrl+P → Save as PDF",
+        )
 
     # ── Period selector ───────────────────────────────────────────────────
     period = st.segmented_control(
