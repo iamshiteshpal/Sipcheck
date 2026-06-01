@@ -844,7 +844,23 @@ def process(raw):
                     mandate_groups[key].append(tx)
 
                 statement_date_obj = to_date(valuation_date)
-                cutoff = statement_date_obj - datetime.timedelta(days=90)
+
+                # ── SMART LIVE/INACTIVE DETECTION ────────────────────────────
+                # Logic:
+                # A SIP is LIVE if it deducted in the last 2 full months
+                # (with ±4 day tolerance for weekends/bank delays)
+                # A SIP is INACTIVE if it hasn't deducted in 2+ months
+                #
+                # Example: Statement date = 22 May 2026
+                #   Last 2 months = March + April + May
+                #   If SIP last deducted in April → LIVE (recent enough)
+                #   If SIP last deducted in Nov 2021 → INACTIVE
+                #
+                # ±4 day tolerance: 20th SIP could hit 16th-24th
+                # So we check if last deduction was within expected window
+
+                # Cutoff = 2 full months back from statement date
+                cutoff_live = statement_date_obj - datetime.timedelta(days=75)
 
                 # Create one SIP record per unique mandate
                 for mandate_key, mandate_txs in mandate_groups.items():
@@ -855,7 +871,7 @@ def process(raw):
                     if amount_sip <= 0:
                         continue
 
-                    # Most common deduction day for this mandate
+                    # Most common deduction day for this mandate (with tolerance)
                     days = [to_date(t.get("date")).day for t in mandate_txs]
                     dom  = Counter(days).most_common(1)[0][0] if days else 1
 
@@ -864,25 +880,55 @@ def process(raw):
                     next_due_label = next_due.strftime("%d %b %Y")
                     next_due_iso   = next_due.isoformat()
 
+                    # ── LIVE CHECK with ±4 day tolerance ─────────────────────
+                    # Check if last deduction was recent enough
+                    # AND scheme still has units (not fully redeemed)
+                    is_recent  = last_date >= cutoff_live
+                    has_units  = units > 0.01
+
+                    # Extra check: if scheme has units AND last deduction
+                    # was within expected day-of-month window (±4 days)
+                    # then it's definitely live
+                    if has_units and is_recent:
+                        status = "Live"
+                    elif has_units and not is_recent:
+                        # Scheme has holdings but SIP hasn't deducted in 75+ days
+                        # Could be paused/stopped
+                        status = "Inactive"
+                    else:
+                        # No units left = fully redeemed, SIP stopped
+                        status = "Inactive"
+
                     # SIP label — append mandate info if multiple mandates
                     sip_label = scheme_name
                     if len(mandate_groups) > 1:
-                        # Multiple mandates on same scheme — label them
                         desc = str(latest_tx.get("description",""))
                         if "MULTI" in desc.upper():
                             sip_label = scheme_name + " (Multi SIP)"
                         else:
                             sip_label = scheme_name + " (Physical)"
 
+                    # Check if this SIP missed last month
+                    # (last deduction was more than ~35 days ago)
+                    days_since_last = (statement_date_obj - last_date).days
+                    missed_last_month = (
+                        status == "Live" and
+                        days_since_last > (35 + 4)  # 35 days + 4 day tolerance
+                    )
+
                     sip_record = {
-                        "scheme":    sip_label,
-                        "amount":    amount_sip,
-                        "day_label": ordinal(dom),
-                        "last_date": last_date.strftime("%d %b %Y"),
-                        "next_date": next_due_label,
-                        "next_iso":  next_due_iso,
-                        "installments": len(mandate_txs),
-                        "status": "Live" if last_date >= cutoff and units > 0.01 else "Inactive",
+                        "scheme":             sip_label,
+                        "amount":             amount_sip,
+                        "day_label":          ordinal(dom),
+                        "dom":                dom,
+                        "last_date":          last_date.strftime("%d %b %Y"),
+                        "last_date_obj":      last_date,
+                        "next_date":          next_due_label,
+                        "next_iso":           next_due_iso,
+                        "installments":       len(mandate_txs),
+                        "days_since_last":    days_since_last,
+                        "missed_last_month":  missed_last_month,
+                        "status":             status,
                     }
 
                     if sip_record["status"] == "Live":
@@ -2403,62 +2449,245 @@ def render_dashboard(data):
             )
             components.html(bars_html, height=340, scrolling=True)
 
-        # ── ROW 2: Live SIP cards  ────────────────────────────────────────────
+        # ── ROW 2: Live SIP cards with MISSED highlight ───────────────────────
         _dash_section("✅ Live SIPs — Active Mandates")
+
+        # Separate missed vs normal live SIPs
+        missed_live   = [s for s in live_sips if s.get("missed_last_month")]
+        normal_live   = [s for s in live_sips if not s.get("missed_last_month")]
+
+        # Show missed SIPs alert banner if any
+        if missed_live:
+            import datetime as _dt2
+            stmt_dt    = to_date(data.get("statement_date", str(date.today())))
+            last_mo    = (stmt_dt.replace(day=1) - _dt2.timedelta(days=1))
+            last_mo_lb = last_mo.strftime("%B %Y")
+            st.markdown(
+                f'<div style="background:rgba(252,129,129,0.08);'
+                f'border:1px solid rgba(252,129,129,0.3);'
+                f'border-radius:14px;padding:14px 18px;margin-bottom:16px;">'
+                f'<div style="display:flex;align-items:center;gap:10px;">'
+                f'<div style="font-size:22px;">🚨</div>'
+                f'<div>'
+                f'<div style="font-size:13px;font-weight:700;color:#fc8181;margin-bottom:3px;">'
+                f'{len(missed_live)} SIP(s) may have missed last month ({last_mo_lb})</div>'
+                f'<div style="font-size:11px;color:#718096;">'
+                f'Last deduction was more than 35 days ago. '
+                f'Could be bounce, pause, or bank issue. Click on the card to see details.</div>'
+                f'</div></div></div>',
+                unsafe_allow_html=True,
+            )
+
         if live_sips:
-            sip_sorted = sorted(live_sips, key=lambda x: x["amount"], reverse=True)
+            sip_sorted = sorted(live_sips, key=lambda x: (not x.get("missed_last_month"), -x["amount"]))
             n = len(sip_sorted)
             cols_per_row = 3
             rows_of_sips = [sip_sorted[i:i+cols_per_row] for i in range(0, n, cols_per_row)]
             for row_sips in rows_of_sips:
                 cols_live = st.columns(len(row_sips))
                 for ci, s in enumerate(row_sips):
-                    sn    = clean_name(s["scheme"])
-                    pct_s = (s["amount"] / (sip_monthly or 1)) * 100
+                    sn           = clean_name(s["scheme"])
+                    pct_s        = (s["amount"] / (sip_monthly or 1)) * 100
+                    is_missed    = s.get("missed_last_month", False)
+                    days_since   = s.get("days_since_last", 0)
+
+                    # Colour scheme: red border for missed, green for normal
+                    if is_missed:
+                        card_bg   = "linear-gradient(135deg,#1a0808,#0c0f1a)"
+                        card_brd  = "rgba(252,129,129,0.35)"
+                        amt_color = "#fc8181"
+                        status_badge = (
+                            '<span style="background:rgba(252,129,129,0.15);'
+                            'border:1px solid rgba(252,129,129,0.4);'
+                            'color:#fc8181;font-size:9px;font-weight:800;'
+                            'padding:2px 7px;border-radius:20px;'
+                            'white-space:nowrap;margin-left:8px;">⚠️ CHECK</span>'
+                        )
+                        extra_info = (
+                            f'<div style="background:rgba(252,129,129,0.08);'
+                            f'border:1px solid rgba(252,129,129,0.2);'
+                            f'border-radius:8px;padding:8px 10px;margin-top:8px;">'
+                            f'<div style="font-size:10px;color:#fc8181;font-weight:700;">'
+                            f'⚠️ No deduction in {days_since} days</div>'
+                            f'<div style="font-size:9px;color:#718096;margin-top:2px;">'
+                            f'Last: {s["last_date"]} · Expected: {s["day_label"]} of month</div>'
+                            f'</div>'
+                        )
+                    else:
+                        card_bg   = "linear-gradient(135deg,#0c0f1a,#0a1f15)"
+                        card_brd  = "rgba(72,187,120,0.22)"
+                        amt_color = "#48bb78"
+                        status_badge = (
+                            '<span style="background:rgba(72,187,120,0.15);'
+                            'border:1px solid rgba(72,187,120,0.3);'
+                            'color:#48bb78;font-size:9px;font-weight:700;'
+                            'padding:2px 7px;border-radius:20px;'
+                            'white-space:nowrap;margin-left:8px;">LIVE</span>'
+                        )
+                        extra_info = ""
+
                     with cols_live[ci]:
                         st.markdown(
-                            f'<div style="background:linear-gradient(135deg,#0c0f1a,#0a1f15);'
-                            f'border:1px solid rgba(72,187,120,0.22);border-radius:14px;padding:16px 18px;margin-bottom:8px;">'
-                            f'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">'
-                            f'<div style="font-size:11px;color:#e2e8f0;font-weight:600;line-height:1.4;">{sn}</div>'
-                            f'<span style="background:rgba(72,187,120,0.15);border:1px solid rgba(72,187,120,0.3);'
-                            f'color:#48bb78;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;'
-                            f'white-space:nowrap;margin-left:8px;">LIVE</span></div>'
-                            f'<div style="font-family:IBM Plex Mono,monospace;font-size:18px;font-weight:700;'
-                            f'color:#48bb78;margin-bottom:8px;">{fmt_inr(s["amount"])}</div>'
+                            f'<div style="background:{card_bg};'
+                            f'border:1px solid {card_brd};'
+                            f'border-radius:14px;padding:16px 18px;margin-bottom:8px;">'
+                            f'<div style="display:flex;justify-content:space-between;'
+                            f'align-items:flex-start;margin-bottom:10px;">'
+                            f'<div style="font-size:11px;color:#e2e8f0;font-weight:600;'
+                            f'line-height:1.4;">{sn}</div>'
+                            f'{status_badge}</div>'
+                            f'<div style="font-family:IBM Plex Mono,monospace;font-size:18px;'
+                            f'font-weight:700;color:{amt_color};margin-bottom:8px;">'
+                            f'{fmt_inr(s["amount"])}</div>'
                             f'<div style="font-size:10px;color:#718096;margin-bottom:8px;">'
-                            f'📅 {s["day_label"]} every month &nbsp;·&nbsp; Next: <span style="color:#63b3ed;">{s["next_date"]}</span></div>'
-                            f'<div style="background:#111627;border-radius:4px;height:4px;overflow:hidden;">'
-                            f'<div style="height:100%;width:{min(pct_s,100):.0f}%;background:linear-gradient(90deg,#48bb7855,#48bb78);'
+                            f'📅 {s["day_label"]} every month &nbsp;·&nbsp; '
+                            f'Next: <span style="color:#63b3ed;">{s["next_date"]}</span></div>'
+                            f'<div style="background:#111627;border-radius:4px;'
+                            f'height:4px;overflow:hidden;">'
+                            f'<div style="height:100%;width:{min(pct_s,100):.0f}%;'
+                            f'background:linear-gradient(90deg,{amt_color}55,{amt_color});'
                             f'border-radius:4px;"></div></div>'
-                            f'<div style="font-size:9px;color:#4a5568;margin-top:3px;">{pct_s:.0f}% of monthly total</div>'
+                            f'<div style="font-size:9px;color:#4a5568;margin-top:3px;">'
+                            f'{pct_s:.0f}% of monthly total</div>'
+                            f'{extra_info}'
                             f'</div>',
                             unsafe_allow_html=True,
                         )
+                        # Alert button for missed SIPs
+                        if is_missed:
+                            if st.button(
+                                f"📋 View Missed Details",
+                                key=f"missed_btn_{ci}_{sn[:10]}",
+                                use_container_width=True,
+                            ):
+                                st.session_state[f"show_missed_{sn}"] = True
+
+                            if st.session_state.get(f"show_missed_{sn}"):
+                                with st.expander("📋 Missed SIP Details", expanded=True):
+                                    st.markdown(
+                                        f'<div style="background:#0c0f1a;border-radius:10px;'
+                                        f'padding:14px;">'
+                                        f'<div style="font-size:13px;font-weight:700;'
+                                        f'color:#f7fafc;margin-bottom:12px;">{sn}</div>'
+                                        f'<div style="display:grid;grid-template-columns:1fr 1fr;'
+                                        f'gap:10px;margin-bottom:10px;">'
+                                        f'<div><div style="font-size:9px;color:#718096;'
+                                        f'text-transform:uppercase;margin-bottom:3px;">SIP Amount</div>'
+                                        f'<div style="font-family:IBM Plex Mono,monospace;'
+                                        f'font-size:14px;font-weight:700;color:#fc8181;">'
+                                        f'{fmt_inr(s["amount"])}</div></div>'
+                                        f'<div><div style="font-size:9px;color:#718096;'
+                                        f'text-transform:uppercase;margin-bottom:3px;">Due Day</div>'
+                                        f'<div style="font-size:13px;color:#f6ad55;font-weight:600;">'
+                                        f'{s["day_label"]} of every month</div></div>'
+                                        f'<div><div style="font-size:9px;color:#718096;'
+                                        f'text-transform:uppercase;margin-bottom:3px;">Last Deducted</div>'
+                                        f'<div style="font-size:13px;color:#e2e8f0;font-weight:600;">'
+                                        f'{s["last_date"]}</div></div>'
+                                        f'<div><div style="font-size:9px;color:#718096;'
+                                        f'text-transform:uppercase;margin-bottom:3px;">Days Since Last</div>'
+                                        f'<div style="font-size:13px;color:#fc8181;font-weight:600;">'
+                                        f'{days_since} days</div></div></div>'
+                                        f'<div style="background:rgba(252,129,129,0.08);'
+                                        f'border:1px solid rgba(252,129,129,0.2);'
+                                        f'border-radius:8px;padding:10px 12px;">'
+                                        f'<div style="font-size:11px;color:#fc8181;font-weight:700;'
+                                        f'margin-bottom:4px;">🔍 What to check:</div>'
+                                        f'<div style="font-size:11px;color:#718096;line-height:1.8;">'
+                                        f'• Check if your bank account had sufficient balance<br>'
+                                        f'• Check if the SIP mandate is still active<br>'
+                                        f'• Check your bank statement for debit on {s["day_label"]} of last month<br>'
+                                        f'• Contact your AMC or bank if issue persists'
+                                        f'</div></div></div>',
+                                        unsafe_allow_html=True,
+                                    )
+                                    if st.button("✕ Close", key=f"close_missed_{sn[:10]}"):
+                                        st.session_state[f"show_missed_{sn}"] = False
+                                        st.rerun()
         else:
             st.info("No live SIPs found.")
 
-        # ── ROW 3: Stopped SIPs  ──────────────────────────────────────────────
+        # ── ROW 3: Stopped SIPs (only show within 1 year) ────────────────────
         if dead_sips:
-            _dash_section("🔴 Stopped SIPs — Restart These")
-            n2 = len(dead_sips)
-            rows_dead = [dead_sips[i:i+3] for i in range(0, n2, 3)]
-            for row_dead in rows_dead:
-                cols_dead = st.columns(len(row_dead))
-                for ci, s in enumerate(row_dead):
-                    sn = clean_name(s["scheme"])
-                    with cols_dead[ci]:
+            import datetime as _dt_stop
+            one_year_ago = to_date(data.get("statement_date",
+                str(date.today()))) - _dt_stop.timedelta(days=365)
+
+            # Filter: only show stopped SIPs whose last date is within 1 year
+            recent_dead = []
+            old_dead    = []
+            for s in dead_sips:
+                try:
+                    ld = s.get("last_date_obj") or to_date(s["last_date"])
+                    if ld >= one_year_ago:
+                        recent_dead.append(s)
+                    else:
+                        old_dead.append(s)
+                except Exception:
+                    recent_dead.append(s)
+
+            if recent_dead:
+                _dash_section(f"🔴 Stopped SIPs — Last 12 Months ({len(recent_dead)} found)")
+                n2 = len(recent_dead)
+                rows_dead = [recent_dead[i:i+3] for i in range(0, n2, 3)]
+                for row_dead in rows_dead:
+                    cols_dead = st.columns(len(row_dead))
+                    for ci, s in enumerate(row_dead):
+                        sn = clean_name(s["scheme"])
+                        try:
+                            ld_obj    = s.get("last_date_obj") or to_date(s["last_date"])
+                            days_ago  = (to_date(data.get("statement_date",
+                                str(date.today()))) - ld_obj).days
+                            recency   = f"{days_ago} days ago"
+                        except Exception:
+                            recency = s["last_date"]
+                        with cols_dead[ci]:
+                            st.markdown(
+                                f'<div style="background:linear-gradient(135deg,#0c0f1a,#1a0a0a);'
+                                f'border:1px solid rgba(252,129,129,0.22);border-radius:14px;'
+                                f'padding:16px 18px;margin-bottom:8px;">'
+                                f'<div style="display:flex;justify-content:space-between;'
+                                f'align-items:flex-start;margin-bottom:10px;">'
+                                f'<div style="font-size:11px;color:#e2e8f0;font-weight:600;'
+                                f'line-height:1.4;">{sn}</div>'
+                                f'<span style="background:rgba(252,129,129,0.15);'
+                                f'border:1px solid rgba(252,129,129,0.3);'
+                                f'color:#fc8181;font-size:9px;font-weight:700;'
+                                f'padding:2px 7px;border-radius:20px;'
+                                f'white-space:nowrap;margin-left:8px;">STOPPED</span></div>'
+                                f'<div style="font-family:IBM Plex Mono,monospace;font-size:18px;'
+                                f'font-weight:700;color:#fc8181;margin-bottom:8px;">'
+                                f'{fmt_inr(s["amount"])}</div>'
+                                f'<div style="font-size:10px;color:#718096;">'
+                                f'⚠️ Last: {s["last_date"]} · {recency}</div>'
+                                f'</div>',
+                                unsafe_allow_html=True,
+                            )
+
+            if old_dead:
+                with st.expander(
+                    f"🗂️ Older Stopped SIPs ({len(old_dead)} — stopped more than 1 year ago)",
+                    expanded=False,
+                ):
+                    st.markdown(
+                        f'<div style="font-size:11px;color:#4a5568;margin-bottom:10px;">'
+                        f'These SIPs stopped more than 1 year ago. '
+                        f'Shown here for reference only.</div>',
+                        unsafe_allow_html=True,
+                    )
+                    for s in sorted(old_dead,
+                        key=lambda x: x.get("last_date",""), reverse=True):
                         st.markdown(
-                            f'<div style="background:linear-gradient(135deg,#0c0f1a,#1a0a0a);'
-                            f'border:1px solid rgba(252,129,129,0.22);border-radius:14px;padding:16px 18px;margin-bottom:8px;">'
-                            f'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;">'
-                            f'<div style="font-size:11px;color:#e2e8f0;font-weight:600;line-height:1.4;">{sn}</div>'
-                            f'<span style="background:rgba(252,129,129,0.15);border:1px solid rgba(252,129,129,0.3);'
-                            f'color:#fc8181;font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;'
-                            f'white-space:nowrap;margin-left:8px;">STOPPED</span></div>'
-                            f'<div style="font-family:IBM Plex Mono,monospace;font-size:18px;font-weight:700;'
-                            f'color:#fc8181;margin-bottom:8px;">{fmt_inr(s["amount"])}</div>'
-                            f'<div style="font-size:10px;color:#718096;">⚠️ Last: {s["last_date"]}</div>'
+                            f'<div style="background:#0a0d14;border:1px solid rgba(255,255,255,0.05);'
+                            f'border-radius:8px;padding:10px 14px;margin-bottom:4px;'
+                            f'display:flex;justify-content:space-between;align-items:center;">'
+                            f'<div>'
+                            f'<div style="font-size:11px;color:#718096;">'
+                            f'{clean_name(s["scheme"])}</div>'
+                            f'<div style="font-size:10px;color:#4a5568;margin-top:2px;">'
+                            f'Last: {s["last_date"]}</div></div>'
+                            f'<div style="font-family:IBM Plex Mono,monospace;font-size:11px;'
+                            f'color:#4a5568;">{fmt_inr(s["amount"])}</div>'
                             f'</div>',
                             unsafe_allow_html=True,
                         )
@@ -4429,6 +4658,369 @@ def render_custom_report(data):
 
 
 # ─────────────────────────────────────────────
+# RETURNS ANALYSIS
+# ─────────────────────────────────────────────
+
+def render_returns_analysis(data, live_data=None):
+    """Scheme-wise returns by Yearly / Quarterly / Monthly."""
+    import datetime as _dt
+    import collections as _col
+
+    live_data = live_data or {}
+
+    st.markdown('<div class="page-title">📈 Returns Analysis</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="page-sub">See how each scheme performed — yearly, quarterly and monthly</div>',
+        unsafe_allow_html=True,
+    )
+
+    # ── Period selector ───────────────────────────────────────────────────
+    period = st.segmented_control(
+        "period_sel",
+        ["📅 Yearly", "📆 Quarterly", "🗓️ Monthly"],
+        default="📅 Yearly",
+        label_visibility="collapsed",
+        key="returns_period",
+    )
+
+    # ── Scheme selector ───────────────────────────────────────────────────
+    all_schemes = [clean_name(h["scheme"]) for h in data["holdings"]]
+    scheme_map  = {clean_name(h["scheme"]): h for h in data["holdings"]}
+    tx_map      = data.get("tx_map", {})
+
+    sc1, sc2 = st.columns([2, 1])
+    with sc1:
+        selected_schemes = st.multiselect(
+            "Select schemes to compare",
+            options=all_schemes,
+            default=all_schemes[:5] if len(all_schemes) >= 5 else all_schemes,
+            key="returns_schemes",
+        )
+    with sc2:
+        show_type = st.selectbox(
+            "Show",
+            ["P&L Amount (₹)", "Return %", "Both"],
+            key="returns_show_type",
+        )
+
+    if not selected_schemes:
+        st.info("Select at least one scheme above.")
+        return
+
+    # ── Build period-wise return data per scheme ──────────────────────────
+    def _get_period_label(dt_obj, period_type):
+        if "Yearly" in period_type:
+            return str(dt_obj.year)
+        elif "Quarterly" in period_type:
+            q = (dt_obj.month - 1) // 3 + 1
+            return f"Q{q} {dt_obj.year}"
+        else:  # Monthly
+            return dt_obj.strftime("%b %Y")
+
+    def _period_sort_key(label, period_type):
+        """Sort key for period labels."""
+        try:
+            if "Yearly" in period_type:
+                return int(label)
+            elif "Quarterly" in period_type:
+                q, yr = label.split()
+                return int(yr) * 10 + int(q[1])
+            else:
+                return _dt.datetime.strptime(label, "%b %Y").toordinal()
+        except Exception:
+            return 0
+
+    # For each selected scheme — group SIP transactions by period
+    scheme_period_data = {}  # scheme → {period → {invested, count}}
+
+    for scheme_clean in selected_schemes:
+        # Find original scheme name in tx_map
+        orig_scheme = None
+        for h in data["holdings"]:
+            if clean_name(h["scheme"]) == scheme_clean:
+                orig_scheme = h["scheme"]
+                break
+
+        if not orig_scheme:
+            continue
+
+        txs = tx_map.get(orig_scheme, [])
+        period_buckets = _col.defaultdict(lambda: {"invested": 0.0, "count": 0, "redeemed": 0.0})
+
+        for tx in txs:
+            try:
+                amt   = float(tx.get("amount") or 0)
+                units = float(tx.get("units")  or 0)
+                dt    = to_date(tx.get("date"))
+                desc  = str(tx.get("description","")).upper()
+                ttype = str(tx.get("type","")).upper()
+
+                if amt <= 0 or units == 0:
+                    continue
+
+                lbl = _get_period_label(dt, period)
+
+                # Classify
+                is_sip_tx = any(k in desc or k in ttype for k in
+                    ["SIP","SYSTEMATIC","RECURRING","AUTO DEBIT","E-DEBIT"])
+                is_buy    = units > 0 and (is_sip_tx or "PURCHASE" in desc or "LUMPSUM" in desc)
+                is_sell   = units < 0 and ("REDEMPTION" in desc or "PAYOUT" in desc)
+
+                if is_buy:
+                    period_buckets[lbl]["invested"] += amt
+                    period_buckets[lbl]["count"]    += 1
+                elif is_sell:
+                    period_buckets[lbl]["redeemed"] += amt
+
+            except Exception:
+                continue
+
+        scheme_period_data[scheme_clean] = dict(period_buckets)
+
+    # ── Get all periods sorted ────────────────────────────────────────────
+    all_periods = set()
+    for pd_data in scheme_period_data.values():
+        all_periods.update(pd_data.keys())
+    all_periods = sorted(all_periods,
+        key=lambda x: _period_sort_key(x, period))
+
+    if not all_periods:
+        st.info("No transaction data available for the selected schemes.")
+        return
+
+    # ── Summary KPI cards ─────────────────────────────────────────────────
+    _dash_section("📊 Investment Summary")
+    kc = st.columns(min(len(selected_schemes), 4))
+    for i, sc in enumerate(selected_schemes[:4]):
+        h   = scheme_map.get(sc, {})
+        lv  = live_data.get(h.get("scheme",""), {}).get("live_value", h.get("value",0))
+        inv = h.get("invested", 0)
+        pnl = lv - inv
+        pc  = "#48bb78" if pnl >= 0 else "#fc8181"
+        pct = (pnl/inv*100) if inv else 0
+        with kc[i % len(kc)]:
+            st.markdown(
+                f'<div style="background:#0c0f1a;border:1px solid rgba(255,255,255,0.07);'
+                f'border-radius:12px;padding:14px 16px;margin-bottom:8px;">'
+                f'<div style="font-size:10px;color:#718096;margin-bottom:6px;'
+                f'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{sc[:30]}</div>'
+                f'<div style="font-family:IBM Plex Mono,monospace;font-size:15px;'
+                f'font-weight:700;color:{pc};">{"▲" if pnl>=0 else "▼"} {fmt_inr(abs(pnl))}</div>'
+                f'<div style="font-size:10px;color:{pc};margin-top:3px;">'
+                f'{"▲" if pct>=0 else "▼"} {abs(pct):.1f}% overall · '
+                f'XIRR {h.get("xirr",0):.1f}%</div></div>',
+                unsafe_allow_html=True,
+            )
+
+    # ── Period-wise invested bar chart ────────────────────────────────────
+    _dash_section(f"💰 Amount Invested — {period.split()[-1]} View")
+
+    chart_data = []
+    for sc in selected_schemes:
+        for prd in all_periods:
+            bucket = scheme_period_data.get(sc, {}).get(prd, {})
+            inv    = bucket.get("invested", 0)
+            if inv > 0:
+                chart_data.append({
+                    "Scheme":  sc[:25],
+                    "Period":  prd,
+                    "Invested": inv,
+                    "Count":   bucket.get("count", 0),
+                })
+
+    if chart_data:
+        import pandas as _pd
+        df_chart = _pd.DataFrame(chart_data)
+
+        # Bar chart — amount per period per scheme
+        fig_bar = go.Figure()
+        colors_bar = ["#63b3ed","#9f7aea","#48bb78","#f6ad55","#fc8181","#4fd1c5","#ed8936"]
+        for i, sc in enumerate(selected_schemes):
+            df_sc = df_chart[df_chart["Scheme"] == sc[:25]]
+            if df_sc.empty:
+                continue
+            fig_bar.add_trace(go.Bar(
+                name=sc[:30],
+                x=df_sc["Period"],
+                y=df_sc["Invested"],
+                marker_color=colors_bar[i % len(colors_bar)],
+                text=[fmt_inr(v) for v in df_sc["Invested"]],
+                textposition="outside",
+                textfont=dict(size=8, color="#718096"),
+                hovertemplate="<b>%{x}</b><br>Invested: ₹%{y:,.0f}<extra></extra>",
+            ))
+
+        fig_bar.update_layout(
+            barmode="group",
+            height=380,
+            xaxis=dict(
+                tickfont=dict(size=10, color="#718096"),
+                tickangle=-30 if len(all_periods) > 8 else 0,
+            ),
+            yaxis=dict(
+                showgrid=True, gridcolor=GRID,
+                tickfont=dict(size=10, color="#718096"),
+                visible=False,
+            ),
+            legend=dict(
+                font=dict(size=10, color="#718096"),
+                bgcolor="rgba(0,0,0,0)",
+                orientation="h",
+                x=0.5, xanchor="center", y=1.08,
+            ),
+            **PLOT_BASE,
+        )
+        st.plotly_chart(fig_bar, use_container_width=True, config={"displayModeBar": False})
+
+    # ── Heatmap table: Scheme vs Period ───────────────────────────────────
+    _dash_section(f"🌡️ Investment Heatmap — Scheme × {period.split()[-1]}")
+
+    # Build header
+    header_html = (
+        "<div style='overflow-x:auto;'>"
+        "<table style='width:100%;border-collapse:collapse;border-radius:10px;"
+        "overflow:hidden;border:1px solid rgba(255,255,255,0.07);'>"
+        "<thead><tr>"
+        "<th style='background:#111627;color:#9f7aea;font-size:10px;font-weight:700;"
+        "text-transform:uppercase;letter-spacing:1px;padding:11px 14px;text-align:left;"
+        "min-width:180px;'>Scheme</th>"
+    )
+    for prd in all_periods[-12:]:  # show last 12 periods
+        header_html += (
+            f"<th style='background:#111627;color:#9f7aea;font-size:10px;font-weight:700;"
+            f"text-transform:uppercase;letter-spacing:1px;padding:11px 10px;"
+            f"text-align:center;white-space:nowrap;'>{prd}</th>"
+        )
+    header_html += (
+        "<th style='background:#111627;color:#63b3ed;font-size:10px;font-weight:700;"
+        "text-transform:uppercase;letter-spacing:1px;padding:11px 10px;"
+        "text-align:center;'>Total</th>"
+        "</tr></thead><tbody>"
+    )
+
+    rows_html = ""
+    for si, sc in enumerate(selected_schemes):
+        color = colors_bar[si % len(colors_bar)]
+        total_inv = sum(
+            scheme_period_data.get(sc, {}).get(p, {}).get("invested", 0)
+            for p in all_periods
+        )
+        row_html = (
+            f"<tr>"
+            f"<td style='background:#0c0f1a;color:#e2e8f0;font-size:11px;"
+            f"padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.04);"
+            f"display:flex;align-items:center;gap:8px;'>"
+            f"<span style='width:8px;height:8px;border-radius:50%;"
+            f"background:{color};display:inline-block;flex-shrink:0;'></span>"
+            f"{sc[:35]}</td>"
+        )
+        for prd in all_periods[-12:]:
+            bucket   = scheme_period_data.get(sc, {}).get(prd, {})
+            inv      = bucket.get("invested", 0)
+            cnt      = bucket.get("count", 0)
+            if inv > 0:
+                # Intensity based on amount
+                intensity = min(inv / 5000, 1.0)
+                bg        = f"rgba{tuple(int(color.lstrip('#')[i:i+2], 16) for i in (0,2,4)) + (round(0.08 + intensity*0.35, 2),)}"
+                cell      = (
+                    f"<td style='background:{bg};"
+                    f"color:#f7fafc;font-size:10px;font-family:monospace;"
+                    f"padding:10px 8px;text-align:center;"
+                    f"border-bottom:1px solid rgba(255,255,255,0.04);"
+                    f"border-left:1px solid rgba(255,255,255,0.03);'>"
+                    f"<div style='font-weight:700;'>{fmt_inr_short(inv)}</div>"
+                    f"<div style='font-size:9px;opacity:.6;'>{cnt} SIP{'s' if cnt>1 else ''}</div>"
+                    f"</td>"
+                )
+            else:
+                cell = (
+                    "<td style='background:#0a0d14;color:#2d3748;"
+                    "font-size:10px;padding:10px 8px;text-align:center;"
+                    "border-bottom:1px solid rgba(255,255,255,0.04);"
+                    "border-left:1px solid rgba(255,255,255,0.03);'>—</td>"
+                )
+            row_html += cell
+
+        row_html += (
+            f"<td style='background:#0c0f1a;color:#63b3ed;"
+            f"font-size:11px;font-weight:700;font-family:monospace;"
+            f"padding:10px 10px;text-align:center;"
+            f"border-bottom:1px solid rgba(255,255,255,0.04);'>"
+            f"{fmt_inr_short(total_inv)}</td>"
+            f"</tr>"
+        )
+        rows_html += row_html
+
+    table_html = header_html + rows_html + "</tbody></table></div>"
+    st.markdown(table_html, unsafe_allow_html=True)
+
+    # ── Per-scheme detailed view ──────────────────────────────────────────
+    _dash_section("🔍 Scheme-wise Detailed Breakdown")
+
+    for si, sc in enumerate(selected_schemes):
+        color  = colors_bar[si % len(colors_bar)]
+        h      = scheme_map.get(sc, {})
+        lv     = live_data.get(h.get("scheme",""), {}).get("live_value", h.get("value",0))
+        inv    = h.get("invested", 0)
+        pnl    = lv - inv
+        xirr_v = h.get("xirr", 0)
+        pc     = "#48bb78" if pnl >= 0 else "#fc8181"
+
+        with st.expander(
+            f"{sc[:50]} — XIRR {xirr_v:.1f}% · P&L {'▲' if pnl>=0 else '▼'} {fmt_inr(abs(pnl))}",
+            expanded=(si == 0),
+        ):
+            # Period breakdown table
+            pd_data = scheme_period_data.get(sc, {})
+            if not pd_data:
+                st.info("No transaction data found for this scheme.")
+                continue
+
+            rows = []
+            for prd in sorted(pd_data.keys(),
+                key=lambda x: _period_sort_key(x, period), reverse=True):
+                bucket = pd_data[prd]
+                inv_p  = bucket.get("invested", 0)
+                cnt_p  = bucket.get("count", 0)
+                red_p  = bucket.get("redeemed", 0)
+                rows.append({
+                    "Period":     prd,
+                    "Invested":   fmt_inr(inv_p) if inv_p else "—",
+                    "No. of SIPs": cnt_p if cnt_p else "—",
+                    "Redeemed":   fmt_inr(red_p) if red_p else "—",
+                })
+            import pandas as _pd2
+            st.dataframe(_pd2.DataFrame(rows), use_container_width=True, hide_index=True)
+
+            # Mini line chart showing investment pattern
+            inv_vals = [(prd, pd_data[prd].get("invested",0))
+                for prd in sorted(pd_data.keys(),
+                    key=lambda x: _period_sort_key(x, period))]
+            if len(inv_vals) > 1:
+                xs = [v[0] for v in inv_vals]
+                ys = [v[1] for v in inv_vals]
+                fig_mini = go.Figure()
+                fig_mini.add_trace(go.Bar(
+                    x=xs, y=ys,
+                    marker_color=color,
+                    opacity=0.7,
+                    hovertemplate="<b>%{x}</b><br>₹%{y:,.0f}<extra></extra>",
+                ))
+                fig_mini.update_layout(
+                    height=200, showlegend=False,
+                    xaxis=dict(
+                        tickfont=dict(size=9, color="#718096"),
+                        tickangle=-30 if len(xs) > 8 else 0,
+                    ),
+                    yaxis=dict(visible=False),
+                    margin=dict(l=0, r=0, t=8, b=30),
+                    **PLOT_BASE,
+                )
+                st.plotly_chart(fig_mini, use_container_width=True,
+                    config={"displayModeBar": False})
+
+
+# ─────────────────────────────────────────────
 # MAIN
 # ─────────────────────────────────────────────
 
@@ -4450,6 +5042,8 @@ def run_app():
         render_dashboard(active)
     elif menu == "💰 P&L Summary":
         render_pnl_summary(active, st.session_state.get("live_data",{}))
+    elif menu == "📈 Returns":
+        render_returns_analysis(active, st.session_state.get("live_data",{}))
     elif menu == "📄 Report Builder":
         render_custom_report(active)
     elif menu == "My Portfolio":
