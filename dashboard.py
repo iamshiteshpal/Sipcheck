@@ -823,17 +823,51 @@ def process(raw):
                 import re as _re
 
                 def _get_mandate_key(tx):
-                    """Extract a unique key per mandate series from description."""
-                    desc = str(tx.get("description", "")).upper()
-                    # Try to find "X/Y" instalment pattern
+                    """
+                    Extract a unique key per mandate series from description.
+
+                    PROBLEM CASES:
+                    1. "Instalment 61/62 Physical" vs "Instalment 56/57 Multi SIP"
+                       → 2 different mandates on same scheme same date
+                       → Key: total_instalments + multi/single flag
+
+                    2. "SIP Purchase Instalment No - 5/1000 Online"
+                       → One mandate with 1000 total instalments
+                       → Key: 1000_SINGLE (all instalments same mandate)
+
+                    3. First instalment may have different description
+                       → "SIP Purchase Instalment No - 1 Online" (no /total)
+                       → Should NOT create separate mandate
+                       → Key: amount (group by amount as fallback)
+
+                    SMART RULE:
+                    - If total instalments > 100 (like /1000) → one long mandate,
+                      use amount+day as key (don't split by total)
+                    - If total instalments <= 100 (like /62, /57) → finite mandate,
+                      use total+multi flag as key
+                    - If no X/Y pattern → use amount as key
+                    """
+                    desc     = str(tx.get("description", "")).upper()
+                    amount   = str(abs(float(tx.get("amount") or 0)))
+                    is_multi = "MULTI" in desc
+                    multi_flag = "MULTI" if is_multi else "SINGLE"
+
                     m = _re.search(r"(\d+)/(\d+)", desc)
                     if m:
-                        total = m.group(2)  # total instalments = unique per mandate
-                        # Also check if Multi SIP is in description
-                        is_multi = "MULTI" in desc
-                        return f"{total}_{'MULTI' if is_multi else 'SINGLE'}"
-                    # Fallback: use amount as mandate key
-                    return str(abs(float(tx.get("amount") or 0)))
+                        current = int(m.group(1))
+                        total   = int(m.group(2))
+                        if total > 100:
+                            # Long-running mandate (e.g. 1000 instalments)
+                            # Group ALL instalments together by amount+multi flag
+                            # so first instalment doesn't become a separate mandate
+                            return f"LONG_{amount}_{multi_flag}"
+                        else:
+                            # Finite mandate (e.g. 62 instalments)
+                            # Total is specific → use as mandate identifier
+                            return f"{total}_{multi_flag}"
+
+                    # No X/Y pattern → group by amount + multi flag
+                    return f"AMT_{amount}_{multi_flag}"
 
                 # Group transactions by mandate key
                 mandate_groups = {}
@@ -842,6 +876,46 @@ def process(raw):
                     if key not in mandate_groups:
                         mandate_groups[key] = []
                     mandate_groups[key].append(tx)
+
+                # ── MERGE SMALL MANDATE GROUPS ────────────────────────────────
+                # If a mandate group has only 1-2 transactions AND there's a
+                # bigger group with same amount → it's likely the same mandate
+                # (first instalment had different description format)
+                # Merge small orphan groups into the main group
+                if len(mandate_groups) > 1:
+                    # Find groups by amount
+                    amount_to_groups = {}
+                    for mk, mtxs in mandate_groups.items():
+                        amt = str(abs(float(mtxs[0].get("amount") or 0)))
+                        if amt not in amount_to_groups:
+                            amount_to_groups[amt] = []
+                        amount_to_groups[amt].append((mk, mtxs))
+
+                    merged_groups = {}
+                    for amt, groups in amount_to_groups.items():
+                        if len(groups) == 1:
+                            mk, mtxs = groups[0]
+                            merged_groups[mk] = mtxs
+                        else:
+                            # Multiple groups with same amount
+                            # Check if any is very small (1-2 txs) — orphan
+                            sorted_by_size = sorted(groups, key=lambda x: len(x[1]), reverse=True)
+                            main_key, main_txs = sorted_by_size[0]
+                            main_multi = "MULTI" in main_key
+
+                            # Merge orphans into main only if same multi/single type
+                            for mk, mtxs in sorted_by_size[1:]:
+                                orphan_multi = "MULTI" in mk
+                                if len(mtxs) <= 2 and orphan_multi == main_multi:
+                                    # Merge into main
+                                    main_txs = main_txs + mtxs
+                                else:
+                                    # Keep separate (different mandate type)
+                                    merged_groups[mk] = mtxs
+
+                            merged_groups[main_key] = main_txs
+
+                    mandate_groups = merged_groups
 
                 statement_date_obj = to_date(valuation_date)
 
