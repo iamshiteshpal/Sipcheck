@@ -154,6 +154,28 @@ def inject_global_styles():
           border-radius: 8px !important;
           color: var(--text) !important;
         }
+        /* Fix selectbox dropdown black overlay */
+        [data-baseweb="select"] * { color: var(--text) !important; }
+        [data-baseweb="popover"] { background: var(--bg2) !important; }
+        [data-baseweb="popover"] * { color: var(--text) !important; }
+        [data-baseweb="menu"] { background: var(--bg2) !important; }
+        [data-baseweb="menu"] li { color: var(--text) !important; }
+        /* Fix the black iframe/overlay that appears below selectbox */
+        [data-testid="stSelectbox"] + div,
+        [data-testid="stSelectbox"] ~ div > iframe {
+          display: none !important;
+        }
+        /* Hide Streamlit's internal resize handle that shows as black bar */
+        [data-testid="stResizeHandle"],
+        .resize-handle,
+        [class*="resizeHandle"] {
+          display: none !important;
+          height: 0 !important;
+        }
+        /* Fix the dark overlay/loading state */
+        [data-testid="stSpinner"] ~ div > div[style*="position: absolute"] {
+          display: none !important;
+        }
         [data-testid="stTextInput"] input { font-family: 'IBM Plex Mono', monospace !important; }
         [data-testid="stFileUploader"] {
           background: rgba(99,179,237,0.03) !important;
@@ -3964,12 +3986,18 @@ def render_transactions(data):
     scheme_display_map = {clean_name(k): k for k in tx_map.keys()}
     scheme_display_list = sorted(scheme_display_map.keys())
 
+    # Use selectbox — wrapped in a container to prevent black overlay
+    st.markdown(
+        '<div style="margin-bottom:4px;font-size:12px;color:#718096;">Select Scheme</div>',
+        unsafe_allow_html=True,
+    )
     selected_display = st.selectbox(
-        "Select Scheme",
+        "scheme_selector",
         scheme_display_list,
-        label_visibility="visible",
+        label_visibility="collapsed",
         key="tx_scheme_select",
     )
+    st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
     selected_scheme = scheme_display_map.get(selected_display, list(tx_map.keys())[0])
 
     # Look up totals — try both clean name and original name
@@ -4042,7 +4070,51 @@ def render_transactions(data):
                 })
             except Exception:
                 continue
-        render_table(rows)
+
+        # Build full HTML table and render via components.html
+        # This completely bypasses Streamlit's rendering chain
+        # and prevents the black overlay bug
+        cols  = ["Date","Description","Amount","NAV","Units","Type"]
+        thead = "".join(
+            f'<th style="background:#111627;color:#9f7aea;font-size:10px;'
+            f'font-weight:700;text-transform:uppercase;letter-spacing:1px;'
+            f'padding:10px 12px;text-align:left;white-space:nowrap;'
+            f'border-bottom:1px solid rgba(255,255,255,0.08);">{c}</th>'
+            for c in cols
+        )
+        tbody = ""
+        for i, r in enumerate(rows):
+            bg = "#0d1020" if i % 2 == 0 else "#0c0f1a"
+            cells = ""
+            for c in cols:
+                v = str(r.get(c,"—"))
+                cl = ("#48bb78" if v.startswith("▲") else
+                      "#fc8181" if v.startswith("▼") else
+                      "#718096" if "STAMP" in v else "#e2e8f0")
+                cells += (
+                    f'<td style="background:{bg};color:{cl};font-size:12px;'
+                    f'padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.04);'
+                    f'font-family:{("IBM Plex Mono,monospace" if c in ["Amount","NAV","Units"] else "inherit")};">'
+                    f'{v}</td>'
+                )
+            tbody += f"<tr>{cells}</tr>"
+
+        table_html = f"""
+        <style>
+        body{{background:#07090f;margin:0;padding:0;font-family:Instrument Sans,sans-serif;}}
+        .wrap{{overflow-x:auto;border-radius:10px;border:1px solid rgba(255,255,255,0.07);}}
+        table{{width:100%;border-collapse:collapse;min-width:700px;}}
+        </style>
+        <div class="wrap">
+        <table>
+        <thead><tr>{thead}</tr></thead>
+        <tbody>{tbody}</tbody>
+        </table>
+        </div>"""
+
+        # Height = 44px per row + 48px header, max 600px
+        h = min(len(rows) * 44 + 52, 600)
+        components.html(table_html, height=h, scrolling=True)
 
     st.markdown('<div class="section-sep" style="margin-top:28px;">All Holdings — XIRR Table</div>', unsafe_allow_html=True)
     performance = [
