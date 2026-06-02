@@ -111,6 +111,42 @@ def inject_global_styles():
           overflow: hidden;
           border: 1px solid var(--border) !important;
         }
+        /* Force dataframe text to be visible on dark background */
+        [data-testid="stDataFrame"] * {
+          color: #e2e8f0 !important;
+        }
+        [data-testid="stDataFrame"] th {
+          background: #111627 !important;
+          color: #9f7aea !important;
+          font-size: 10px !important;
+          font-weight: 700 !important;
+          text-transform: uppercase !important;
+          letter-spacing: 1px !important;
+        }
+        [data-testid="stDataFrame"] td {
+          background: #0c0f1a !important;
+          color: #e2e8f0 !important;
+          font-size: 12px !important;
+        }
+        [data-testid="stDataFrame"] tr:nth-child(even) td {
+          background: #0d1020 !important;
+        }
+        /* Fix the black canvas overlay in dataframe */
+        [data-testid="stDataFrame"] canvas {
+          display: none !important;
+        }
+        [data-testid="stDataFrame"] [class*="glideDataCore"] {
+          background: #0c0f1a !important;
+        }
+        [data-testid="stDataFrame"] [class*="dvn-scroller"] {
+          background: #0c0f1a !important;
+        }
+        /* Streamlit dataframe cell text fix */
+        .stDataFrame [role="gridcell"],
+        .stDataFrame [role="columnheader"] {
+          color: #e2e8f0 !important;
+          background: #0c0f1a !important;
+        }
         [data-testid="stSelectbox"] > div > div,
         [data-testid="stTextInput"] input {
           background: var(--bg3) !important;
@@ -291,6 +327,50 @@ def fmt_inr_short(v):
 
 def gain_arrow(v):
     return "▲" if v >= 0 else "▼"
+
+
+def render_table(rows, key=""):
+    """
+    Render a list of dicts as a styled HTML table.
+    Avoids the st.dataframe() black text bug on dark backgrounds.
+    """
+    if not rows:
+        st.info("No data to display.")
+        return
+    cols = list(rows[0].keys())
+    header = "".join(
+        f'<th style="background:#111627;color:#9f7aea;font-size:10px;font-weight:700;'
+        f'text-transform:uppercase;letter-spacing:1px;padding:11px 14px;text-align:left;'
+        f'white-space:nowrap;">{c}</th>'
+        for c in cols
+    )
+    body = ""
+    for i, row in enumerate(rows):
+        bg = "#0d1020" if i % 2 == 0 else "#0c0f1a"
+        cells = ""
+        for c in cols:
+            val = str(row.get(c, "—"))
+            # Color gain/loss values
+            if val.startswith("▲"):
+                color = "#48bb78"
+            elif val.startswith("▼"):
+                color = "#fc8181"
+            else:
+                color = "#e2e8f0"
+            cells += (
+                f'<td style="background:{bg};color:{color};font-size:12px;'
+                f'padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.04);">'
+                f'{val}</td>'
+            )
+        body += f"<tr>{cells}</tr>"
+    html = (
+        f'<div style="overflow-x:auto;border-radius:10px;border:1px solid rgba(255,255,255,0.07);">'
+        f'<table style="width:100%;border-collapse:collapse;">'
+        f'<thead><tr>{header}</tr></thead>'
+        f'<tbody>{body}</tbody>'
+        f'</table></div>'
+    )
+    st.markdown(html, unsafe_allow_html=True)
 
 
 def gain_color(v):
@@ -2252,16 +2332,16 @@ def render_dashboard(data):
             top_l = sorted([h for h in data["holdings"] if h["pnl"] < 0], key=lambda x: x["pnl"])[:4]
             if top_g:
                 st.markdown('<div style="font-size:11px;color:#48bb78;font-weight:600;margin-bottom:6px;">✅ Top Gainers</div>', unsafe_allow_html=True)
-                st.dataframe(pd.DataFrame([
+                render_table([
                     {"Scheme": clean_name(h["scheme"]), "P&L": fmt_inr(h["pnl"]), "XIRR": f"{h['xirr']:.1f}%"}
                     for h in top_g
-                ]), use_container_width=True, hide_index=True)
+                ])
             if top_l:
                 st.markdown('<div style="font-size:11px;color:#fc8181;font-weight:600;margin:10px 0 6px;">⚠️ In Loss</div>', unsafe_allow_html=True)
-                st.dataframe(pd.DataFrame([
+                render_table([
                     {"Scheme": clean_name(h["scheme"]), "P&L": fmt_inr(h["pnl"]), "XIRR": f"{h['xirr']:.1f}%"}
                     for h in top_l
-                ]), use_container_width=True, hide_index=True)
+                ])
 
         # ── SIP COUNTDOWN + CAPITAL CONCENTRATION ───────────────────────────
         r3, r4 = st.columns(2)
@@ -2288,11 +2368,11 @@ def render_dashboard(data):
                     )
                 ticker_html += "</div>"
                 components.html(ticker_html, height=140, scrolling=False)
-                st.dataframe(pd.DataFrame([
+                render_table([
                     {"Scheme": clean_name(s["scheme"]), "Amount": fmt_inr(s["amount"]),
                      "Day": s["day_label"], "Next": s["next_date"]}
                     for s in sorted_sips[:4]
-                ]), use_container_width=True, hide_index=True)
+                ])
             else:
                 st.info("No live SIPs detected.")
 
@@ -3620,7 +3700,7 @@ def render_my_portfolio(data):
                 "Current P&L": (f"▲ {fmt_inr(current_pnl)}" if current_pnl >= 0 else f"▼ {fmt_inr(current_pnl)}"),
                 "XIRR %": f"{item['xirr']:.2f}%",
             })
-        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        render_table(rows)
 
     st.markdown('<div class="section-sep">Bubble Map — Invested vs XIRR</div>', unsafe_allow_html=True)
     df_bubble = pd.DataFrame([
@@ -3676,7 +3756,7 @@ def render_my_portfolio(data):
             }
             for item in data["redeemed"]
         ]
-        st.dataframe(pd.DataFrame(redeemed_rows), use_container_width=True, hide_index=True)
+        render_table(redeemed_rows)
     else:
         st.info("No fully redeemed positions found.")
 
@@ -3741,7 +3821,7 @@ def render_my_portfolio(data):
         # ── Full table ────────────────────────────────────────────────────
         if filtered:
             df_special = build_special_tx_df(filtered)
-            st.dataframe(df_special, use_container_width=True, hide_index=True)
+            render_table(df_special.to_dict('records') if hasattr(df_special,'to_dict') else [])
 
         # ── Per-scheme breakdown for holdings ─────────────────────────────
         st.markdown(
@@ -3765,11 +3845,8 @@ def render_my_portfolio(data):
                 sc1.metric("Inflow",   fmt_inr(inflow_amt))
                 sc2.metric("Outflow",  fmt_inr(outflow_amt))
                 sc3.metric("Reversed", fmt_inr(rev_amt))
-                st.dataframe(
-                    build_special_tx_df(sorted(s_txs, key=lambda x: x["date_obj"], reverse=True)),
-                    use_container_width=True,
-                    hide_index=True,
-                )
+                _df = build_special_tx_df(sorted(s_txs, key=lambda x: x["date_obj"], reverse=True))
+                render_table(_df.to_dict('records') if not _df.empty else [])
 
 
 # ─────────────────────────────────────────────
@@ -3838,18 +3915,18 @@ def render_sip_center(data):
                 "Next Due":  item["next_date"],
                 "Status":    item["status"],
             })
-        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        render_table(rows)
     else:
         st.info("No SIPs in this category.")
 
     # Show old stopped in expander
     if not is_live and old_dead:
         with st.expander(f"🗂️ Older Stopped SIPs — {len(old_dead)} (stopped 1+ year ago)"):
-            st.dataframe(pd.DataFrame([{
+            render_table([{
                 "Scheme":    clean_name(s["scheme"]),
                 "Amount":    fmt_inr(s["amount"]),
                 "Last Date": s["last_date"],
-            } for s in old_dead]), use_container_width=True, hide_index=True)
+            } for s in old_dead])
 
     # Bar chart — only live SIPs
     if live_sips:
@@ -3965,7 +4042,7 @@ def render_transactions(data):
                 })
             except Exception:
                 continue
-        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        render_table(rows)
 
     st.markdown('<div class="section-sep" style="margin-top:28px;">All Holdings — XIRR Table</div>', unsafe_allow_html=True)
     performance = [
@@ -3981,7 +4058,7 @@ def render_transactions(data):
         }
         for item in data["holdings"]
     ]
-    st.dataframe(pd.DataFrame(performance), use_container_width=True, hide_index=True)
+    render_table(performance)
 
 
 # ─────────────────────────────────────────────
@@ -4304,11 +4381,7 @@ def render_family_overview():
                 "Category":  h["category"],
             })
     if all_holdings:
-        st.dataframe(
-            pd.DataFrame(all_holdings),
-            use_container_width=True,
-            hide_index=True,
-        )
+        render_table(all_holdings)
 
 
 
@@ -4420,7 +4493,7 @@ def render_pnl_summary(data, live_data=None):
                 "Return %":  f"{'▲' if pnl_pct>=0 else '▼'} {abs(pnl_pct):.2f}%",
                 "XIRR %":   f"{h['xirr']:.2f}%",
             })
-        st.dataframe(pd.DataFrame(ur_rows), use_container_width=True, hide_index=True)
+        render_table(ur_rows)
 
     # ── Realised P&L (fully exited) ───────────────────────────────────────
     redeemed = data.get("redeemed", [])
@@ -5183,7 +5256,7 @@ def render_returns_analysis(data, live_data=None):
                     "Redeemed":   fmt_inr(red_p) if red_p else "—",
                 })
             import pandas as _pd2
-            st.dataframe(_pd2.DataFrame(rows), use_container_width=True, hide_index=True)
+            render_table(rows)
 
             # Mini line chart showing investment pattern
             inv_vals = [(prd, pd_data[prd].get("invested",0))
