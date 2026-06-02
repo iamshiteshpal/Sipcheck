@@ -1730,7 +1730,7 @@ def build_sidebar(data):
                 unsafe_allow_html=True,
             )
 
-            nav_items = ["Dashboard", "💰 P&L Summary", "📄 Report Builder",
+            nav_items = ["Dashboard", "💰 P&L Summary", "📈 Returns", "📄 Report Builder",
                          "My Portfolio", "SIP Center", "Transactions", "Alerts"]
             if profiles_count > 1:
                 nav_items = ["👨‍👩‍👧‍👦 Family"] + nav_items
@@ -3894,12 +3894,55 @@ def render_transactions(data):
         key="tx_scheme_select",
     )
     selected_scheme = scheme_display_map.get(selected_display, list(tx_map.keys())[0])
-    totals = agg_map.get(selected_scheme, {"cost": 0.0, "units": 0.0, "value": 0.0})
 
-    c1, c2, c3 = st.columns(3)
-    c1.metric("Book Cost",      fmt_inr(totals["cost"]))
-    c2.metric("Units",          f"{totals['units']:.3f}")
-    c3.metric("Current Value",  fmt_inr(totals["value"]))
+    # Look up totals — try both clean name and original name
+    totals = agg_map.get(selected_scheme, None)
+    if not totals:
+        # Try finding by partial match
+        for k, v in agg_map.items():
+            if clean_name(k) == selected_display or k == selected_scheme:
+                totals = v
+                break
+    if not totals:
+        totals = {"cost": 0.0, "units": 0.0, "value": 0.0}
+
+    cost  = float(totals.get("cost",  0.0))
+    units = float(totals.get("units", 0.0))
+    value = float(totals.get("value", 0.0))
+    pnl   = value - cost
+    pc    = "#48bb78" if pnl >= 0 else "#fc8181"
+
+    # Show metrics as styled cards (not st.metric which causes the black gap)
+    st.markdown(
+        f'<div style="display:grid;grid-template-columns:repeat(4,1fr);'
+        f'gap:12px;margin:12px 0 16px;">' +
+        f'<div style="background:#0c0f1a;border:1px solid rgba(255,255,255,0.07);'
+        f'border-radius:12px;padding:14px 18px;">'
+        f'<div style="font-size:9px;color:#718096;text-transform:uppercase;'
+        f'letter-spacing:1.2px;margin-bottom:6px;">Book Cost</div>'
+        f'<div style="font-family:IBM Plex Mono,monospace;font-size:16px;'
+        f'font-weight:700;color:#9f7aea;">{fmt_inr(cost)}</div></div>' +
+        f'<div style="background:#0c0f1a;border:1px solid rgba(255,255,255,0.07);'
+        f'border-radius:12px;padding:14px 18px;">'
+        f'<div style="font-size:9px;color:#718096;text-transform:uppercase;'
+        f'letter-spacing:1.2px;margin-bottom:6px;">Units Held</div>'
+        f'<div style="font-family:IBM Plex Mono,monospace;font-size:16px;'
+        f'font-weight:700;color:#63b3ed;">{units:.3f}</div></div>' +
+        f'<div style="background:#0c0f1a;border:1px solid rgba(255,255,255,0.07);'
+        f'border-radius:12px;padding:14px 18px;">'
+        f'<div style="font-size:9px;color:#718096;text-transform:uppercase;'
+        f'letter-spacing:1.2px;margin-bottom:6px;">Current Value</div>'
+        f'<div style="font-family:IBM Plex Mono,monospace;font-size:16px;'
+        f'font-weight:700;color:#f7fafc;">{fmt_inr(value)}</div></div>' +
+        f'<div style="background:#0c0f1a;border:1px solid rgba({("72,187,120" if pnl>=0 else "252,129,129")},0.15);'
+        f'border-radius:12px;padding:14px 18px;">'
+        f'<div style="font-size:9px;color:#718096;text-transform:uppercase;'
+        f'letter-spacing:1.2px;margin-bottom:6px;">Unrealised P&L</div>'
+        f'<div style="font-family:IBM Plex Mono,monospace;font-size:16px;'
+        f'font-weight:700;color:{pc};">{"▲" if pnl>=0 else "▼"} {fmt_inr(abs(pnl))}</div></div>' +
+        f'</div>',
+        unsafe_allow_html=True,
+    )
 
     txs = tx_map.get(selected_scheme, [])
     if not txs:
