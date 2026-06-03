@@ -118,38 +118,51 @@ def gain_arrow(v):
     return "▲" if v >= 0 else "▼"
 
 
+_TABLE_STYLE = """
+<style>
+.cas-tbl{width:100%;border-collapse:collapse;}
+.cas-tbl th{background:#111627!important;color:#9f7aea!important;font-size:10px!important;
+  font-weight:700!important;text-transform:uppercase!important;letter-spacing:1px!important;
+  padding:11px 14px!important;text-align:left!important;white-space:nowrap!important;
+  border-bottom:1px solid rgba(255,255,255,0.08)!important;}
+.cas-tbl td{color:#e2e8f0!important;font-size:12px!important;
+  padding:11px 14px!important;border-bottom:1px solid rgba(255,255,255,0.04)!important;}
+.cas-tbl tr.even td{background:#0c0f1a!important;}
+.cas-tbl tr.odd  td{background:#0d1020!important;}
+.cas-gain{color:#48bb78!important;}
+.cas-loss{color:#fc8181!important;}
+.cas-muted{color:#718096!important;}
+.cas-mono{font-family:IBM Plex Mono,monospace!important;}
+</style>
+"""
+
 def render_table(rows, key=""):
     if not rows:
         st.info("No data to display.")
         return
     cols = list(rows[0].keys())
     header = "".join(
-        f'<th style="background:#111627;color:#9f7aea;font-size:10px;font-weight:700;'
-        f'text-transform:uppercase;letter-spacing:1px;padding:11px 14px;text-align:left;'
-        f'white-space:nowrap;">{c}</th>'
+        f'<th class="cas-tbl-th">{c}</th>'
         for c in cols
     )
     body = ""
     for i, row in enumerate(rows):
-        bg = "#0d1020" if i % 2 == 0 else "#0c0f1a"
+        stripe = "even" if i % 2 == 0 else "odd"
         cells = ""
         for c in cols:
             val = str(row.get(c, "—"))
             if val.startswith("▲"):
-                color = "#48bb78"
+                cls = "cas-gain"
             elif val.startswith("▼"):
-                color = "#fc8181"
+                cls = "cas-loss"
             else:
-                color = "#e2e8f0"
-            cells += (
-                f'<td style="background:{bg};color:{color};font-size:12px;'
-                f'padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.04);">'
-                f'{val}</td>'
-            )
-        body += f"<tr>{cells}</tr>"
+                cls = ""
+            cells += f'<td class="{cls}">{val}</td>'
+        body += f'<tr class="{stripe}">{cells}</tr>'
     html = (
+        _TABLE_STYLE +
         f'<div style="overflow-x:auto;border-radius:10px;border:1px solid rgba(255,255,255,0.07);">'
-        f'<table style="width:100%;border-collapse:collapse;">'
+        f'<table class="cas-tbl">'
         f'<thead><tr>{header}</tr></thead>'
         f'<tbody>{body}</tbody>'
         f'</table></div>'
@@ -405,9 +418,13 @@ def inject_global_styles():
         /* ── Force all Streamlit widget text to be visible ───────────────── */
         [data-testid="stSelectbox"] label {{ color: {muted} !important; font-size: 12px !important; }}
         [data-testid="stSelectbox"] span {{ color: {text} !important; }}
-        /* ── Markdown container — ensure inline color styles are not clobbered */
+        /* ── Markdown container table overrides (Streamlit hijacks td/th color) */
         [data-testid="stMarkdownContainer"] {{ color: {text} !important; }}
-        [data-testid="stMarkdownContainer"] * {{ color: inherit; }}
+        [data-testid="stMarkdownContainer"] table td {{ color: {text} !important; font-size:12px !important; }}
+        [data-testid="stMarkdownContainer"] table th {{ color: #9f7aea !important; font-size:10px !important; font-weight:700 !important; text-transform:uppercase !important; }}
+        [data-testid="stMarkdownContainer"] .cas-gain {{ color: #48bb78 !important; }}
+        [data-testid="stMarkdownContainer"] .cas-loss {{ color: #fc8181 !important; }}
+        [data-testid="stMarkdownContainer"] .cas-muted {{ color: #718096 !important; }}
         /* ── Override any browser/OS default that makes text dark on dark bg */
         .stApp input, .stApp select, .stApp textarea {{ color: {text} !important; background: {input_bg} !important; }}
         [data-testid="stResizeHandle"], .resize-handle {{ display: none !important; height: 0 !important; }}
@@ -4078,35 +4095,30 @@ def render_transactions(data):
             except Exception:
                 continue
 
-        cols  = ["Date", "Description", "Amount", "NAV", "Units", "Type"]
-        header = "".join(
-            f'<th style="background:#111627;color:#9f7aea;font-size:10px;font-weight:700;'
-            f'text-transform:uppercase;letter-spacing:1px;padding:11px 14px;text-align:left;'
-            f'white-space:nowrap;">{c}</th>'
-            for c in cols
-        )
-        body = ""
+        cols = ["Date", "Description", "Amount", "NAV", "Units", "Type"]
         mono = {"Amount", "NAV", "Units"}
+        header = "".join(f'<th class="cas-tbl-th">{c}</th>' for c in cols)
+        body = ""
         for i, r in enumerate(rows):
-            bg = "#0d1020" if i % 2 == 0 else "#0c0f1a"
+            stripe = "even" if i % 2 == 0 else "odd"
             cells = ""
             for c in cols:
                 v = str(r.get(c, "—"))
-                color = ("#48bb78" if v.startswith("▲") else
-                         "#fc8181" if v.startswith("▼") else
-                         "#718096" if "STAMP" in v else "#e2e8f0")
-                ff = "IBM Plex Mono,monospace" if c in mono else "inherit"
-                cells += (
-                    f'<td style="background:{bg};color:{color};font-size:12px;'
-                    f'padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.04);'
-                    f'font-family:{ff};">{v}</td>'
-                )
-            body += f"<tr>{cells}</tr>"
+                extra = " cas-mono" if c in mono else ""
+                if v.startswith("▲"):
+                    extra += " cas-gain"
+                elif v.startswith("▼"):
+                    extra += " cas-loss"
+                elif "STAMP" in v:
+                    extra += " cas-muted"
+                cells += f'<td class="{extra.strip()}">{v}</td>'
+            body += f'<tr class="{stripe}">{cells}</tr>'
 
         html = (
+            _TABLE_STYLE +
             f'<div style="overflow-x:auto;border-radius:10px;'
             f'border:1px solid rgba(255,255,255,0.07);">'
-            f'<table style="width:100%;border-collapse:collapse;">'
+            f'<table class="cas-tbl">'
             f'<thead><tr>{header}</tr></thead>'
             f'<tbody>{body}</tbody>'
             f'</table></div>'
