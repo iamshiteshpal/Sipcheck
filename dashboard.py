@@ -4069,61 +4069,53 @@ def render_transactions(data):
                 amt = float(transaction["amount"]) if transaction.get("amount") else 0
                 nav = float(transaction["nav"])     if transaction.get("nav")    else 0
                 unt = float(transaction["units"])   if transaction.get("units")  else 0
+                raw_type = str(transaction.get("type", "—"))
+                clean_type = raw_type.split(".")[-1] if "." in raw_type else raw_type
                 rows.append({
                     "Date":        to_date(transaction.get("date")).strftime("%d %b %Y"),
                     "Description": transaction.get("description", "—"),
                     "Amount":      fmt_inr(amt) if amt else "—",
                     "NAV":         f"₹{nav:,.4f}" if nav else "—",
                     "Units":       f"{unt:+,.3f}" if unt else "—",
-                    "Type":        transaction.get("type", "—"),
+                    "Type":        clean_type,
                 })
             except Exception:
                 continue
 
-        # Build full HTML table and render via components.html
-        # This completely bypasses Streamlit's rendering chain
-        # and prevents the black overlay bug
-        cols  = ["Date","Description","Amount","NAV","Units","Type"]
-        thead = "".join(
-            f'<th style="background:#111627;color:#9f7aea;font-size:10px;'
-            f'font-weight:700;text-transform:uppercase;letter-spacing:1px;'
-            f'padding:10px 12px;text-align:left;white-space:nowrap;'
-            f'border-bottom:1px solid rgba(255,255,255,0.08);">{c}</th>'
+        cols  = ["Date", "Description", "Amount", "NAV", "Units", "Type"]
+        header = "".join(
+            f'<th style="background:#111627;color:#9f7aea;font-size:10px;font-weight:700;'
+            f'text-transform:uppercase;letter-spacing:1px;padding:11px 14px;text-align:left;'
+            f'white-space:nowrap;">{c}</th>'
             for c in cols
         )
-        tbody = ""
+        body = ""
+        mono = {"Amount", "NAV", "Units"}
         for i, r in enumerate(rows):
             bg = "#0d1020" if i % 2 == 0 else "#0c0f1a"
             cells = ""
             for c in cols:
-                v = str(r.get(c,"—"))
-                cl = ("#48bb78" if v.startswith("▲") else
-                      "#fc8181" if v.startswith("▼") else
-                      "#718096" if "STAMP" in v else "#e2e8f0")
+                v = str(r.get(c, "—"))
+                color = ("#48bb78" if v.startswith("▲") else
+                         "#fc8181" if v.startswith("▼") else
+                         "#718096" if "STAMP" in v else "#e2e8f0")
+                ff = "IBM Plex Mono,monospace" if c in mono else "inherit"
                 cells += (
-                    f'<td style="background:{bg};color:{cl};font-size:12px;'
-                    f'padding:10px 12px;border-bottom:1px solid rgba(255,255,255,0.04);'
-                    f'font-family:{("IBM Plex Mono,monospace" if c in ["Amount","NAV","Units"] else "inherit")};">'
-                    f'{v}</td>'
+                    f'<td style="background:{bg};color:{color};font-size:12px;'
+                    f'padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.04);'
+                    f'font-family:{ff};">{v}</td>'
                 )
-            tbody += f"<tr>{cells}</tr>"
+            body += f"<tr>{cells}</tr>"
 
-        table_html = f"""
-        <style>
-        body{{background:#07090f;margin:0;padding:0;font-family:Instrument Sans,sans-serif;}}
-        .wrap{{overflow-x:auto;border-radius:10px;border:1px solid rgba(255,255,255,0.07);}}
-        table{{width:100%;border-collapse:collapse;min-width:700px;}}
-        </style>
-        <div class="wrap">
-        <table>
-        <thead><tr>{thead}</tr></thead>
-        <tbody>{tbody}</tbody>
-        </table>
-        </div>"""
-
-        # Height = 44px per row + 48px header, max 600px
-        h = min(len(rows) * 44 + 52, 600)
-        components.html(table_html, height=h, scrolling=True)
+        html = (
+            f'<div style="overflow-x:auto;border-radius:10px;'
+            f'border:1px solid rgba(255,255,255,0.07);">'
+            f'<table style="width:100%;border-collapse:collapse;">'
+            f'<thead><tr>{header}</tr></thead>'
+            f'<tbody>{body}</tbody>'
+            f'</table></div>'
+        )
+        st.markdown(html, unsafe_allow_html=True)
 
     st.markdown('<div class="section-sep" style="margin-top:28px;">All Holdings — XIRR Table</div>', unsafe_allow_html=True)
     performance = [
