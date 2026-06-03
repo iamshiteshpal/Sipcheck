@@ -118,21 +118,36 @@ def gain_arrow(v):
     return "▲" if v >= 0 else "▼"
 
 
-_TABLE_STYLE = """
+def _table_style():
+    is_dark = st.session_state.get("theme", "light") == "dark"
+    if is_dark:
+        th_bg, th_color  = "#111627", "#9f7aea"
+        td_color         = "#e2e8f0"
+        even_bg, odd_bg  = "#0c0f1a", "#0d1020"
+        border_color     = "rgba(255,255,255,0.04)"
+        wrap_border      = "rgba(255,255,255,0.07)"
+    else:
+        th_bg, th_color  = "#edf2f7", "#553c9a"
+        td_color         = "#1a202c"
+        even_bg, odd_bg  = "#ffffff", "#f7fafc"
+        border_color     = "rgba(0,0,0,0.06)"
+        wrap_border      = "rgba(0,0,0,0.1)"
+    return f"""
 <style>
-.cas-tbl{width:100%;border-collapse:collapse;}
-.cas-tbl th{background:#111627!important;color:#9f7aea!important;font-size:10px!important;
+.cas-wrap{{overflow-x:auto;border-radius:10px;border:1px solid {wrap_border};}}
+.cas-tbl{{width:100%;border-collapse:collapse;}}
+.cas-tbl th{{background:{th_bg}!important;color:{th_color}!important;font-size:10px!important;
   font-weight:700!important;text-transform:uppercase!important;letter-spacing:1px!important;
   padding:11px 14px!important;text-align:left!important;white-space:nowrap!important;
-  border-bottom:1px solid rgba(255,255,255,0.08)!important;}
-.cas-tbl td{color:#e2e8f0!important;font-size:12px!important;
-  padding:11px 14px!important;border-bottom:1px solid rgba(255,255,255,0.04)!important;}
-.cas-tbl tr.even td{background:#0c0f1a!important;}
-.cas-tbl tr.odd  td{background:#0d1020!important;}
-.cas-gain{color:#48bb78!important;}
-.cas-loss{color:#fc8181!important;}
-.cas-muted{color:#718096!important;}
-.cas-mono{font-family:IBM Plex Mono,monospace!important;}
+  border-bottom:1px solid {border_color}!important;}}
+.cas-tbl td{{color:{td_color}!important;font-size:12px!important;
+  padding:11px 14px!important;border-bottom:1px solid {border_color}!important;}}
+.cas-tbl tr.even td{{background:{even_bg}!important;}}
+.cas-tbl tr.odd  td{{background:{odd_bg}!important;}}
+.cas-gain{{color:#22863a!important;}}
+.cas-loss{{color:#d73a49!important;}}
+.cas-muted{{color:#6a737d!important;}}
+.cas-mono{{font-family:IBM Plex Mono,monospace!important;}}
 </style>
 """
 
@@ -160,8 +175,8 @@ def render_table(rows, key=""):
             cells += f'<td class="{cls}">{val}</td>'
         body += f'<tr class="{stripe}">{cells}</tr>'
     html = (
-        _TABLE_STYLE +
-        f'<div style="overflow-x:auto;border-radius:10px;border:1px solid rgba(255,255,255,0.07);">'
+        _table_style() +
+        f'<div class="cas-wrap">'
         f'<table class="cas-tbl">'
         f'<thead><tr>{header}</tr></thead>'
         f'<tbody>{body}</tbody>'
@@ -1230,7 +1245,7 @@ def initialize_session_state():
         "reg_email": "",
         "view_family": False,
         "cas_requested": False,
-        "theme": "dark",
+        "theme": "light",
         "cas_ref_no": "",
         "cas_req_email": "",
         "cas_req_pwd": "",
@@ -4115,9 +4130,8 @@ def render_transactions(data):
             body += f'<tr class="{stripe}">{cells}</tr>'
 
         html = (
-            _TABLE_STYLE +
-            f'<div style="overflow-x:auto;border-radius:10px;'
-            f'border:1px solid rgba(255,255,255,0.07);">'
+            _table_style() +
+            f'<div class="cas-wrap">'
             f'<table class="cas-tbl">'
             f'<thead><tr>{header}</tr></thead>'
             f'<tbody>{body}</tbody>'
