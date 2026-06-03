@@ -13,6 +13,17 @@ from collections import Counter
 from pyxirr import xirr
 import casparser
 
+
+def to_dict(obj):
+    if hasattr(obj, 'model_dump'):
+        return obj.model_dump()
+    elif hasattr(obj, 'dict'):
+        return obj.dict()
+    elif isinstance(obj, dict):
+        return obj
+    return obj
+
+
 PLOT_BASE = dict(
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
@@ -35,387 +46,209 @@ def apply_page_config():
 
 
 def inject_global_styles():
+    theme = st.session_state.get("theme", "dark")
+    is_dark = theme == "dark"
+
+    # ── CSS variables based on theme ──────────────────────────────────────
+    if is_dark:
+        bg        = "#07090f"
+        bg2       = "#0c0f1a"
+        bg3       = "#111627"
+        border    = "rgba(255,255,255,0.06)"
+        text      = "#e2e8f0"
+        muted     = "#718096"
+        faint     = "#2d3748"
+        sidebar_bg = "linear-gradient(180deg,#07090f 0%,#0a0d18 100%)"
+        card_bg   = "#0c0f1a"
+        input_bg  = "#111627"
+        th_bg     = "#111627"
+        td_bg     = "#0c0f1a"
+        td_bg2    = "#0d1020"
+        noise_op  = "0.025"
+        metric_bg = "#0c0f1a"
+    else:
+        bg        = "#f0f4f8"
+        bg2       = "#ffffff"
+        bg3       = "#e8edf3"
+        border    = "rgba(0,0,0,0.08)"
+        text      = "#1a202c"
+        muted     = "#4a5568"
+        faint     = "#a0aec0"
+        sidebar_bg = "linear-gradient(180deg,#ffffff 0%,#f7fafc 100%)"
+        card_bg   = "#ffffff"
+        input_bg  = "#f7fafc"
+        th_bg     = "#edf2f7"
+        td_bg     = "#ffffff"
+        td_bg2    = "#f7fafc"
+        noise_op  = "0"
+        metric_bg = "#ffffff"
+
     st.markdown(
-        """
+        f"""
         <style>
         @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap');
-        :root {
-          --bg:        #07090f;
-          --bg2:       #0c0f1a;
-          --bg3:       #111627;
-          --border:    rgba(255,255,255,0.06);
+        :root {{
+          --bg:        {bg};
+          --bg2:       {bg2};
+          --bg3:       {bg3};
+          --border:    {border};
           --border-hi: rgba(99,179,237,0.35);
           --accent:    #63b3ed;
           --accent2:   #9f7aea;
-          --gain:      #48bb78;
-          --loss:      #fc8181;
-          --warn:      #f6ad55;
-          --text:      #e2e8f0;
-          --muted:     #718096;
-          --faint:     #2d3748;
-        }
-        *, *::before, *::after { box-sizing: border-box; }
-        html, body, .stApp {
-          background: var(--bg) !important;
-          color: var(--text) !important;
+          --gain:      #38a169;
+          --loss:      #e53e3e;
+          --warn:      #d97706;
+          --text:      {text};
+          --muted:     {muted};
+          --faint:     {faint};
+        }}
+        *, *::before, *::after {{ box-sizing: border-box; }}
+        html, body, .stApp {{
+          background: {bg} !important;
+          color: {text} !important;
           font-family: 'Instrument Sans', sans-serif !important;
-        }
-        .stApp::after {
+        }}
+        .stApp::after {{
           content: '';
           position: fixed;
           inset: 0;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='{noise_op}'/%3E%3C/svg%3E");
           pointer-events: none;
           z-index: 9999;
-        }
-        [data-testid="stSidebar"] {
-          background: var(--bg2) !important;
-          border-right: 1px solid var(--border) !important;
-        }
-        [data-testid="stSidebar"] * { font-family: 'Instrument Sans', sans-serif !important; }
-        div[data-testid="stMetric"] {
-          background: var(--bg2) !important;
-          border: 1px solid var(--border) !important;
+        }}
+        [data-testid="stSidebar"] {{
+          background: {sidebar_bg} !important;
+          border-right: 1px solid {border} !important;
+        }}
+        [data-testid="stSidebar"] * {{ font-family: 'Instrument Sans', sans-serif !important; color: {text} !important; }}
+        div[data-testid="stMetric"] {{
+          background: {metric_bg} !important;
+          border: 1px solid {border} !important;
           border-radius: 12px !important;
           padding: 18px 20px !important;
           transition: border-color .25s, transform .2s;
-        }
-        div[data-testid="stMetric"]:hover {
-          border-color: var(--border-hi) !important;
+        }}
+        div[data-testid="stMetric"]:hover {{
+          border-color: rgba(99,179,237,0.35) !important;
           transform: translateY(-2px);
-        }
-        div[data-testid="stMetricValue"] > div {
+        }}
+        div[data-testid="stMetricValue"] > div {{
           font-family: 'IBM Plex Mono', monospace !important;
           font-size: 18px !important;
           font-weight: 600 !important;
-          color: #f7fafc !important;
-        }
-        div[data-testid="stMetricLabel"] > div {
+          color: {text} !important;
+        }}
+        div[data-testid="stMetricLabel"] > div {{
           font-size: 10px !important;
-          color: var(--muted) !important;
+          color: {muted} !important;
           text-transform: uppercase;
           letter-spacing: 1.4px;
           font-weight: 500 !important;
-        }
-        div[data-testid="stMetricDelta"] > div { font-size: 11px !important; }
-        [data-testid="stVerticalBlockBorderWrapper"] > div > div {
-          background: var(--bg2) !important;
-          border: 1px solid var(--border) !important;
+        }}
+        div[data-testid="stMetricDelta"] > div {{ font-size: 11px !important; }}
+        [data-testid="stVerticalBlockBorderWrapper"] > div > div {{
+          background: {bg2} !important;
+          border: 1px solid {border} !important;
           border-radius: 14px !important;
-        }
-        [data-testid="stVerticalBlockBorderWrapper"] > div > div:hover {
-          border-color: rgba(99,179,237,0.2) !important;
-        }
-        [data-testid="stDataFrame"] {
+        }}
+        [data-testid="stDataFrame"] {{
           border-radius: 10px !important;
           overflow: hidden;
-          border: 1px solid var(--border) !important;
-        }
-        /* Force dataframe text to be visible on dark background */
-        [data-testid="stDataFrame"] * {
-          color: #e2e8f0 !important;
-        }
-        [data-testid="stDataFrame"] th {
-          background: #111627 !important;
+          border: 1px solid {border} !important;
+        }}
+        [data-testid="stDataFrame"] * {{ color: {text} !important; }}
+        [data-testid="stDataFrame"] th {{
+          background: {th_bg} !important;
           color: #9f7aea !important;
           font-size: 10px !important;
           font-weight: 700 !important;
           text-transform: uppercase !important;
           letter-spacing: 1px !important;
-        }
-        [data-testid="stDataFrame"] td {
-          background: #0c0f1a !important;
-          color: #e2e8f0 !important;
+        }}
+        [data-testid="stDataFrame"] td {{
+          background: {td_bg} !important;
+          color: {text} !important;
           font-size: 12px !important;
-        }
-        [data-testid="stDataFrame"] tr:nth-child(even) td {
-          background: #0d1020 !important;
-        }
-        /* Fix the black canvas overlay in dataframe */
-        [data-testid="stDataFrame"] canvas {
-          display: none !important;
-        }
-        [data-testid="stDataFrame"] [class*="glideDataCore"] {
-          background: #0c0f1a !important;
-        }
-        [data-testid="stDataFrame"] [class*="dvn-scroller"] {
-          background: #0c0f1a !important;
-        }
-        /* Streamlit dataframe cell text fix */
-        .stDataFrame [role="gridcell"],
-        .stDataFrame [role="columnheader"] {
-          color: #e2e8f0 !important;
-          background: #0c0f1a !important;
-        }
+        }}
+        [data-testid="stDataFrame"] tr:nth-child(even) td {{
+          background: {td_bg2} !important;
+        }}
         [data-testid="stSelectbox"] > div > div,
-        [data-testid="stTextInput"] input {
-          background: var(--bg3) !important;
-          border: 1px solid var(--border) !important;
+        [data-testid="stTextInput"] input {{
+          background: {input_bg} !important;
+          border: 1px solid {border} !important;
           border-radius: 8px !important;
-          color: var(--text) !important;
-        }
-        /* Fix selectbox dropdown black overlay */
-        [data-baseweb="select"] * { color: var(--text) !important; }
-        [data-baseweb="popover"] { background: var(--bg2) !important; }
-        [data-baseweb="popover"] * { color: var(--text) !important; }
-        [data-baseweb="menu"] { background: var(--bg2) !important; }
-        [data-baseweb="menu"] li { color: var(--text) !important; }
-        /* Fix the black iframe/overlay that appears below selectbox */
-        [data-testid="stSelectbox"] + div,
-        [data-testid="stSelectbox"] ~ div > iframe {
-          display: none !important;
-        }
-        /* Hide Streamlit's internal resize handle that shows as black bar */
-        [data-testid="stResizeHandle"],
-        .resize-handle,
-        [class*="resizeHandle"] {
-          display: none !important;
-          height: 0 !important;
-        }
-        /* Fix the dark overlay/loading state */
-        [data-testid="stSpinner"] ~ div > div[style*="position: absolute"] {
-          display: none !important;
-        }
-        [data-testid="stTextInput"] input { font-family: 'IBM Plex Mono', monospace !important; }
-        [data-testid="stFileUploader"] {
+          color: {text} !important;
+        }}
+        [data-testid="stTextInput"] input {{ font-family: 'IBM Plex Mono', monospace !important; }}
+        [data-testid="stFileUploader"] {{
           background: rgba(99,179,237,0.03) !important;
           border: 2px dashed rgba(99,179,237,0.2) !important;
           border-radius: 14px !important;
-        }
-        [data-testid="stSegmentedControl"] > div {
-          background: var(--bg3) !important;
-          border: 1px solid var(--border) !important;
+        }}
+        [data-testid="stSegmentedControl"] > div {{
+          background: {bg3} !important;
+          border: 1px solid {border} !important;
           border-radius: 8px !important;
-        }
-        [data-testid="stSegmentedControl"] button[aria-checked="true"] {
+        }}
+        [data-testid="stSegmentedControl"] button[aria-checked="true"] {{
           background: linear-gradient(135deg,#2b6cb0,#553c9a) !important;
           color: #fff !important;
           border-radius: 6px !important;
-        }
-        hr { border-color: var(--border) !important; }
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 4px; }
-        .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; margin-bottom: 16px; position: relative; }
-        .card-title { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; }
-        .pill-gain { display: inline-flex; align-items: center; gap: 4px; background: rgba(72,187,120,0.1); border: 1px solid rgba(72,187,120,0.25); color: var(--gain); font-family: 'IBM Plex Mono',monospace; font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px; }
-        .pill-loss { display: inline-flex; align-items: center; gap: 4px; background: rgba(252,129,129,0.1); border: 1px solid rgba(252,129,129,0.25); color: var(--loss); font-family: 'IBM Plex Mono',monospace; font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px; }
-        .notice { background: rgba(99,179,237,0.05); border: 1px solid rgba(99,179,237,0.15); border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0; padding: 12px 16px; font-size: 13px; color: var(--muted); margin-bottom: 22px; display: flex; align-items: flex-start; gap: 10px; }
-        .section-sep { font-size: 10px; font-weight: 700; color: var(--faint); text-transform: uppercase; letter-spacing: 2px; margin: 24px 0 12px; display: flex; align-items: center; gap: 10px; }
-        .section-sep::after { content:''; flex:1; height:1px; background: var(--border); }
-        .page-title { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; color: #f7fafc; letter-spacing: -0.5px; margin-bottom: 4px; }
-        .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 22px; }
-        .sip-card { background: var(--bg3); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .alloc-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); }
-        .alloc-dot { width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:8px; }
-        .alert-card { border-left: 3px solid; border-radius: 0 10px 10px 0; padding: 12px 16px; margin-bottom: 10px; background: var(--bg2); }
-        div[data-testid="stAppViewBlockContainer"] { padding-top: 2.5rem !important; }
-
-        /* ── Hide Streamlit default toolbar (Share, GitHub, pencil, star) ── */
-        #MainMenu { visibility: hidden !important; display: none !important; }
-        header[data-testid="stHeader"] { visibility: hidden !important; height: 0 !important; }
-        [data-testid="stToolbar"] { visibility: hidden !important; display: none !important; }
-        [data-testid="stDecoration"] { display: none !important; }
-        [data-testid="stStatusWidget"] { display: none !important; }
-        footer { visibility: hidden !important; display: none !important; }
-        /* Hide keyboard shortcut tooltip */
-        [data-testid="stTooltipHoverTarget"] { display: none !important; }
-        .stDeployButton { display: none !important; }
-        /* Hide the leaked "nav" radio label */
-        [data-testid="stSidebar"] [data-testid="stRadio"] > label:first-child {
-            display: none !important;
-        }
-        /* Hide keyboard shortcut overlay completely */
-        [data-testid="stShortcuts"] { display: none !important; }
-        div[class*="shortcut"] { display: none !important; }
-        .keyboard_doub { display: none !important; }
+        }}
+        hr {{ border-color: {border} !important; }}
+        ::-webkit-scrollbar {{ width: 4px; height: 4px; }}
+        ::-webkit-scrollbar-track {{ background: {bg}; }}
+        ::-webkit-scrollbar-thumb {{ background: {faint}; border-radius: 4px; }}
+        .card {{ background: {bg2}; border: 1px solid {border}; border-radius: 14px; padding: 22px 24px; margin-bottom: 16px; position: relative; }}
+        .card-title {{ font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; }}
+        .pill-gain {{ display: inline-flex; align-items: center; gap: 4px; background: rgba(72,187,120,0.1); border: 1px solid rgba(72,187,120,0.25); color: var(--gain); font-family: 'IBM Plex Mono',monospace; font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px; }}
+        .pill-loss {{ display: inline-flex; align-items: center; gap: 4px; background: rgba(252,129,129,0.1); border: 1px solid rgba(252,129,129,0.25); color: var(--loss); font-family: 'IBM Plex Mono',monospace; font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px; }}
+        .notice {{ background: rgba(99,179,237,0.05); border: 1px solid rgba(99,179,237,0.15); border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0; padding: 12px 16px; font-size: 13px; color: var(--muted); margin-bottom: 22px; display: flex; align-items: flex-start; gap: 10px; }}
+        .section-sep {{ font-size: 10px; font-weight: 700; color: {faint}; text-transform: uppercase; letter-spacing: 2px; margin: 24px 0 12px; display: flex; align-items: center; gap: 10px; }}
+        .section-sep::after {{ content:''; flex:1; height:1px; background: {border}; }}
+        .page-title {{ font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; color: {"#f7fafc" if is_dark else "#1a202c"}; letter-spacing: -0.5px; margin-bottom: 4px; }}
+        .page-sub {{ font-size: 13px; color: {muted}; margin-bottom: 22px; }}
+        .sip-card {{ background: {bg3}; border: 1px solid {border}; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }}
+        .alloc-row {{ display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid {border}; }}
+        .alert-card {{ border-left: 3px solid; border-radius: 0 10px 10px 0; padding: 12px 16px; margin-bottom: 10px; background: {bg2}; }}
+        div[data-testid="stAppViewBlockContainer"] {{ padding-top: 2.5rem !important; }}
+        /* Hide Streamlit toolbar */
+        #MainMenu, header[data-testid="stHeader"], [data-testid="stToolbar"],
+        [data-testid="stDecoration"], [data-testid="stStatusWidget"], footer,
+        [data-testid="stTooltipHoverTarget"], .stDeployButton {{ display:none!important; }}
+        /* Sidebar nav radio */
+        [data-testid="stSidebar"] [role="radiogroup"] {{ gap: 2px !important; }}
+        [data-testid="stSidebar"] [data-testid="stRadio"] label {{
+          display: flex !important; align-items: center !important;
+          padding: 9px 14px !important; border-radius: 10px !important;
+          font-size: 13px !important; font-weight: 500 !important;
+          color: {muted} !important; cursor: pointer !important;
+          transition: background .15s, color .15s !important; margin: 0 !important;
+        }}
+        [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {{
+          background: rgba(99,179,237,0.06) !important;
+          color: {text} !important;
+        }}
+        [data-testid="stSidebar"] [data-testid="stRadio"] [data-baseweb="radio"] > div:first-child {{
+          display: none !important;
+        }}
+        [data-testid="stSidebar"] [data-testid="stRadio"] > label:first-child {{ display: none !important; }}
+        [data-baseweb="select"] * {{ color: {text} !important; }}
+        [data-baseweb="popover"] {{ background: {bg2} !important; }}
+        [data-baseweb="menu"] {{ background: {bg2} !important; }}
+        [data-testid="stResizeHandle"], .resize-handle {{ display: none !important; height: 0 !important; }}
+        /* Light theme specific overrides */
+        {"" if is_dark else f"""
+        [data-testid="stSidebar"] {{ box-shadow: 2px 0 8px rgba(0,0,0,0.08) !important; }}
+        .stApp {{ background: {bg} !important; }}
+        button[kind="primary"] {{ background: linear-gradient(135deg,#2b6cb0,#553c9a) !important; color: #fff !important; }}
+        """}
         </style>
         """,
         unsafe_allow_html=True,
     )
 
-
-# ─────────────────────────────────────────────
-# HELPERS
-# ─────────────────────────────────────────────
-
-def to_date(d):
-    if not d:
-        return date.today()
-    if isinstance(d, str):
-        try:
-            return datetime.datetime.strptime(d.split("T")[0], "%Y-%m-%d").date()
-        except Exception:
-            return date.today()
-    if hasattr(d, "date"):
-        return d.date()
-    return d
-
-
-def to_dict(obj):
-    if isinstance(obj, dict):
-        return {k: to_dict(v) for k, v in obj.items()}
-    if isinstance(obj, list):
-        return [to_dict(i) for i in obj]
-    if hasattr(obj, "model_dump"):
-        return to_dict(obj.model_dump())
-    if hasattr(obj, "dict"):
-        return to_dict(obj.dict())
-    return obj
-
-
-def clean_name(name):
-    if not name:
-        return "Unknown Scheme"
-    for sfx in [
-        "- Direct Plan - Growth Option", "- Direct Plan - Growth",
-        "- Direct Growth Plan", "- Direct Plan Growth",
-        "Direct Plan Growth", "Direct Growth", "Direct Plan",
-        "Regular Plan", "Growth",
-    ]:
-        name = name.replace(sfx, "")
-    return name.strip()
-
-
-def ordinal(n):
-    suffix = "th" if 11 <= n <= 13 else {1: "st", 2: "nd", 3: "rd"}.get(n % 10, "th")
-    return f"{n}{suffix}"
-
-
-def next_due_date(dom: int) -> date:
-    today = date.today()
-    try:
-        candidate = today.replace(day=dom)
-    except ValueError:
-        candidate = today.replace(day=28)
-    if candidate <= today:
-        m, y = today.month + 1, today.year
-        if m > 12:
-            m, y = 1, y + 1
-        try:
-            candidate = candidate.replace(year=y, month=m)
-        except ValueError:
-            candidate = candidate.replace(year=y, month=m, day=28)
-    return candidate
-
-
-def calc_xirr(transactions, current_value, valuation_date_str):
-    dates, amounts = [], []
-    for tx in transactions:
-        try:
-            dt = to_date(tx.get("date"))
-            amt = float(tx.get("amount", 0.0))
-            if amt > 0:
-                dates.append(dt)
-                amounts.append(-amt)
-        except Exception:
-            continue
-    if current_value > 0:
-        try:
-            dates.append(to_date(valuation_date_str))
-            amounts.append(current_value)
-        except Exception:
-            pass
-    if len(amounts) >= 2 and sum(amounts) != 0:
-        try:
-            rate = xirr(dates, amounts)
-            return rate * 100 if rate is not None else 0.0
-        except Exception:
-            return 0.0
-    return 0.0
-
-
-def fmt_inr(v):
-    """Full precision INR — used in tables, exports, HTML reports."""
-    return f"₹{abs(v):,.2f}"
-
-
-def fmt_inr_short(v):
-    """
-    Compact INR formatter for dashboard KPI tiles so values never truncate.
-    ≥ 1 Cr  → ₹X.XX Cr
-    ≥ 1 L   → ₹X.XX L
-    < 1 L   → ₹X,XXX
-    Negative values prefix with −.
-    """
-    sign = "−" if v < 0 else ""
-    av = abs(v)
-    if av >= 1_00_00_000:          # 1 crore and above
-        return f"{sign}₹{av / 1_00_00_000:.2f} Cr"
-    if av >= 1_00_000:             # 1 lakh and above
-        return f"{sign}₹{av / 1_00_000:.2f} L"
-    return f"{sign}₹{av:,.0f}"    # below 1 lakh — plain number
-
-
-def gain_arrow(v):
-    return "▲" if v >= 0 else "▼"
-
-
-def render_table(rows, key=""):
-    """
-    Render a list of dicts as a styled HTML table.
-    Avoids the st.dataframe() black text bug on dark backgrounds.
-    """
-    if not rows:
-        st.info("No data to display.")
-        return
-    cols = list(rows[0].keys())
-    header = "".join(
-        f'<th style="background:#111627;color:#9f7aea;font-size:10px;font-weight:700;'
-        f'text-transform:uppercase;letter-spacing:1px;padding:11px 14px;text-align:left;'
-        f'white-space:nowrap;">{c}</th>'
-        for c in cols
-    )
-    body = ""
-    for i, row in enumerate(rows):
-        bg = "#0d1020" if i % 2 == 0 else "#0c0f1a"
-        cells = ""
-        for c in cols:
-            val = str(row.get(c, "—"))
-            # Color gain/loss values
-            if val.startswith("▲"):
-                color = "#48bb78"
-            elif val.startswith("▼"):
-                color = "#fc8181"
-            else:
-                color = "#e2e8f0"
-            cells += (
-                f'<td style="background:{bg};color:{color};font-size:12px;'
-                f'padding:11px 14px;border-bottom:1px solid rgba(255,255,255,0.04);">'
-                f'{val}</td>'
-            )
-        body += f"<tr>{cells}</tr>"
-    html = (
-        f'<div style="overflow-x:auto;border-radius:10px;border:1px solid rgba(255,255,255,0.07);">'
-        f'<table style="width:100%;border-collapse:collapse;">'
-        f'<thead><tr>{header}</tr></thead>'
-        f'<tbody>{body}</tbody>'
-        f'</table></div>'
-    )
-    st.markdown(html, unsafe_allow_html=True)
-
-
-def gain_color(v):
-    return C_GAIN if v >= 0 else C_LOSS
-
-
-def safe_int(value, default=0):
-    try:
-        return int(value)
-    except Exception:
-        return default
-
-
-def safe_float(value, default=0.0):
-    try:
-        return float(value)
-    except Exception:
-        return default
-
-
-# ─────────────────────────────────────────────
-# PDF PARSING
-# ─────────────────────────────────────────────
 
 def parse_pdf(pdf_bytes, password):
     with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as f:
@@ -1207,6 +1040,7 @@ def initialize_session_state():
         "reg_email": "",
         "view_family": False,
         "cas_requested": False,
+        "theme": "dark",
         "cas_ref_no": "",
         "cas_req_email": "",
         "cas_req_pwd": "",
@@ -2000,10 +1834,34 @@ def build_sidebar(data):
                 unsafe_allow_html=True,
             )
 
-            # ── Version watermark ─────────────────────────────────────────
+            # ── Theme toggle + Version watermark ──────────────────────────
             st.markdown(
-                "<div style='text-align:center;padding:16px 0 4px;'>"
-                "<div style='font-size:9px;color:#1a202c;letter-spacing:1.5px;"
+                "<div style='height:1px;background:rgba(128,128,128,0.15);margin:10px 0 12px;'></div>",
+                unsafe_allow_html=True,
+            )
+            current_theme = st.session_state.get("theme", "dark")
+            tc1, tc2 = st.columns(2)
+            with tc1:
+                if st.button(
+                    "🌙 Dark",
+                    use_container_width=True,
+                    type="primary" if current_theme == "dark" else "secondary",
+                    key="theme_dark_btn",
+                ):
+                    st.session_state["theme"] = "dark"
+                    st.rerun()
+            with tc2:
+                if st.button(
+                    "☀️ Light",
+                    use_container_width=True,
+                    type="primary" if current_theme == "light" else "secondary",
+                    key="theme_light_btn",
+                ):
+                    st.session_state["theme"] = "light"
+                    st.rerun()
+            st.markdown(
+                "<div style='text-align:center;padding:10px 0 4px;'>"
+                "<div style='font-size:9px;color:#718096;letter-spacing:1.5px;"
                 "text-transform:uppercase;font-weight:600;'>CAS 360 View v4</div>"
                 "</div>",
                 unsafe_allow_html=True,
@@ -5394,4 +5252,4 @@ def run_app():
         render_alerts(active)
 
 
-run_app()
+run_app() 
