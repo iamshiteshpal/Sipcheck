@@ -1428,301 +1428,172 @@ def setup_sheet_headers():
 def show_upload():
     is_unlocked = st.session_state.get("coupon_ok", False)
 
-    # ── Hero ──────────────────────────────────────────────────────────────
+    # ── Auto-unlock immediately (no signup gate) ──────────────────────────
+    if not is_unlocked:
+        st.session_state["coupon_ok"]   = True
+        st.session_state["coupon_used"] = "DIRECT"
+        try:
+            setup_sheet_headers()
+        except Exception:
+            pass
+        st.rerun()
+
+    # ── Page-level CSS ────────────────────────────────────────────────────
     st.markdown("""
     <style>
-    @keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
-    @keyframes shimmer{0%{background-position:200% center;}100%{background-position:-200% center;}}
-    .lp-hero{padding:48px 0 36px;text-align:center;animation:fadeUp .6s ease forwards;}
-    .lp-title{
-      font-family:'Syne',sans-serif;font-size:44px;font-weight:800;letter-spacing:-1.5px;
-      background:linear-gradient(135deg,#1e3a8a 0%,#3b82f6 45%,#8b5cf6 100%);
-      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-      background-clip:text;background-size:200% auto;
-      animation:shimmer 5s linear infinite;margin-bottom:10px;
+    @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes gradShift{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+
+    /* File uploader — override Streamlit defaults */
+    [data-testid="stFileUploader"] section {
+      background:#f8faff!important;
+      border:2px dashed #a5b4fc!important;
+      border-radius:16px!important;
+      padding:28px 20px!important;
+      transition:border-color .2s,background .2s!important;
     }
-    .lp-sub{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:4px;
-      font-weight:700;margin-bottom:20px;}
-    .lp-pills{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:0;}
-    .lp-pill{background:#fff;border:1px solid rgba(59,130,246,0.18);color:#475569;
-      font-size:10px;padding:5px 14px;border-radius:20px;font-weight:600;letter-spacing:.3px;
-      box-shadow:0 1px 3px rgba(0,0,0,0.06);}
-    .guide-card{background:#fff;border:1px solid rgba(0,0,0,0.07);border-radius:20px;
-      padding:28px 24px;box-shadow:0 4px 20px rgba(0,0,0,0.06);
-      font-family:'Instrument Sans',sans-serif;}
-    .step-row{display:flex;gap:16px;margin-bottom:20px;}
-    .step-num{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;
-      justify-content:center;font-size:15px;flex-shrink:0;font-weight:800;}
-    .step-tag{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;
-      padding:2px 8px;border-radius:20px;display:inline-block;margin-bottom:5px;}
-    .step-title{font-size:13px;font-weight:700;color:#0f172a;margin-bottom:3px;}
-    .step-desc{font-size:11px;color:#64748b;line-height:1.6;margin-bottom:10px;}
-    .mock-card{background:#f8fafc;border:1px solid rgba(0,0,0,0.07);border-radius:10px;
-      overflow:hidden;}
-    .mock-bar{background:#f1f5f9;border-bottom:1px solid rgba(0,0,0,0.06);
-      padding:7px 12px;display:flex;align-items:center;gap:8px;}
-    .mock-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
-    .mock-url{flex:1;background:#fff;border-radius:4px;padding:3px 8px;font-size:9px;
-      color:#94a3b8;font-family:monospace;border:1px solid rgba(0,0,0,0.06);}
-    .mock-body{padding:12px 14px;}
-    .upload-card{background:#fff;border:1px solid rgba(0,0,0,0.07);border-radius:20px;
-      padding:32px 28px;box-shadow:0 4px 20px rgba(0,0,0,0.06);}
-    .feat-row{display:flex;align-items:center;gap:12px;padding:10px 0;
-      border-bottom:1px solid rgba(0,0,0,0.05);font-size:13px;color:#475569;}
-    .feat-icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;
-      justify-content:center;font-size:15px;flex-shrink:0;}
+    [data-testid="stFileUploader"] section:hover {
+      border-color:#4f46e5!important;
+      background:#eef2ff!important;
+    }
+    [data-testid="stFileUploader"] section svg { color:#4f46e5!important; }
+    [data-testid="stFileUploader"] section span { color:#4f46e5!important; font-weight:600!important; }
+    [data-testid="stFileUploader"] section small { color:#94a3b8!important; }
+
+    /* Password input */
+    [data-testid="stTextInput"] input {
+      border:1.5px solid #e2e8f0!important;
+      border-radius:12px!important;
+      padding:14px 16px!important;
+      font-size:14px!important;
+      background:#ffffff!important;
+      color:#0f172a!important;
+      transition:border-color .2s,box-shadow .2s!important;
+    }
+    [data-testid="stTextInput"] input:focus {
+      border-color:#4f46e5!important;
+      box-shadow:0 0 0 3px rgba(79,70,229,0.12)!important;
+    }
+
+    /* Primary button override */
+    [data-testid="stBaseButton-primary"] {
+      background:linear-gradient(135deg,#4f46e5,#7c3aed)!important;
+      border:none!important;
+      border-radius:12px!important;
+      padding:14px 28px!important;
+      font-size:15px!important;
+      font-weight:700!important;
+      letter-spacing:.3px!important;
+      box-shadow:0 4px 14px rgba(79,70,229,0.35)!important;
+      transition:transform .15s,box-shadow .15s!important;
+    }
+    [data-testid="stBaseButton-primary"]:hover {
+      transform:translateY(-2px)!important;
+      box-shadow:0 8px 20px rgba(79,70,229,0.45)!important;
+    }
     </style>
-    <div class="lp-hero">
-      <div class="lp-title">CAS 360 View</div>
-      <div class="lp-sub">Portfolio Intelligence Platform</div>
-      <div class="lp-pills">
-        <span class="lp-pill">📊 Live NAV</span>
-        <span class="lp-pill">🔄 SIP Tracker</span>
-        <span class="lp-pill">💰 P&L Analytics</span>
-        <span class="lp-pill">👨‍👩‍👧‍👦 Family View</span>
-        <span class="lp-pill">🔒 100% Private</span>
+    """, unsafe_allow_html=True)
+
+    # ── HERO ──────────────────────────────────────────────────────────────
+    st.markdown("""
+    <div style="text-align:center;padding:56px 20px 40px;animation:fadeUp .7s ease forwards;">
+
+      <!-- Eyebrow badge -->
+      <div style="display:inline-flex;align-items:center;gap:8px;
+                  background:#eef2ff;border:1px solid #c7d2fe;
+                  border-radius:40px;padding:6px 18px;margin-bottom:24px;">
+        <div style="width:8px;height:8px;border-radius:50%;
+                    background:linear-gradient(135deg,#4f46e5,#7c3aed);"></div>
+        <span style="font-size:11px;font-weight:700;color:#4f46e5;letter-spacing:1.5px;
+                     text-transform:uppercase;">Mutual Fund Intelligence Platform</span>
+      </div>
+
+      <!-- Main headline -->
+      <h1 style="font-family:'Syne',sans-serif;font-size:52px;font-weight:800;
+                 line-height:1.1;letter-spacing:-2px;color:#0f172a;margin:0 0 16px;">
+        Your Portfolio,<br>
+        <span style="background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#06b6d4 100%);
+                     background-size:200% auto;animation:gradShift 4s ease infinite;
+                     -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                     background-clip:text;">Fully Decoded.</span>
+      </h1>
+
+      <!-- Sub-copy -->
+      <p style="font-size:17px;color:#64748b;max-width:520px;margin:0 auto 32px;
+                line-height:1.7;font-weight:400;">
+        Upload your CAS PDF and instantly unlock a complete 360° view of all your
+        mutual fund investments — live NAV, XIRR, SIP health, and more.
+      </p>
+
+      <!-- Trust pills -->
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <span style="background:#fff;border:1px solid #e2e8f0;color:#475569;font-size:12px;
+                     padding:6px 16px;border-radius:40px;font-weight:600;
+                     box-shadow:0 1px 4px rgba(0,0,0,0.06);">🔒 Zero data storage</span>
+        <span style="background:#fff;border:1px solid #e2e8f0;color:#475569;font-size:12px;
+                     padding:6px 16px;border-radius:40px;font-weight:600;
+                     box-shadow:0 1px 4px rgba(0,0,0,0.06);">⚡ Instant analysis</span>
+        <span style="background:#fff;border:1px solid #e2e8f0;color:#475569;font-size:12px;
+                     padding:6px 16px;border-radius:40px;font-weight:600;
+                     box-shadow:0 1px 4px rgba(0,0,0,0.06);">🏦 CAMS + KFintech</span>
+        <span style="background:#fff;border:1px solid #e2e8f0;color:#475569;font-size:12px;
+                     padding:6px 16px;border-radius:40px;font-weight:600;
+                     box-shadow:0 1px 4px rgba(0,0,0,0.06);">📊 Live NAV & XIRR</span>
       </div>
     </div>
     """, unsafe_allow_html=True)
 
-    left, right = st.columns([1, 1], gap="large")
-
-    # ── LEFT: How-to Guide ────────────────────────────────────────────────
-    with left:
-        steps = [
-            {
-                "emoji": "🌐", "tag": "Step 1", "tag_color": "#3b82f6", "tag_bg": "#eff6ff",
-                "title": "Visit camsonline.com",
-                "desc": "Go to MF Investor Services → Statements → CAS",
-                "mock_content": """
-                  <div style="display:flex;gap:6px;margin-bottom:8px;">
-                    <div style="background:#1e40af;color:#fff;border-radius:6px;padding:5px 12px;
-                                font-size:10px;font-weight:700;">MF Investors ▾</div>
-                    <div style="background:#dbeafe;color:#1d4ed8;border-radius:6px;padding:5px 12px;
-                                font-size:10px;font-weight:700;border:1px solid #93c5fd;">✦ Statements</div>
-                    <div style="background:#f1f5f9;color:#64748b;border-radius:6px;padding:5px 12px;
-                                font-size:10px;">Transactions</div>
-                  </div>
-                  <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;
-                              padding:9px 12px;font-size:11px;color:#3b82f6;font-weight:500;">
-                    📄 CAS - CAMS+KFintech → <span style="color:#1d4ed8;font-weight:700;">Click here</span>
-                  </div>""",
-            },
-            {
-                "emoji": "⚙️", "tag": "Step 2", "tag_color": "#8b5cf6", "tag_bg": "#f5f3ff",
-                "title": "Configure the form",
-                "desc": "Detailed · Date 01/01/1991 to today · Zero balance folios ✓",
-                "mock_content": """
-                  <div style="display:flex;flex-direction:column;gap:6px;">
-                    <div style="display:flex;align-items:center;gap:8px;">
-                      <div style="width:14px;height:14px;border-radius:50%;background:#8b5cf6;flex-shrink:0;"></div>
-                      <span style="font-size:11px;color:#1e293b;font-weight:600;">Detailed
-                        <span style="color:#64748b;font-weight:400;">(includes all transactions)</span></span>
-                    </div>
-                    <div style="display:flex;gap:6px;">
-                      <div style="flex:1;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:6px;
-                                  padding:5px 8px;font-size:10px;color:#7c3aed;">📅 01-Jan-1991</div>
-                      <div style="flex:1;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:6px;
-                                  padding:5px 8px;font-size:10px;color:#7c3aed;">📅 Today</div>
-                    </div>
-                    <div style="display:flex;align-items:center;gap:8px;">
-                      <div style="width:14px;height:14px;border-radius:3px;background:#8b5cf6;
-                                  display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;flex-shrink:0;">✓</div>
-                      <span style="font-size:11px;color:#1e293b;">Include zero balance folios</span>
-                    </div>
-                  </div>""",
-            },
-            {
-                "emoji": "🔑", "tag": "Step 3", "tag_color": "#059669", "tag_bg": "#ecfdf5",
-                "title": "Enter email & set password",
-                "desc": "Enter your email · Set a password like Rahul@1234 · Click Submit",
-                "mock_content": """
-                  <div style="display:flex;flex-direction:column;gap:6px;">
-                    <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;
-                                padding:6px 10px;font-size:10px;color:#64748b;">📧 rahul@gmail.com</div>
-                    <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;
-                                padding:6px 10px;font-size:10px;color:#64748b;">🔒 ••••••••••</div>
-                    <div style="background:linear-gradient(135deg,#059669,#047857);border-radius:6px;
-                                padding:8px 10px;font-size:11px;font-weight:700;color:#fff;text-align:center;">
-                      Submit →</div>
-                  </div>""",
-            },
-            {
-                "emoji": "📬", "tag": "Step 4", "tag_color": "#d97706", "tag_bg": "#fffbeb",
-                "title": "Check email & upload here",
-                "desc": "PDF arrives in 2 mins · Come back · Upload with your password",
-                "mock_content": """
-                  <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;
-                              padding:8px 10px;display:flex;gap:8px;align-items:center;">
-                    <div style="font-size:18px;">📩</div>
-                    <div>
-                      <div style="font-size:10px;font-weight:700;color:#b45309;">CAS-CAMS+KFintech.pdf</div>
-                      <div style="font-size:9px;color:#64748b;margin-top:1px;">From: noreply@camsonline.com</div>
-                    </div>
-                  </div>
-                  <div style="font-size:9px;color:#94a3b8;text-align:center;margin-top:6px;">
-                    ↓ Download & upload to CAS 360 View</div>""",
-            },
-        ]
-
-        steps_html = ""
-        for i, s in enumerate(steps):
-            connector = (f'<div style="width:2px;flex:1;min-height:12px;margin-top:4px;'
-                         f'background:linear-gradient({s["tag_color"]}44,transparent);'
-                         f'margin-left:17px;"></div>') if i < 3 else ""
-            steps_html += f"""
-            <div class="step-row">
-              <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;">
-                <div class="step-num" style="background:{s['tag_bg']};color:{s['tag_color']};
-                     border:1.5px solid {s['tag_color']}44;">{s['emoji']}</div>
-                {connector}
-              </div>
-              <div style="flex:1;padding-top:2px;">
-                <span class="step-tag" style="background:{s['tag_bg']};color:{s['tag_color']};
-                  border:1px solid {s['tag_color']}33;">{s['tag']}</span>
-                <div class="step-title">{s['title']}</div>
-                <div class="step-desc">{s['desc']}</div>
-                <div class="mock-card">
-                  <div class="mock-bar">
-                    <span class="mock-dot" style="background:#ef4444;"></span>
-                    <span class="mock-dot" style="background:#f59e0b;margin:0 3px;"></span>
-                    <span class="mock-dot" style="background:#22c55e;"></span>
-                    <span class="mock-url">{s['title']}</span>
-                  </div>
-                  <div class="mock-body">{s['mock_content']}</div>
-                </div>
-              </div>
-            </div>"""
-
-        st.markdown(f"""
-        <div class="guide-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <div style="width:36px;height:36px;background:#eff6ff;border-radius:12px;
-                          display:flex;align-items:center;justify-content:center;font-size:18px;">📋</div>
-              <div>
-                <div style="font-size:14px;font-weight:700;color:#0f172a;">How to get your CAS</div>
-                <div style="font-size:10px;color:#94a3b8;margin-top:1px;">4 steps · 2 minutes · one time only</div>
-              </div>
-            </div>
-            <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:20px;
-                        padding:4px 12px;font-size:10px;font-weight:700;color:#059669;">✓ FREE</div>
-          </div>
-          {steps_html}
-          <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;
-                      padding:12px 16px;display:flex;gap:10px;align-items:center;margin-top:8px;">
-            <div style="font-size:18px;">🔐</div>
-            <div style="font-size:11px;color:#475569;line-height:1.6;">
-              <span style="color:#0369a1;font-weight:600;">100% Private</span> —
-              Your CAS data is processed locally. Nothing is stored on any server.
-            </div>
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # ── RIGHT: Sign-up + Upload ───────────────────────────────────────────
-    with right:
-        if not st.session_state.get("user_registered", False):
-            st.markdown("""
-            <div class="upload-card">
-              <div style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;
-                          border:1px solid #86efac;color:#059669;font-size:10px;font-weight:700;
-                          padding:4px 12px;border-radius:20px;margin-bottom:20px;letter-spacing:1px;">
-                ✦ FREE ACCESS</div>
-              <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;
-                          color:#0f172a;letter-spacing:-0.5px;margin-bottom:6px;line-height:1.2;">
-                Start your portfolio<br>intelligence journey</div>
-              <div style="font-size:12px;color:#64748b;margin-bottom:24px;line-height:1.7;">
-                Upload your CAS PDF and get a complete 360° view<br>of all your mutual fund investments.</div>
-              <div class="feat-row">
-                <div class="feat-icon" style="background:#eff6ff;">📊</div>
-                Live NAV tracking &amp; XIRR calculation
-              </div>
-              <div class="feat-row">
-                <div class="feat-icon" style="background:#f5f3ff;">🔄</div>
-                SIP health score &amp; bounce alerts
-              </div>
-              <div class="feat-row">
-                <div class="feat-icon" style="background:#f0fdf4;">👨‍👩‍👧‍👦</div>
-                Family portfolio consolidated view
-              </div>
-              <div class="feat-row" style="border:none;">
-                <div class="feat-icon" style="background:#fffbeb;">🔒</div>
-                Your data never leaves your device
-              </div>
-              <div style="height:20px;"></div>
-            """, unsafe_allow_html=True)
-
-            name_input  = st.text_input("Your Name",     placeholder="Rahul Sharma",    key="_reg_name_input")
-            email_input = st.text_input("Email Address", placeholder="rahul@gmail.com", key="_reg_email_input")
-            st.markdown("</div>", unsafe_allow_html=True)
-
-            if st.button("Get Started →", use_container_width=True, type="primary", key="reg_btn"):
-                if name_input.strip() and email_input.strip() and "@" in email_input:
-                    st.session_state["user_registered"] = True
-                    st.session_state["reg_name"]        = name_input.strip()
-                    st.session_state["reg_email"]       = email_input.strip()
-                    st.rerun()
-                else:
-                    st.error("Please enter a valid name and email address.")
-            st.stop()
-
-        # ── Auto-unlock ───────────────────────────────────────────────────
-        if not is_unlocked:
-            st.session_state["coupon_ok"]   = True
-            st.session_state["coupon_used"] = "DIRECT"
-            try:
-                setup_sheet_headers()
-                log_signup_to_sheet(
-                    st.session_state.get("reg_name",""),
-                    st.session_state.get("reg_email",""),
-                    "DIRECT_ACCESS"
-                )
-            except Exception:
-                pass
-            st.rerun()
-
-        # ── Upload section ────────────────────────────────────────────────
-        reg_name = st.session_state.get("reg_name", "there")
-        st.markdown(f"""
-        <div class="upload-card">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-            <div>
-              <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;
-                          color:#0f172a;letter-spacing:-0.3px;">
-                Welcome back, {reg_name.split()[0]} 👋</div>
-              <div style="font-size:12px;color:#64748b;margin-top:3px;">
-                Upload your CAS PDF to analyse your portfolio</div>
-            </div>
-            <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:20px;
-                        padding:5px 14px;font-size:10px;font-weight:700;color:#059669;">
-              🔓 ACTIVE</div>
-          </div>
-          <div style="background:linear-gradient(135deg,#eff6ff,#f5f3ff);border:1px solid #c7d2fe;
-                      border-radius:14px;padding:16px 18px;margin-bottom:20px;">
-            <div style="font-size:11px;font-weight:700;color:#3730a3;margin-bottom:4px;">
-              📄 Your CAS PDF</div>
-            <div style="font-size:11px;color:#6366f1;line-height:1.6;">
-              Password is your <strong>PAN number</strong> (e.g. ABCDE1234F)
-              or <strong>Date of Birth</strong> (DDMMYYYY format)</div>
+    # ── UPLOAD CARD (centered) ────────────────────────────────────────────
+    _, col, _ = st.columns([1, 2, 1])
+    with col:
+        st.markdown("""
+        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:24px;
+                    padding:36px 36px 28px;box-shadow:0 8px 32px rgba(0,0,0,0.08),
+                    0 2px 8px rgba(0,0,0,0.04);margin-bottom:12px;">
+          <div style="text-align:center;margin-bottom:24px;">
+            <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;
+                        color:#0f172a;margin-bottom:6px;">Upload your CAS PDF</div>
+            <div style="font-size:13px;color:#94a3b8;">
+              Drag and drop or click to browse — PDF files only</div>
           </div>
         """, unsafe_allow_html=True)
 
-        uploaded = st.file_uploader("Upload CAS PDF", type=["pdf"], label_visibility="collapsed")
-        password = st.text_input(
-            "PDF Password",
-            type="password",
-            placeholder="PAN number or Date of Birth (DDMMYYYY)",
-            key="pdf_password",
+        uploaded = st.file_uploader(
+            "CAS PDF", type=["pdf"],
+            label_visibility="collapsed",
+            help="Upload the CAS PDF you received from CAMS or KFintech"
         )
-        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown("""
+          <div style="display:flex;align-items:center;gap:12px;margin:20px 0 8px;">
+            <div style="flex:1;height:1px;background:#f1f5f9;"></div>
+            <span style="font-size:11px;color:#cbd5e1;font-weight:600;">ENTER PASSWORD</span>
+            <div style="flex:1;height:1px;background:#f1f5f9;"></div>
+          </div>
+          <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;text-align:center;">
+            Your <strong style="color:#475569;">PAN number</strong> or
+            <strong style="color:#475569;">Date of Birth</strong> (DDMMYYYY)
+          </div>
+        """, unsafe_allow_html=True)
+
+        password = st.text_input(
+            "CAS Password",
+            type="password",
+            placeholder="e.g. ABCDE1234F or 01011990",
+            key="pdf_password",
+            label_visibility="collapsed",
+        )
+
+        st.markdown("""
+          <div style="height:8px;"></div>
+        """, unsafe_allow_html=True)
 
         if uploaded and password:
-            if st.button("🚀 Analyse My Portfolio →", use_container_width=True, type="primary"):
-                with st.spinner("Parsing your CAS…"):
+            if st.button("Analyze Portfolio →", use_container_width=True, type="primary"):
+                with st.spinner("Parsing your CAS PDF…"):
                     data, error = parse_pdf(uploaded.read(), password)
                 if error == "wrong_password":
-                    st.error("Wrong password. Try your PAN number or date of birth (DDMMYYYY).")
+                    st.error("Incorrect password. Try your PAN number (e.g. ABCDE1234F) or Date of Birth (DDMMYYYY).")
                 elif error:
                     st.error(f"Parse error: {error}")
                 else:
@@ -1733,6 +1604,174 @@ def show_upload():
                     st.session_state.pin_ok  = True
                     st.success(f"✅ Portfolio loaded — {investor_name}")
                     st.rerun()
+        elif uploaded:
+            st.markdown("""<div style="text-align:center;font-size:13px;color:#94a3b8;
+                         padding:4px 0;">Enter your password above to continue</div>""",
+                         unsafe_allow_html=True)
+        else:
+            st.markdown("""<div style="text-align:center;font-size:13px;color:#94a3b8;
+                         padding:4px 0;">Upload your PDF to get started</div>""",
+                         unsafe_allow_html=True)
+
+        st.markdown("""
+          <div style="text-align:center;margin-top:20px;padding-top:20px;
+                      border-top:1px solid #f8fafc;">
+            <span style="font-size:11px;color:#cbd5e1;">
+              🔒 Processed entirely on your device · Nothing sent to any server
+            </span>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # ── FEATURES BENTO GRID ───────────────────────────────────────────────
+    st.markdown("""
+    <div style="max-width:900px;margin:48px auto 0;padding:0 8px;">
+
+      <!-- Section header -->
+      <div style="text-align:center;margin-bottom:36px;">
+        <div style="display:inline-block;background:#f1f5f9;border-radius:40px;
+                    padding:5px 16px;font-size:11px;font-weight:700;color:#64748b;
+                    letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;">
+          Why CAS 360
+        </div>
+        <h2 style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;
+                   color:#0f172a;letter-spacing:-1px;margin:0 0 10px;">
+          Everything your portfolio<br>needs, in one place.
+        </h2>
+        <p style="font-size:15px;color:#64748b;margin:0;">
+          Institutional-grade portfolio intelligence for every Indian investor.
+        </p>
+      </div>
+
+      <!-- Bento grid row 1: 3 equal cards -->
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
+
+        <div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;
+                    padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+          <div style="width:44px;height:44px;background:#eef2ff;border-radius:14px;
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:22px;margin-bottom:16px;">📊</div>
+          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">
+            Live NAV & XIRR</div>
+          <div style="font-size:13px;color:#64748b;line-height:1.65;">
+            Real-time NAV from MFAPI. Per-scheme XIRR calculated automatically across
+            your entire portfolio history.
+          </div>
+        </div>
+
+        <div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;
+                    padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+          <div style="width:44px;height:44px;background:#f5f3ff;border-radius:14px;
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:22px;margin-bottom:16px;">🗂️</div>
+          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">
+            360° Portfolio View</div>
+          <div style="font-size:13px;color:#64748b;line-height:1.65;">
+            Every folio, scheme, and transaction from both CAMS and KFintech — unified
+            in a single clean dashboard.
+          </div>
+        </div>
+
+        <div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;
+                    padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+          <div style="width:44px;height:44px;background:#f0fdf4;border-radius:14px;
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:22px;margin-bottom:16px;">💰</div>
+          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">
+            P&amp;L Analytics</div>
+          <div style="font-size:13px;color:#64748b;line-height:1.65;">
+            Realised &amp; unrealised gains broken down by scheme, category,
+            and time period — with a visual P&amp;L summary.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bento grid row 2: wide + narrow -->
+      <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:16px;">
+
+        <div style="background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);
+                    border-radius:20px;padding:32px 28px;
+                    box-shadow:0 8px 24px rgba(79,70,229,0.25);">
+          <div style="width:44px;height:44px;background:rgba(255,255,255,0.15);border-radius:14px;
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:22px;margin-bottom:16px;">🔄</div>
+          <div style="font-size:18px;font-weight:700;color:#ffffff;margin-bottom:8px;">
+            SIP Health Monitor</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.75);line-height:1.65;margin-bottom:18px;">
+            Track every active SIP — next due dates, mandate status, bounce alerts, and
+            historical SIP investment timeline with monthly contribution analysis.
+          </div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);
+                         color:#fff;font-size:10px;font-weight:600;padding:4px 12px;
+                         border-radius:20px;">Active SIPs</span>
+            <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);
+                         color:#fff;font-size:10px;font-weight:600;padding:4px 12px;
+                         border-radius:20px;">Bounce Alerts</span>
+            <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);
+                         color:#fff;font-size:10px;font-weight:600;padding:4px 12px;
+                         border-radius:20px;">Next Due Date</span>
+          </div>
+        </div>
+
+        <div style="background:#0f172a;border-radius:20px;padding:28px 24px;
+                    box-shadow:0 2px 12px rgba(0,0,0,0.1);">
+          <div style="width:44px;height:44px;background:rgba(255,255,255,0.06);border-radius:14px;
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:22px;margin-bottom:16px;">👨‍👩‍👧‍👦</div>
+          <div style="font-size:16px;font-weight:700;color:#f8fafc;margin-bottom:8px;">
+            Family View</div>
+          <div style="font-size:13px;color:#94a3b8;line-height:1.65;">
+            Analyse multiple CAS files together. Compare portfolios across
+            family members with a consolidated wealth summary.
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Bento grid row 3: narrow + wide -->
+      <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:16px;margin-bottom:48px;">
+
+        <div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;
+                    padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+          <div style="width:44px;height:44px;background:#fffbeb;border-radius:14px;
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:22px;margin-bottom:16px;">🥧</div>
+          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">
+            Asset Allocation</div>
+          <div style="font-size:13px;color:#64748b;line-height:1.65;">
+            Equity vs Debt breakdown with interactive charts. Understand
+            your actual risk exposure at a glance.
+          </div>
+        </div>
+
+        <div style="background:#f8fafc;border:1px solid #f1f5f9;border-radius:20px;
+                    padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+          <div style="width:44px;height:44px;background:#fff;border:1px solid #e2e8f0;
+                      border-radius:14px;display:flex;align-items:center;
+                      justify-content:center;font-size:22px;margin-bottom:16px;">🔒</div>
+          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">
+            100% Private by Design</div>
+          <div style="font-size:13px;color:#64748b;line-height:1.65;margin-bottom:16px;">
+            Your CAS PDF is parsed entirely on your device using
+            <strong style="color:#0f172a;">casparser</strong>. No data is uploaded, logged, or stored
+            anywhere — not even on our servers.
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <span style="background:#f0fdf4;border:1px solid #bbf7d0;color:#16a34a;
+                         font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;">
+              ✓ No server storage</span>
+            <span style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;
+                         font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;">
+              ✓ Local processing</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+    """, unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────
