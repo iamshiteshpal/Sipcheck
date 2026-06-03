@@ -1428,16 +1428,14 @@ def show_upload():
             pass
         st.rerun()
 
-    # ── Landing page CSS ──────────────────────────────────────────────────
+    # ── Page-level CSS ────────────────────────────────────────────────────
     st.markdown("""
     <style>
-    /* Hide sidebar on landing — full canvas */
+    /* Hide sidebar on landing page only */
     [data-testid="stSidebar"]{display:none!important;}
     section[data-testid="stAppViewContainer"]>.main{margin-left:0!important;}
-    .block-container{max-width:100%!important;padding:0!important;}
-    [data-testid="stAppViewBlockContainer"]{padding:0!important;}
 
-    @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
     @keyframes gradShift{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
 
     /* File uploader — override Streamlit defaults */
@@ -1490,171 +1488,96 @@ def show_upload():
     </style>
     """, unsafe_allow_html=True)
 
-    # ── MAIN LAYOUT: left hero + right upload ────────────────────────────
-    left, right = st.columns([5, 4], gap="large")
+    # ── HERO ──────────────────────────────────────────────────────────────
+    st.markdown("""
+    <div style="text-align:center;padding:56px 20px 40px;animation:fadeUp .7s ease forwards;">
+      <div style="display:inline-flex;align-items:center;gap:8px;
+                  background:#eef2ff;border:1px solid #c7d2fe;
+                  border-radius:40px;padding:6px 18px;margin-bottom:24px;">
+        <div style="width:8px;height:8px;border-radius:50%;
+                    background:linear-gradient(135deg,#4f46e5,#7c3aed);"></div>
+        <span style="font-size:11px;font-weight:700;color:#4f46e5;letter-spacing:1.5px;
+                     text-transform:uppercase;">Mutual Fund Intelligence Platform</span>
+      </div>
+      <h1 style="font-family:'Syne',sans-serif;font-size:52px;font-weight:800;
+                 line-height:1.1;letter-spacing:-2px;color:#0f172a;margin:0 0 16px;">
+        Your Portfolio,<br>
+        <span style="background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#06b6d4 100%);
+                     background-size:200% auto;animation:gradShift 4s ease infinite;
+                     -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                     background-clip:text;">Fully Decoded.</span>
+      </h1>
+      <p style="font-size:17px;color:#64748b;max-width:520px;margin:0 auto 32px;
+                line-height:1.7;font-weight:400;">
+        Upload your CAS PDF and instantly unlock a complete 360° view of all your
+        mutual fund investments — live NAV, XIRR, SIP health, and more.
+      </p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <span style="background:#fff;border:1px solid #e2e8f0;color:#475569;font-size:12px;
+                     padding:6px 16px;border-radius:40px;font-weight:600;
+                     box-shadow:0 1px 4px rgba(0,0,0,0.06);">🔒 Zero data storage</span>
+        <span style="background:#fff;border:1px solid #e2e8f0;color:#475569;font-size:12px;
+                     padding:6px 16px;border-radius:40px;font-weight:600;
+                     box-shadow:0 1px 4px rgba(0,0,0,0.06);">⚡ Instant analysis</span>
+        <span style="background:#fff;border:1px solid #e2e8f0;color:#475569;font-size:12px;
+                     padding:6px 16px;border-radius:40px;font-weight:600;
+                     box-shadow:0 1px 4px rgba(0,0,0,0.06);">🏦 CAMS + KFintech</span>
+        <span style="background:#fff;border:1px solid #e2e8f0;color:#475569;font-size:12px;
+                     padding:6px 16px;border-radius:40px;font-weight:600;
+                     box-shadow:0 1px 4px rgba(0,0,0,0.06);">📊 Live NAV & XIRR</span>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    with left:
+    # ── UPLOAD CARD (centered) ────────────────────────────────────────────
+    _, col, _ = st.columns([1, 2, 1])
+    with col:
         st.markdown("""
-        <div style="padding:56px 0 0 32px;animation:fadeUp .6s ease forwards;">
-
-          <!-- Logo -->
-          <div style="display:flex;align-items:center;gap:12px;margin-bottom:56px;">
-            <div style="width:44px;height:44px;background:linear-gradient(135deg,#4f46e5,#7c3aed);
-                        border-radius:14px;display:flex;align-items:center;justify-content:center;
-                        font-size:20px;box-shadow:0 4px 14px rgba(79,70,229,0.4);">◈</div>
-            <div>
-              <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;
-                          color:#0f172a;letter-spacing:-0.5px;line-height:1.1;">
-                CAS 360 <span style="color:#4f46e5;">View</span></div>
-              <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;
-                          letter-spacing:2.5px;font-weight:600;margin-top:2px;">
-                Portfolio Intelligence</div>
-            </div>
-          </div>
-
-          <!-- Badge -->
-          <div style="display:inline-flex;align-items:center;gap:8px;
-                      background:#eef2ff;border:1px solid #c7d2fe;
-                      border-radius:40px;padding:5px 14px;margin-bottom:24px;">
-            <div style="width:6px;height:6px;border-radius:50%;
-                        background:#4f46e5;"></div>
-            <span style="font-size:10px;font-weight:700;color:#4f46e5;
-                         letter-spacing:1.5px;text-transform:uppercase;">
-              Mutual Fund Intelligence</span>
-          </div>
-
-          <!-- Headline -->
-          <h1 style="font-family:'Syne',sans-serif;font-size:58px;font-weight:900;
-                     line-height:1.05;letter-spacing:-3px;color:#0f172a;
-                     margin:0 0 20px;">
-            Your entire<br>portfolio,<br>
-            <span style="background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#06b6d4 100%);
-                         background-size:200% auto;animation:gradShift 5s ease infinite;
-                         -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-                         background-clip:text;">decoded.</span>
-          </h1>
-
-          <!-- Sub text -->
-          <p style="font-size:17px;color:#64748b;max-width:440px;margin:0 0 40px;
-                    line-height:1.75;font-weight:400;">
-            Upload your CAS PDF from CAMS or KFintech — get a complete 360° view of
-            every scheme, SIP, P&amp;L, and XIRR in seconds.
-          </p>
-
-          <!-- Stats row -->
-          <div style="display:flex;gap:28px;margin-bottom:40px;">
-            <div style="text-align:center;">
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:28px;
-                          font-weight:800;color:#4f46e5;line-height:1;">360°</div>
-              <div style="font-size:11px;color:#94a3b8;margin-top:4px;font-weight:500;">
-                Portfolio View</div>
-            </div>
-            <div style="width:1px;background:#e2e8f0;"></div>
-            <div style="text-align:center;">
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:28px;
-                          font-weight:800;color:#059669;line-height:1;">XIRR</div>
-              <div style="font-size:11px;color:#94a3b8;margin-top:4px;font-weight:500;">
-                Live Returns</div>
-            </div>
-            <div style="width:1px;background:#e2e8f0;"></div>
-            <div style="text-align:center;">
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:28px;
-                          font-weight:800;color:#dc2626;line-height:1;">0</div>
-              <div style="font-size:11px;color:#94a3b8;margin-top:4px;font-weight:500;">
-                Data Stored</div>
-            </div>
-            <div style="width:1px;background:#e2e8f0;"></div>
-            <div style="text-align:center;">
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:28px;
-                          font-weight:800;color:#d97706;line-height:1;">2</div>
-              <div style="font-size:11px;color:#94a3b8;margin-top:4px;font-weight:500;">
-                RTAs Supported</div>
-            </div>
-          </div>
-
-          <!-- Feature list -->
-          <div style="display:flex;flex-direction:column;gap:12px;">
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:22px;height:22px;border-radius:50%;background:#eff6ff;
-                          display:flex;align-items:center;justify-content:center;
-                          font-size:11px;flex-shrink:0;">✓</div>
-              <span style="font-size:14px;color:#0f172a;font-weight:500;">
-                Live NAV from MFAPI — updated daily</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:22px;height:22px;border-radius:50%;background:#f0fdf4;
-                          display:flex;align-items:center;justify-content:center;
-                          font-size:11px;flex-shrink:0;">✓</div>
-              <span style="font-size:14px;color:#0f172a;font-weight:500;">
-                SIP health score, bounce detection &amp; next due dates</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:22px;height:22px;border-radius:50%;background:#fdf4ff;
-                          display:flex;align-items:center;justify-content:center;
-                          font-size:11px;flex-shrink:0;">✓</div>
-              <span style="font-size:14px;color:#0f172a;font-weight:500;">
-                CAMS + KFintech — both RTAs in one view</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:12px;">
-              <div style="width:22px;height:22px;border-radius:50%;background:#fff7ed;
-                          display:flex;align-items:center;justify-content:center;
-                          font-size:11px;flex-shrink:0;">✓</div>
-              <span style="font-size:14px;color:#0f172a;font-weight:500;">
-                Family portfolios — analyse multiple members together</span>
-            </div>
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    with right:
-        st.markdown("""
-        <div style="padding:56px 32px 0 0;animation:fadeUp .7s ease .1s both;">
-        """, unsafe_allow_html=True)
-
-        st.markdown("""
-        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:28px;
-                    padding:40px 36px 32px;
-                    box-shadow:0 20px 60px rgba(79,70,229,0.10),
-                               0 4px 16px rgba(0,0,0,0.06);">
-          <div style="margin-bottom:28px;">
-            <div style="font-size:22px;font-weight:800;color:#0f172a;
-                        margin-bottom:6px;">Upload your CAS PDF</div>
+        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:24px;
+                    padding:36px 36px 28px;box-shadow:0 8px 32px rgba(0,0,0,0.08),
+                    0 2px 8px rgba(0,0,0,0.04);margin-bottom:12px;">
+          <div style="text-align:center;margin-bottom:24px;">
+            <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;
+                        color:#0f172a;margin-bottom:6px;">Upload your CAS PDF</div>
             <div style="font-size:13px;color:#94a3b8;">
-              Drag &amp; drop · PDF only · Parsed on your device</div>
+              Drag and drop or click to browse — PDF files only</div>
           </div>
         """, unsafe_allow_html=True)
 
         uploaded = st.file_uploader(
             "CAS PDF", type=["pdf"],
             label_visibility="collapsed",
-            help="Your CAS PDF from CAMS (camsonline.com) or KFintech (kfintech.com)"
+            help="Upload the CAS PDF you received from CAMS or KFintech"
         )
 
         st.markdown("""
-          <div style="margin:22px 0 10px;">
-            <div style="font-size:12px;font-weight:600;color:#0f172a;margin-bottom:6px;">
-              Password</div>
-            <div style="font-size:11px;color:#94a3b8;margin-bottom:8px;">
-              Your PAN (e.g. ABCDE1234F) or Date of Birth (DDMMYYYY)</div>
+          <div style="display:flex;align-items:center;gap:12px;margin:20px 0 8px;">
+            <div style="flex:1;height:1px;background:#f1f5f9;"></div>
+            <span style="font-size:11px;color:#cbd5e1;font-weight:600;">ENTER PASSWORD</span>
+            <div style="flex:1;height:1px;background:#f1f5f9;"></div>
+          </div>
+          <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;text-align:center;">
+            Your <strong style="color:#475569;">PAN number</strong> or
+            <strong style="color:#475569;">Date of Birth</strong> (DDMMYYYY)
           </div>
         """, unsafe_allow_html=True)
 
         password = st.text_input(
             "CAS Password",
             type="password",
-            placeholder="ABCDE1234F or 01011990",
+            placeholder="e.g. ABCDE1234F or 01011990",
             key="pdf_password",
             label_visibility="collapsed",
         )
 
-        st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
         if uploaded and password:
-            if st.button("Analyze My Portfolio →", use_container_width=True, type="primary"):
+            if st.button("Analyze Portfolio →", use_container_width=True, type="primary"):
                 with st.spinner("Parsing your CAS PDF…"):
                     data, error = parse_pdf(uploaded.read(), password)
                 if error == "wrong_password":
-                    st.error("Incorrect password. Try your PAN (e.g. ABCDE1234F) or DOB (DDMMYYYY).")
+                    st.error("Incorrect password. Try your PAN number (e.g. ABCDE1234F) or Date of Birth (DDMMYYYY).")
                 elif error:
                     st.error(f"Parse error: {error}")
                 else:
@@ -1666,51 +1589,63 @@ def show_upload():
                     st.success(f"✅ Portfolio loaded — {investor_name}")
                     st.rerun()
         elif uploaded:
-            st.info("Enter your password above to continue.")
+            st.markdown('<div style="text-align:center;font-size:13px;color:#94a3b8;padding:4px 0;">Enter your password above to continue</div>', unsafe_allow_html=True)
         else:
-            st.markdown("""
-            <div style="text-align:center;padding:12px 0 4px;
-                        font-size:12px;color:#94a3b8;">
-              Upload your CAS PDF to get started</div>
-            """, unsafe_allow_html=True)
+            st.markdown('<div style="text-align:center;font-size:13px;color:#94a3b8;padding:4px 0;">Upload your PDF to get started</div>', unsafe_allow_html=True)
 
         st.markdown("""
-          <div style="display:flex;align-items:center;gap:8px;
-                      margin-top:24px;padding-top:20px;
-                      border-top:1px solid #f1f5f9;">
-            <span style="font-size:16px;">🔒</span>
-            <span style="font-size:11px;color:#94a3b8;line-height:1.5;">
-              <strong style="color:#64748b;">100% private.</strong>
-              Your PDF is parsed entirely in this session —
-              nothing is uploaded or stored anywhere.</span>
+          <div style="text-align:center;margin-top:20px;padding-top:20px;
+                      border-top:1px solid #f8fafc;">
+            <span style="font-size:11px;color:#cbd5e1;">
+              🔒 Processed entirely on your device · Nothing sent to any server
+            </span>
           </div>
         </div>
         """, unsafe_allow_html=True)
 
-        # Trust badges below card
-        st.markdown("""
-        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;
-                    padding:0 4px;">
-          <span style="background:#f0fdf4;border:1px solid #bbf7d0;color:#16a34a;
-                       font-size:10px;font-weight:700;padding:4px 12px;
-                       border-radius:20px;">🏦 CAMS</span>
-          <span style="background:#f0fdf4;border:1px solid #bbf7d0;color:#16a34a;
-                       font-size:10px;font-weight:700;padding:4px 12px;
-                       border-radius:20px;">🏦 KFintech</span>
-          <span style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;
-                       font-size:10px;font-weight:700;padding:4px 12px;
-                       border-radius:20px;">⚡ Instant</span>
-          <span style="background:#fdf4ff;border:1px solid #e9d5ff;color:#7c3aed;
-                       font-size:10px;font-weight:700;padding:4px 12px;
-                       border-radius:20px;">📊 Live NAV</span>
-          <span style="background:#fff7ed;border:1px solid #fed7aa;color:#d97706;
-                       font-size:10px;font-weight:700;padding:4px 12px;
-                       border-radius:20px;">🔄 XIRR</span>
-        </div>
-        </div>
-        """, unsafe_allow_html=True)
+    # ── FEATURES BENTO GRID ───────────────────────────────────────────────
+    st.markdown("""
+    <div style="text-align:center;padding:48px 0 28px;">
+      <div style="display:inline-block;background:#f1f5f9;border-radius:40px;
+                  padding:5px 16px;font-size:11px;font-weight:700;color:#64748b;
+                  letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;">
+        Why CAS 360
+      </div>
+      <h2 style="font-size:32px;font-weight:800;color:#0f172a;
+                 letter-spacing:-1px;margin:0 0 10px;">
+        Everything your portfolio needs, in one place.
+      </h2>
+      <p style="font-size:15px;color:#64748b;margin:0;">
+        Institutional-grade portfolio intelligence for every Indian investor.
+      </p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.markdown("<div style='height:60px'></div>", unsafe_allow_html=True)
+    c1, c2, c3 = st.columns(3, gap="medium")
+    with c1:
+        st.markdown("""<div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);height:100%;"><div style="width:44px;height:44px;background:#eef2ff;border-radius:14px;font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">📊</div><div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">Live NAV &amp; XIRR</div><div style="font-size:13px;color:#64748b;line-height:1.65;">Real-time NAV from MFAPI. Per-scheme XIRR calculated automatically across your entire portfolio history.</div></div>""", unsafe_allow_html=True)
+    with c2:
+        st.markdown("""<div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);height:100%;"><div style="width:44px;height:44px;background:#f5f3ff;border-radius:14px;font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">🗂</div><div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">360° Portfolio View</div><div style="font-size:13px;color:#64748b;line-height:1.65;">Every folio, scheme, and transaction from both CAMS and KFintech — unified in a single clean dashboard.</div></div>""", unsafe_allow_html=True)
+    with c3:
+        st.markdown("""<div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);height:100%;"><div style="width:44px;height:44px;background:#f0fdf4;border-radius:14px;font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">💰</div><div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">P&amp;L Analytics</div><div style="font-size:13px;color:#64748b;line-height:1.65;">Realised &amp; unrealised gains broken down by scheme, category, and time period — with a visual summary.</div></div>""", unsafe_allow_html=True)
+
+    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+
+    c1, c2 = st.columns([1.6, 1], gap="medium")
+    with c1:
+        st.markdown("""<div style="background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);border-radius:20px;padding:32px 28px;box-shadow:0 8px 24px rgba(79,70,229,0.25);"><div style="width:44px;height:44px;background:rgba(255,255,255,0.15);border-radius:14px;font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">🔄</div><div style="font-size:18px;font-weight:700;color:#ffffff;margin-bottom:8px;">SIP Health Monitor</div><div style="font-size:13px;color:rgba(255,255,255,0.80);line-height:1.65;margin-bottom:18px;">Track every active SIP — next due dates, mandate status, bounce alerts, and historical SIP investment timeline.</div><span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:#fff;font-size:10px;font-weight:600;padding:4px 12px;border-radius:20px;margin-right:8px;">Active SIPs</span><span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:#fff;font-size:10px;font-weight:600;padding:4px 12px;border-radius:20px;margin-right:8px;">Bounce Alerts</span><span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:#fff;font-size:10px;font-weight:600;padding:4px 12px;border-radius:20px;">Next Due Date</span></div>""", unsafe_allow_html=True)
+    with c2:
+        st.markdown("""<div style="background:#0f172a;border-radius:20px;padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.1);height:100%;"><div style="width:44px;height:44px;background:rgba(255,255,255,0.07);border-radius:14px;font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">👨‍👩‍👧</div><div style="font-size:16px;font-weight:700;color:#f8fafc;margin-bottom:8px;">Family View</div><div style="font-size:13px;color:#94a3b8;line-height:1.65;">Analyse multiple CAS files together. Compare portfolios across family members with a consolidated wealth summary.</div></div>""", unsafe_allow_html=True)
+
+    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+
+    c1, c2 = st.columns([1, 1.6], gap="medium")
+    with c1:
+        st.markdown("""<div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);height:100%;"><div style="width:44px;height:44px;background:#fffbeb;border-radius:14px;font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">🥧</div><div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">Asset Allocation</div><div style="font-size:13px;color:#64748b;line-height:1.65;">Equity vs Debt breakdown with interactive charts. Understand your actual risk exposure at a glance.</div></div>""", unsafe_allow_html=True)
+    with c2:
+        st.markdown("""<div style="background:#f8fafc;border:1px solid #f1f5f9;border-radius:20px;padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.04);height:100%;"><div style="width:44px;height:44px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">🔒</div><div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">100% Private by Design</div><div style="font-size:13px;color:#64748b;line-height:1.65;margin-bottom:16px;">Your CAS PDF is parsed entirely on your device using <strong style="color:#0f172a;">casparser</strong>. No data is uploaded, logged, or stored anywhere.</div><span style="background:#f0fdf4;border:1px solid #bbf7d0;color:#16a34a;font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;margin-right:8px;">✓ No server storage</span><span style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;">✓ Local processing</span></div>""", unsafe_allow_html=True)
+
+    st.markdown("<div style='height:48px'></div>", unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────
