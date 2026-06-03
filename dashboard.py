@@ -119,35 +119,24 @@ def gain_arrow(v):
 
 
 def _table_style():
-    is_dark = st.session_state.get("theme", "light") == "dark"
-    if is_dark:
-        th_bg, th_color  = "#111627", "#9f7aea"
-        td_color         = "#e2e8f0"
-        even_bg, odd_bg  = "#0c0f1a", "#0d1020"
-        border_color     = "rgba(255,255,255,0.04)"
-        wrap_border      = "rgba(255,255,255,0.07)"
-    else:
-        th_bg, th_color  = "#edf2f7", "#553c9a"
-        td_color         = "#1a202c"
-        even_bg, odd_bg  = "#ffffff", "#f7fafc"
-        border_color     = "rgba(0,0,0,0.06)"
-        wrap_border      = "rgba(0,0,0,0.1)"
-    return f"""
+    return """
 <style>
-.cas-wrap{{overflow-x:auto;border-radius:10px;border:1px solid {wrap_border};}}
-.cas-tbl{{width:100%;border-collapse:collapse;}}
-.cas-tbl th{{background:{th_bg}!important;color:{th_color}!important;font-size:10px!important;
+.cas-wrap{overflow-x:auto;border-radius:12px;border:1px solid rgba(0,0,0,0.07);
+          box-shadow:0 1px 4px rgba(0,0,0,0.05);}
+.cas-tbl{width:100%;border-collapse:collapse;}
+.cas-tbl th{background:#f1f5f9!important;color:#8b5cf6!important;font-size:10px!important;
   font-weight:700!important;text-transform:uppercase!important;letter-spacing:1px!important;
   padding:11px 14px!important;text-align:left!important;white-space:nowrap!important;
-  border-bottom:1px solid {border_color}!important;}}
-.cas-tbl td{{color:{td_color}!important;font-size:12px!important;
-  padding:11px 14px!important;border-bottom:1px solid {border_color}!important;}}
-.cas-tbl tr.even td{{background:{even_bg}!important;}}
-.cas-tbl tr.odd  td{{background:{odd_bg}!important;}}
-.cas-gain{{color:#22863a!important;}}
-.cas-loss{{color:#d73a49!important;}}
-.cas-muted{{color:#6a737d!important;}}
-.cas-mono{{font-family:IBM Plex Mono,monospace!important;}}
+  border-bottom:1px solid rgba(0,0,0,0.07)!important;}
+.cas-tbl td{color:#0f172a!important;font-size:12px!important;
+  padding:11px 14px!important;border-bottom:1px solid rgba(0,0,0,0.05)!important;}
+.cas-tbl tr.even td{background:#ffffff!important;}
+.cas-tbl tr.odd  td{background:#f8fafc!important;}
+.cas-tbl tr:hover td{background:#eff6ff!important;}
+.cas-gain{color:#059669!important;}
+.cas-loss{color:#dc2626!important;}
+.cas-muted{color:#64748b!important;}
+.cas-mono{font-family:'IBM Plex Mono',monospace!important;}
 </style>
 """
 
@@ -206,14 +195,14 @@ def safe_float(value, default=0.0):
 PLOT_BASE = dict(
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
-    font=dict(family='Instrument Sans', color='#718096'),
+    font=dict(family='Instrument Sans', color='#64748b'),
     margin=dict(l=0, r=0, t=10, b=10),
 )
-GRID = 'rgba(255,255,255,0.04)'
-C_GAIN = '#48bb78'
-C_LOSS = '#fc8181'
-C_ACCENT = '#63b3ed'
-C_ACCENT2 = '#9f7aea'
+GRID = 'rgba(0,0,0,0.06)'
+C_GAIN = '#059669'
+C_LOSS = '#dc2626'
+C_ACCENT = '#3b82f6'
+C_ACCENT2 = '#8b5cf6'
 
 
 def apply_page_config():
@@ -225,98 +214,74 @@ def apply_page_config():
 
 
 def inject_global_styles():
-    theme = st.session_state.get("theme", "dark")
-    is_dark = theme == "dark"
-
-    # ── CSS variables based on theme ──────────────────────────────────────
-    if is_dark:
-        bg        = "#07090f"
-        bg2       = "#0c0f1a"
-        bg3       = "#111627"
-        border    = "rgba(255,255,255,0.06)"
-        text      = "#e2e8f0"
-        muted     = "#718096"
-        faint     = "#2d3748"
-        sidebar_bg = "linear-gradient(180deg,#07090f 0%,#0a0d18 100%)"
-        card_bg   = "#0c0f1a"
-        input_bg  = "#111627"
-        th_bg     = "#111627"
-        td_bg     = "#0c0f1a"
-        td_bg2    = "#0d1020"
-        noise_op  = "0.025"
-        metric_bg = "#0c0f1a"
-    else:
-        bg        = "#f8fafc"
-        bg2       = "#ffffff"
-        bg3       = "#f1f5f9"
-        border    = "rgba(0,0,0,0.07)"
-        text      = "#0f172a"
-        muted     = "#64748b"
-        faint     = "#94a3b8"
-        sidebar_bg = "#ffffff"
-        card_bg   = "#ffffff"
-        input_bg  = "#f8fafc"
-        th_bg     = "#f1f5f9"
-        td_bg     = "#ffffff"
-        td_bg2    = "#f8fafc"
-        noise_op  = "0"
-        metric_bg = "#ffffff"
+    bg        = "#f8fafc"
+    bg2       = "#ffffff"
+    bg3       = "#f1f5f9"
+    border    = "rgba(0,0,0,0.07)"
+    text      = "#0f172a"
+    muted     = "#64748b"
+    faint     = "#94a3b8"
+    input_bg  = "#f8fafc"
+    th_bg     = "#f1f5f9"
+    td_bg     = "#ffffff"
+    td_bg2    = "#f8fafc"
 
     st.markdown(
         f"""
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@700;800&display=swap');
         :root {{
           --bg:        {bg};
           --bg2:       {bg2};
           --bg3:       {bg3};
           --border:    {border};
-          --border-hi: {"rgba(99,179,237,0.35)" if is_dark else "rgba(59,130,246,0.4)"};
-          --accent:    {"#63b3ed" if is_dark else "#3b82f6"};
-          --accent2:   {"#9f7aea" if is_dark else "#8b5cf6"};
-          --gain:      {"#38a169" if is_dark else "#059669"};
-          --loss:      {"#e53e3e" if is_dark else "#dc2626"};
+          --border-hi: rgba(59,130,246,0.35);
+          --accent:    #3b82f6;
+          --accent2:   #8b5cf6;
+          --gain:      #059669;
+          --loss:      #dc2626;
           --warn:      #d97706;
           --text:      {text};
           --muted:     {muted};
           --faint:     {faint};
-          --shadow:    {"none" if is_dark else "0 1px 3px rgba(0,0,0,0.07),0 1px 2px rgba(0,0,0,0.05)"};
-          --shadow-lg: {"none" if is_dark else "0 4px 16px rgba(0,0,0,0.08),0 2px 6px rgba(0,0,0,0.05)"};
+          --shadow:    0 1px 4px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
+          --shadow-md: 0 4px 16px rgba(0,0,0,0.08),0 2px 6px rgba(0,0,0,0.05);
+          --shadow-lg: 0 8px 32px rgba(0,0,0,0.10),0 2px 8px rgba(0,0,0,0.06);
         }}
         *, *::before, *::after {{ box-sizing: border-box; }}
         html, body, .stApp {{
           background: {bg} !important;
           color: {text} !important;
-          font-family: 'Instrument Sans', sans-serif !important;
+          font-family: 'Inter', sans-serif !important;
         }}
-        .stApp::after {{
-          content: '';
-          position: fixed;
-          inset: 0;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='{noise_op}'/%3E%3C/svg%3E");
-          pointer-events: none;
-          z-index: 9999;
-        }}
+        /* ── Sidebar ─────────────────────────────────────────────────────── */
         [data-testid="stSidebar"] {{
-          background: {sidebar_bg} !important;
-          border-right: 1px solid {border} !important;
+          background: #ffffff !important;
+          border-right: 1px solid rgba(0,0,0,0.07) !important;
+          box-shadow: 2px 0 16px rgba(0,0,0,0.06) !important;
         }}
-        [data-testid="stSidebar"] * {{ font-family: 'Instrument Sans', sans-serif !important; color: {text} !important; }}
+        [data-testid="stSidebar"] * {{
+          font-family: 'Inter', sans-serif !important;
+          color: {text} !important;
+        }}
+        /* ── Metric cards ─────────────────────────────────────────────────── */
         div[data-testid="stMetric"] {{
-          background: {metric_bg} !important;
-          border: 1px solid {border} !important;
-          border-radius: 12px !important;
+          background: #ffffff !important;
+          border: 1px solid rgba(0,0,0,0.07) !important;
+          border-radius: 14px !important;
           padding: 18px 20px !important;
-          transition: border-color .25s, transform .2s;
+          box-shadow: var(--shadow) !important;
+          transition: box-shadow .2s, transform .2s;
         }}
         div[data-testid="stMetric"]:hover {{
-          border-color: rgba(99,179,237,0.35) !important;
+          box-shadow: var(--shadow-md) !important;
+          border-color: rgba(59,130,246,0.25) !important;
           transform: translateY(-2px);
         }}
         div[data-testid="stMetricValue"] > div {{
           font-family: 'IBM Plex Mono', monospace !important;
           font-size: 18px !important;
-          font-weight: 600 !important;
+          font-weight: 700 !important;
           color: {text} !important;
         }}
         div[data-testid="stMetricLabel"] > div {{
@@ -324,23 +289,20 @@ def inject_global_styles():
           color: {muted} !important;
           text-transform: uppercase;
           letter-spacing: 1.4px;
-          font-weight: 500 !important;
+          font-weight: 600 !important;
         }}
         div[data-testid="stMetricDelta"] > div {{ font-size: 11px !important; }}
-        [data-testid="stVerticalBlockBorderWrapper"] > div > div {{
-          background: {bg2} !important;
-          border: 1px solid {border} !important;
-          border-radius: 14px !important;
-        }}
+        /* ── Data frames ─────────────────────────────────────────────────── */
         [data-testid="stDataFrame"] {{
-          border-radius: 10px !important;
+          border-radius: 12px !important;
           overflow: hidden;
           border: 1px solid {border} !important;
+          box-shadow: var(--shadow) !important;
         }}
         [data-testid="stDataFrame"] * {{ color: {text} !important; }}
         [data-testid="stDataFrame"] th {{
           background: {th_bg} !important;
-          color: #9f7aea !important;
+          color: #8b5cf6 !important;
           font-size: 10px !important;
           font-weight: 700 !important;
           text-transform: uppercase !important;
@@ -354,51 +316,127 @@ def inject_global_styles():
         [data-testid="stDataFrame"] tr:nth-child(even) td {{
           background: {td_bg2} !important;
         }}
+        /* ── Inputs ──────────────────────────────────────────────────────── */
         [data-testid="stSelectbox"] > div > div,
         [data-testid="stTextInput"] input {{
           background: {input_bg} !important;
           border: 1px solid {border} !important;
-          border-radius: 8px !important;
+          border-radius: 10px !important;
           color: {text} !important;
         }}
         [data-testid="stTextInput"] input {{ font-family: 'IBM Plex Mono', monospace !important; }}
-        [data-testid="stFileUploader"] {{
-          background: rgba(99,179,237,0.03) !important;
-          border: 2px dashed rgba(99,179,237,0.2) !important;
-          border-radius: 14px !important;
+        [data-testid="stTextInput"] input:focus {{
+          border-color: rgba(59,130,246,0.5) !important;
+          box-shadow: 0 0 0 3px rgba(59,130,246,0.12) !important;
         }}
+        /* ── Segmented control ───────────────────────────────────────────── */
         [data-testid="stSegmentedControl"] > div {{
           background: {bg3} !important;
           border: 1px solid {border} !important;
-          border-radius: 8px !important;
+          border-radius: 10px !important;
         }}
         [data-testid="stSegmentedControl"] button[aria-checked="true"] {{
-          background: linear-gradient(135deg,#2b6cb0,#553c9a) !important;
+          background: linear-gradient(135deg,#2563eb,#7c3aed) !important;
           color: #fff !important;
-          border-radius: 6px !important;
+          border-radius: 8px !important;
+          box-shadow: 0 2px 8px rgba(37,99,235,0.25) !important;
         }}
+        /* ── Buttons ─────────────────────────────────────────────────────── */
+        button[kind="primary"] {{
+          background: linear-gradient(135deg,#2563eb,#7c3aed) !important;
+          color: #fff !important;
+          border: none !important;
+          box-shadow: 0 2px 10px rgba(37,99,235,0.3) !important;
+          border-radius: 10px !important;
+          font-weight: 600 !important;
+        }}
+        button[kind="primary"]:hover {{
+          box-shadow: 0 4px 18px rgba(37,99,235,0.4) !important;
+          transform: translateY(-1px) !important;
+        }}
+        button[kind="secondary"] {{
+          background: #ffffff !important;
+          border: 1px solid rgba(0,0,0,0.09) !important;
+          color: {muted} !important;
+          border-radius: 10px !important;
+        }}
+        button[kind="secondary"]:hover {{
+          background: #eff6ff !important;
+          border-color: #bfdbfe !important;
+          color: #2563eb !important;
+        }}
+        /* ── File uploader ───────────────────────────────────────────────── */
+        [data-testid="stFileUploader"] {{
+          background: rgba(59,130,246,0.03) !important;
+          border: 2px dashed rgba(59,130,246,0.25) !important;
+          border-radius: 14px !important;
+        }}
+        /* ── Scrollbar ───────────────────────────────────────────────────── */
         hr {{ border-color: {border} !important; }}
         ::-webkit-scrollbar {{ width: 4px; height: 4px; }}
         ::-webkit-scrollbar-track {{ background: {bg}; }}
-        ::-webkit-scrollbar-thumb {{ background: {faint}; border-radius: 4px; }}
-        .card {{ background: {bg2}; border: 1px solid {border}; border-radius: 14px; padding: 22px 24px; margin-bottom: 16px; position: relative; }}
-        .card-title {{ font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; }}
-        .pill-gain {{ display: inline-flex; align-items: center; gap: 4px; background: rgba(72,187,120,0.1); border: 1px solid rgba(72,187,120,0.25); color: var(--gain); font-family: 'IBM Plex Mono',monospace; font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px; }}
-        .pill-loss {{ display: inline-flex; align-items: center; gap: 4px; background: rgba(252,129,129,0.1); border: 1px solid rgba(252,129,129,0.25); color: var(--loss); font-family: 'IBM Plex Mono',monospace; font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px; }}
-        .notice {{ background: rgba(99,179,237,0.05); border: 1px solid rgba(99,179,237,0.15); border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0; padding: 12px 16px; font-size: 13px; color: var(--muted); margin-bottom: 22px; display: flex; align-items: flex-start; gap: 10px; }}
-        .section-sep {{ font-size: 10px; font-weight: 700; color: {faint}; text-transform: uppercase; letter-spacing: 2px; margin: 24px 0 12px; display: flex; align-items: center; gap: 10px; }}
+        ::-webkit-scrollbar-thumb {{ background: #cbd5e1; border-radius: 4px; }}
+        /* ── Custom component classes ────────────────────────────────────── */
+        .card {{
+          background: #ffffff;
+          border: 1px solid rgba(0,0,0,0.07);
+          border-radius: 16px;
+          padding: 22px 24px;
+          margin-bottom: 16px;
+          position: relative;
+          box-shadow: var(--shadow);
+        }}
+        .card-title {{
+          font-family: 'Syne', sans-serif;
+          font-size: 11px; font-weight: 700;
+          color: #3b82f6;
+          text-transform: uppercase; letter-spacing: 2px;
+          margin-bottom: 14px;
+        }}
+        .pill-gain {{
+          display: inline-flex; align-items: center; gap: 4px;
+          background: rgba(5,150,105,0.08); border: 1px solid rgba(5,150,105,0.2);
+          color: #059669; font-family: 'IBM Plex Mono',monospace;
+          font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px;
+        }}
+        .pill-loss {{
+          display: inline-flex; align-items: center; gap: 4px;
+          background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.2);
+          color: #dc2626; font-family: 'IBM Plex Mono',monospace;
+          font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px;
+        }}
+        .notice {{
+          background: rgba(59,130,246,0.05); border: 1px solid rgba(59,130,246,0.15);
+          border-left: 3px solid #3b82f6; border-radius: 0 10px 10px 0;
+          padding: 12px 16px; font-size: 13px; color: {muted};
+          margin-bottom: 22px; display: flex; align-items: flex-start; gap: 10px;
+        }}
+        .section-sep {{
+          font-size: 10px; font-weight: 700; color: {faint};
+          text-transform: uppercase; letter-spacing: 2px;
+          margin: 24px 0 12px; display: flex; align-items: center; gap: 10px;
+        }}
         .section-sep::after {{ content:''; flex:1; height:1px; background: {border}; }}
-        .page-title {{ font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; color: {"#f7fafc" if is_dark else "#1a202c"}; letter-spacing: -0.5px; margin-bottom: 4px; }}
+        .page-title {{
+          font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800;
+          color: #0f172a; letter-spacing: -0.5px; margin-bottom: 4px;
+        }}
         .page-sub {{ font-size: 13px; color: {muted}; margin-bottom: 22px; }}
-        .sip-card {{ background: {bg3}; border: 1px solid {border}; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }}
-        .alloc-row {{ display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid {border}; }}
-        .alert-card {{ border-left: 3px solid; border-radius: 0 10px 10px 0; padding: 12px 16px; margin-bottom: 10px; background: {bg2}; }}
-        div[data-testid="stAppViewBlockContainer"] {{ padding-top: 2.5rem !important; }}
-        /* Hide Streamlit toolbar */
-        #MainMenu, header[data-testid="stHeader"], [data-testid="stToolbar"],
-        [data-testid="stDecoration"], [data-testid="stStatusWidget"], footer,
-        [data-testid="stTooltipHoverTarget"], .stDeployButton {{ display:none!important; }}
-        /* Sidebar nav radio */
+        .sip-card {{
+          background: #f8fafc; border: 1px solid {border};
+          border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
+          display: flex; justify-content: space-between; align-items: center;
+        }}
+        .alloc-row {{
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 9px 0; border-bottom: 1px solid {border};
+        }}
+        .alert-card {{
+          border-left: 3px solid; border-radius: 0 10px 10px 0;
+          padding: 12px 16px; margin-bottom: 10px; background: #ffffff;
+          box-shadow: var(--shadow);
+        }}
+        /* ── Sidebar nav ─────────────────────────────────────────────────── */
         [data-testid="stSidebar"] [role="radiogroup"] {{ gap: 2px !important; }}
         [data-testid="stSidebar"] [data-testid="stRadio"] label {{
           display: flex !important; align-items: center !important;
@@ -408,87 +446,46 @@ def inject_global_styles():
           transition: background .15s, color .15s !important; margin: 0 !important;
         }}
         [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {{
-          background: rgba(99,179,237,0.06) !important;
+          background: rgba(59,130,246,0.06) !important;
           color: {text} !important;
         }}
         [data-testid="stSidebar"] [data-testid="stRadio"] [data-baseweb="radio"] > div:first-child {{
           display: none !important;
         }}
         [data-testid="stSidebar"] [data-testid="stRadio"] > label:first-child {{ display: none !important; }}
-        /* ── Selectbox / dropdown fixes ─────────────────────────────────── */
+        /* ── Selectbox / dropdown ────────────────────────────────────────── */
         [data-baseweb="select"] * {{ color: {text} !important; }}
         [data-baseweb="select"] > div {{ background: {input_bg} !important; border-color: {border} !important; }}
-        [data-baseweb="popover"] {{ background: {bg2} !important; border: 1px solid {border} !important; }}
+        [data-baseweb="popover"] {{ background: #ffffff !important; border: 1px solid {border} !important; box-shadow: var(--shadow-md) !important; }}
         [data-baseweb="popover"] * {{ background: transparent !important; color: {text} !important; }}
-        [data-baseweb="menu"] {{ background: {bg2} !important; }}
-        [data-baseweb="menu"] ul {{ background: {bg2} !important; }}
-        [data-baseweb="menu"] li {{
-          background: {bg2} !important;
-          color: {text} !important;
-        }}
+        [data-baseweb="menu"] {{ background: #ffffff !important; }}
+        [data-baseweb="menu"] ul {{ background: #ffffff !important; }}
+        [data-baseweb="menu"] li {{ background: #ffffff !important; color: {text} !important; }}
         [data-baseweb="menu"] li:hover,
         [data-baseweb="menu"] li[aria-selected="true"] {{
-          background: {bg3} !important;
-          color: {text} !important;
+          background: {bg3} !important; color: {text} !important;
         }}
         [data-baseweb="menu"] li span {{ color: {text} !important; }}
-        /* ── Force all Streamlit widget text to be visible ───────────────── */
+        /* ── Widget labels ───────────────────────────────────────────────── */
         [data-testid="stSelectbox"] label {{ color: {muted} !important; font-size: 12px !important; }}
         [data-testid="stSelectbox"] span {{ color: {text} !important; }}
-        /* ── Markdown container table overrides (Streamlit hijacks td/th color) */
+        /* ── Markdown table overrides ────────────────────────────────────── */
         [data-testid="stMarkdownContainer"] {{ color: {text} !important; }}
         [data-testid="stMarkdownContainer"] table td {{ color: {text} !important; font-size:12px !important; }}
-        [data-testid="stMarkdownContainer"] table th {{ color: #9f7aea !important; font-size:10px !important; font-weight:700 !important; text-transform:uppercase !important; }}
-        [data-testid="stMarkdownContainer"] .cas-gain {{ color: #48bb78 !important; }}
-        [data-testid="stMarkdownContainer"] .cas-loss {{ color: #fc8181 !important; }}
-        [data-testid="stMarkdownContainer"] .cas-muted {{ color: #718096 !important; }}
-        /* ── Override any browser/OS default that makes text dark on dark bg */
-        .stApp input, .stApp select, .stApp textarea {{ color: {text} !important; background: {input_bg} !important; }}
+        [data-testid="stMarkdownContainer"] table th {{ color: #8b5cf6 !important; font-size:10px !important; font-weight:700 !important; text-transform:uppercase !important; }}
+        [data-testid="stMarkdownContainer"] .cas-gain {{ color: #059669 !important; }}
+        [data-testid="stMarkdownContainer"] .cas-loss {{ color: #dc2626 !important; }}
+        [data-testid="stMarkdownContainer"] .cas-muted {{ color: {muted} !important; }}
+        /* ── Inputs background ───────────────────────────────────────────── */
+        .stApp input, .stApp select, .stApp textarea {{
+          color: {text} !important; background: {input_bg} !important;
+        }}
+        /* ── Hide Streamlit chrome ───────────────────────────────────────── */
         [data-testid="stResizeHandle"], .resize-handle {{ display: none !important; height: 0 !important; }}
-        /* ── Light theme overrides ───────────────────────────────────────── */
-        {"" if is_dark else f"""
-        [data-testid="stSidebar"] {{
-          background: #ffffff !important;
-          border-right: 1px solid rgba(0,0,0,0.07) !important;
-          box-shadow: 2px 0 12px rgba(0,0,0,0.05) !important;
-        }}
-        .stApp {{ background: {bg} !important; }}
-        .card {{ box-shadow: var(--shadow) !important; }}
-        div[data-testid="stMetric"] {{
-          box-shadow: var(--shadow) !important;
-          border: 1px solid rgba(0,0,0,0.06) !important;
-        }}
-        div[data-testid="stMetric"]:hover {{
-          box-shadow: var(--shadow-lg) !important;
-          border-color: rgba(59,130,246,0.3) !important;
-          transform: translateY(-2px) !important;
-        }}
-        button[kind="primary"] {{
-          background: linear-gradient(135deg,#2563eb,#7c3aed) !important;
-          color: #fff !important;
-          border: none !important;
-          box-shadow: 0 2px 8px rgba(37,99,235,0.3) !important;
-          border-radius: 10px !important;
-          font-weight: 600 !important;
-        }}
-        button[kind="primary"]:hover {{
-          box-shadow: 0 4px 16px rgba(37,99,235,0.4) !important;
-          transform: translateY(-1px) !important;
-        }}
-        [data-testid="stFileUploader"] {{
-          background: rgba(59,130,246,0.03) !important;
-          border: 2px dashed rgba(59,130,246,0.25) !important;
-          border-radius: 14px !important;
-        }}
-        [data-testid="stSegmentedControl"] button[aria-checked="true"] {{
-          background: linear-gradient(135deg,#2563eb,#7c3aed) !important;
-          color: #fff !important;
-        }}
-        [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {{
-          background: rgba(59,130,246,0.06) !important;
-          color: {text} !important;
-        }}
-        """}
+        div[data-testid="stAppViewBlockContainer"] {{ padding-top: 2.5rem !important; }}
+        #MainMenu, header[data-testid="stHeader"], [data-testid="stToolbar"],
+        [data-testid="stDecoration"], [data-testid="stStatusWidget"], footer,
+        [data-testid="stTooltipHoverTarget"], .stDeployButton {{ display:none!important; }}
         </style>
         """,
         unsafe_allow_html=True,
@@ -685,7 +682,7 @@ def generate_html(d, live_data=None):
           <td style=\"color:{'#48bb78' if p>=0 else '#fc8181'};font-weight:600;\">{fmt_inr(p)}</td>
         </tr>"""
     if not rows_redeemed:
-        rows_redeemed = "<tr><td colspan='4' style='text-align:center;color:#718096;padding:20px;'>No fully redeemed schemes.</td></tr>"
+        rows_redeemed = "<tr><td colspan='4' style='text-align:center;color:#64748b;padding:20px;'>No fully redeemed schemes.</td></tr>"
 
     rows_sip = ""
     for s in d.get("live_sips", []) + d.get("dead_sips", []):
@@ -703,34 +700,34 @@ def generate_html(d, live_data=None):
 <html><head><meta charset=\"utf-8\">
 <title>CAS 360 View — {d['investor_name']}</title>
 <style>
-  @media print {{body{{background:#07090f!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}}}
-  body{{background:#07090f;color:#e2e8f0;font-family:'Helvetica Neue',Helvetica,sans-serif;padding:32px;line-height:1.5;}}
+  @media print {{body{{background:#f1f5f9!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}}}
+  body{{background:#f1f5f9;color:#0f172a;font-family:'Helvetica Neue',Helvetica,sans-serif;padding:32px;line-height:1.5;}}
   h1{{font-size:24px;font-weight:800;color:#fff;margin:0 0 4px;letter-spacing:-0.5px;}}
-  .sub{{font-size:12px;color:#63b3ed;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:20px;}}
-  .card{{background:#0c0f1a;border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:22px;margin-bottom:20px;}}
+  .sub{{font-size:12px;color:#3b82f6;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:20px;}}
+  .card{{background:#ffffff;border:1px solid rgba(0,0,0,0.07);border-radius:12px;padding:22px;margin-bottom:20px;}}
   .grid-4{{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:16px 0;}}
-  .kpi{{background:#111627;border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:14px;}}
-  .kpi-label{{font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;}}
+  .kpi{{background:#f8fafc;border:1px solid rgba(0,0,0,0.07);border-radius:8px;padding:14px;}}
+  .kpi-label{{font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;}}
   .kpi-value{{font-size:18px;font-weight:700;font-family:monospace;color:#fff;}}
-  table{{width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);margin:10px 0;}}
-  th{{background:#111627;color:#9f7aea;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:12px 14px;text-align:left;}}
-  td{{background:#0c0f1a;color:#e2e8f0;font-size:12px;padding:12px 14px;border-bottom:1px solid rgba(255,255,255,0.04);}}
-  tr:nth-child(even) td{{background:#111627;}}
+  table{{width:100%;border-collapse:collapse;border-radius:10px;overflow:hidden;border:1px solid rgba(0,0,0,0.07);margin:10px 0;}}
+  th{{background:#f8fafc;color:#8b5cf6;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1px;padding:12px 14px;text-align:left;}}
+  td{{background:#ffffff;color:#0f172a;font-size:12px;padding:12px 14px;border-bottom:1px solid rgba(0,0,0,0.06);}}
+  tr:nth-child(even) td{{background:#f8fafc;}}
   .sec{{font-size:10px;font-weight:700;color:#2d3748;text-transform:uppercase;letter-spacing:2px;margin:30px 0 12px;border-left:3px solid #63b3ed;padding-left:10px;}}
-  .footer{{text-align:center;font-size:10px;color:#2d3748;border-top:1px solid rgba(255,255,255,0.05);padding-top:14px;margin-top:40px;}}
+  .footer{{text-align:center;font-size:10px;color:#2d3748;border-top:1px solid rgba(0,0,0,0.06);padding-top:14px;margin-top:40px;}}
 </style></head><body>
 <div class=\"card\">
   <h1>CAS 360 VIEW</h1>
   <div class=\"sub\">Portfolio Intelligence Dashboard{live_header}</div>
   <table style=\"border:none;background:transparent;\"><tbody>
-    <tr><td style=\"background:transparent;color:#718096;font-size:11px;width:120px;\">Name</td><td style=\"background:transparent;color:#f7fafc;font-weight:600;\">{d['investor_name'].title()}</td>
-        <td style=\"background:transparent;color:#718096;font-size:11px;width:120px;\">Email</td><td style=\"background:transparent;color:#f7fafc;\">{d['investor_email'] or '—'}</td></tr>
-    <tr><td style=\"background:transparent;color:#718096;font-size:11px;\">PAN</td><td style=\"background:transparent;color:#9f7aea;font-family:monospace;font-weight:700;\">{d.get('investor_pan','—')}</td>
-        <td style=\"background:transparent;color:#718096;font-size:11px;\">Statement Date</td><td style=\"background:transparent;color:#f7fafc;\">{d['statement_date']}</td></tr>
+    <tr><td style=\"background:transparent;color:#64748b;font-size:11px;width:120px;\">Name</td><td style=\"background:transparent;color:#0f172a;font-weight:600;\">{d['investor_name'].title()}</td>
+        <td style=\"background:transparent;color:#64748b;font-size:11px;width:120px;\">Email</td><td style=\"background:transparent;color:#0f172a;\">{d['investor_email'] or '—'}</td></tr>
+    <tr><td style=\"background:transparent;color:#64748b;font-size:11px;\">PAN</td><td style=\"background:transparent;color:#8b5cf6;font-family:monospace;font-weight:700;\">{d.get('investor_pan','—')}</td>
+        <td style=\"background:transparent;color:#64748b;font-size:11px;\">Statement Date</td><td style=\"background:transparent;color:#0f172a;\">{d['statement_date']}</td></tr>
   </tbody></table>
   <div class=\"grid-4\">
     <div class=\"kpi\"><div class=\"kpi-label\">Total Wealth</div><div class=\"kpi-value\">{fmt_inr(display_wealth)}</div></div>
-    <div class=\"kpi\"><div class=\"kpi-label\">Invested</div><div class=\"kpi-value\" style=\"color:#63b3ed;\">{fmt_inr(d['total_invested'])}</div></div>
+    <div class=\"kpi\"><div class=\"kpi-label\">Invested</div><div class=\"kpi-value\" style=\"color:#3b82f6;\">{fmt_inr(d['total_invested'])}</div></div>
     <div class=\"kpi\"><div class=\"kpi-label\">Unrealized P&L</div><div class=\"kpi-value\" style=\"color:{'#48bb78' if display_pnl>=0 else '#fc8181'};\">{fmt_inr(display_pnl)}</div></div>
     <div class=\"kpi\"><div class=\"kpi-label\">Realized P&L</div><div class=\"kpi-value\" style=\"color:{'#48bb78' if realized>=0 else '#fc8181'};\">{fmt_inr(realized)}</div></div>
   </div>
@@ -1713,7 +1710,7 @@ def show_upload():
                     box-shadow:0 2px 12px rgba(0,0,0,0.1);height:100%;">
           <div style="width:44px;height:44px;background:rgba(255,255,255,0.07);border-radius:14px;
                       font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">👨‍👩‍👧</div>
-          <div style="font-size:16px;font-weight:700;color:#f8fafc;margin-bottom:8px;">Family View</div>
+          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">Family View</div>
           <div style="font-size:13px;color:#94a3b8;line-height:1.65;">
             Analyse multiple CAS files together. Compare portfolios across family members
             with a consolidated wealth summary.
@@ -1946,7 +1943,7 @@ def build_sidebar(data):
 
             # ── Action buttons ────────────────────────────────────────────
             st.markdown(
-                "<div style='height:1px;background:rgba(255,255,255,0.05);margin:8px 0;'></div>",
+                "<div style='height:1px;background:rgba(0,0,0,0.06);margin:8px 0;'></div>",
                 unsafe_allow_html=True,
             )
             if st.button("＋ Add Another CAS", use_container_width=True, key="add_cas_btn"):
@@ -1960,7 +1957,7 @@ def build_sidebar(data):
 
             # ── Export section ────────────────────────────────────────────
             st.markdown(
-                "<div style='height:1px;background:rgba(255,255,255,0.05);margin:10px 0 8px;'></div>"
+                "<div style='height:1px;background:rgba(0,0,0,0.06);margin:10px 0 8px;'></div>"
                 "<div style='font-size:9px;color:#2d3748;text-transform:uppercase;"
                 "letter-spacing:2px;font-weight:700;margin-bottom:8px;'>Export</div>",
                 unsafe_allow_html=True,
@@ -1992,9 +1989,9 @@ def build_sidebar(data):
             st.markdown(
                 '<div style="background:rgba(99,179,237,0.05);border:1px solid rgba(99,179,237,0.12);' +
                 'border-radius:8px;padding:8px 10px;margin-top:4px;">' +
-                '<div style="font-size:9px;color:#63b3ed;font-weight:700;margin-bottom:3px;">'  +
+                '<div style="font-size:9px;color:#3b82f6;font-weight:700;margin-bottom:3px;">'  +
                 '💡 To save as PDF:</div>' +
-                '<div style="font-size:9px;color:#4a5568;line-height:1.6;">' +
+                '<div style="font-size:9px;color:#94a3b8;line-height:1.6;">' +
                 '1. Download HTML Report<br>2. Open in Chrome<br>3. Ctrl+P → Save as PDF</div></div>',
                 unsafe_allow_html=True,
             )
@@ -2026,7 +2023,7 @@ def build_sidebar(data):
                     st.rerun()
             st.markdown(
                 "<div style='text-align:center;padding:10px 0 4px;'>"
-                "<div style='font-size:9px;color:#718096;letter-spacing:1.5px;"
+                "<div style='font-size:9px;color:#64748b;letter-spacing:1.5px;"
                 "text-transform:uppercase;font-weight:600;'>CAS 360 View v4</div>"
                 "</div>",
                 unsafe_allow_html=True,
@@ -2060,11 +2057,11 @@ def _kpi_card(label, value, sub="", color="#f7fafc", bg_color="rgba(99,179,237,0
     return f"""
     <div style="background:{bg_color};border:1px solid {border_color};border-radius:12px;
                 padding:16px 18px;height:100%;">
-      <div style="font-size:10px;color:#718096;text-transform:uppercase;letter-spacing:1.2px;
+      <div style="font-size:10px;color:#64748b;text-transform:uppercase;letter-spacing:1.2px;
                   margin-bottom:6px;font-weight:600;">{label}</div>
       <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:700;color:{color};">
         {value}</div>
-      {f'<div style="font-size:11px;color:#4a5568;margin-top:3px;">{sub}</div>' if sub else ''}
+      {f'<div style="font-size:11px;color:#94a3b8;margin-top:3px;">{sub}</div>' if sub else ''}
     </div>"""
 
 
@@ -2102,7 +2099,7 @@ def render_dashboard(data):
         st.markdown(
             f"""<div style="background:rgba(72,187,120,0.08);border:1px solid rgba(72,187,120,0.2);
                 border-radius:8px;padding:7px 14px;margin-bottom:12px;display:inline-flex;
-                align-items:center;gap:8px;color:#48bb78;font-size:11px;font-weight:700;">
+                align-items:center;gap:8px;color:#059669;font-size:11px;font-weight:700;">
                 <span style="width:7px;height:7px;background:#48bb78;border-radius:50%;
                 box-shadow:0 0 6px #48bb78;display:inline-block;"></span>
                 LIVE DATA ACTIVE · NAVs as of {st.session_state.live_last_updated}</div>""",
@@ -2157,81 +2154,105 @@ def render_dashboard(data):
         score_label = "Excellent" if score >= 80 else "Good" if score >= 65 else "Fair" if score >= 45 else "Needs Work"
         score_dash  = int(283 * (1 - score / 100))
 
-        # ── ANIMATED KPI CARDS ───────────────────────────────────────────────
-        pnl_color  = "#48bb78" if display_pnl >= 0 else "#fc8181"
-        pnl_border = "rgba(72,187,120,0.2)" if display_pnl >= 0 else "rgba(252,129,129,0.2)"
-        pnl_arrow  = "▲" if display_pnl >= 0 else "▼"
-        kpi_html = (
-            "<style>"
-            "@keyframes kpiIn{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}"
-            "@keyframes glowP{0%,100%{box-shadow:0 0 0 rgba(99,179,237,0);}50%{box-shadow:0 0 16px rgba(99,179,237,0.14);}}"
-            ".kbox{background:#0c0f1a;border-radius:14px;padding:16px 18px;"
-            "animation:kpiIn .5s ease forwards,glowP 3s ease infinite;"
-            "transition:border-color .25s,transform .2s;cursor:default;}"
-            ".kbox:hover{transform:translateY(-3px);}"
-            ".klbl{font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1.4px;"
-            "font-weight:600;margin-bottom:8px;}"
-            ".kval{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:700;"
-            "letter-spacing:-0.5px;line-height:1.2;}"
-            ".ksub{font-size:10px;color:#4a5568;margin-top:5px;}"
-            ".sring{display:flex;align-items:center;gap:10px;}"
-            "</style>"
-            "<div style='display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px;'>"
-            f"<div class='kbox' style='border:1px solid rgba(99,179,237,0.2);animation-delay:.0s;'>"
-            f"<div class='klbl'>Total Wealth</div>"
-            f"<div class='kval' style='color:#63b3ed;'>{fmt_inr(display_wealth)}</div>"
-            f"<div class='ksub'>Portfolio value</div></div>"
-            f"<div class='kbox' style='border:1px solid rgba(159,122,234,0.2);animation-delay:.08s;'>"
-            f"<div class='klbl'>Total Invested</div>"
-            f"<div class='kval' style='color:#9f7aea;'>{fmt_inr(data['total_invested'])}</div>"
-            f"<div class='ksub'>Cost basis (CAS)</div></div>"
-            f"<div class='kbox' style='border:1px solid {pnl_border};animation-delay:.16s;'>"
-            f"<div class='klbl'>Unrealized P&L</div>"
-            f"<div class='kval' style='color:{pnl_color};'>{pnl_arrow} {fmt_inr(display_pnl)}</div>"
-            f"<div class='ksub'>{pnl_arrow} {abs(pnl_pct):.2f}% all-time</div></div>"
-            f"<div class='kbox' style='border:1px solid rgba(72,187,120,0.2);animation-delay:.24s;'>"
-            f"<div class='klbl'>Monthly SIP</div>"
-            f"<div class='kval' style='color:#48bb78;'>{fmt_inr(sip_monthly)}</div>"
-            f"<div class='ksub'>{live_count} active &nbsp;·&nbsp; {dead_count} stopped</div></div>"
-            f"<div class='kbox' style='border:1px solid {score_color}44;animation-delay:.32s;'>"
-            f"<div class='klbl'>SIP Health Score</div>"
-            f"<div class='sring'>"
-            f"<svg width='48' height='48' viewBox='0 0 100 100'>"
-            f"<circle cx='50' cy='50' r='45' fill='none' stroke='#1a202c' stroke-width='10'/>"
-            f"<circle cx='50' cy='50' r='45' fill='none' stroke='{score_color}' stroke-width='10'"
-            f" stroke-dasharray='283' stroke-dashoffset='{score_dash}'"
-            f" stroke-linecap='round' transform='rotate(-90 50 50)'"
-            f" style='transition:stroke-dashoffset 1.2s ease;'/>"
-            f"</svg>"
-            f"<div><div style='font-family:IBM Plex Mono,monospace;font-size:20px;font-weight:700;color:{score_color};'>{score}</div>"
-            f"<div style='font-size:10px;color:{score_color};font-weight:600;'>{score_label}</div></div>"
-            f"</div></div></div>"
-        )
-        components.html(kpi_html, height=140, scrolling=False)
+        # ── KPI CARDS ────────────────────────────────────────────────────────
+        pnl_color = "#059669" if display_pnl >= 0 else "#dc2626"
+        pnl_arrow = "▲" if display_pnl >= 0 else "▼"
+        pnl_bg    = "rgba(5,150,105,0.07)" if display_pnl >= 0 else "rgba(220,38,38,0.07)"
+        pnl_bdr   = "rgba(5,150,105,0.18)" if display_pnl >= 0 else "rgba(220,38,38,0.18)"
 
-        # ── ANIMATED SIP vs LUMP BAR ─────────────────────────────────────────
-        split_html = (
-            "<style>@keyframes bSlide{from{width:0;}to{width:var(--w);}}.bfill{animation:bSlide 1.2s cubic-bezier(.4,0,.2,1) forwards;}</style>"
-            "<div style='background:#0c0f1a;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px 22px;margin-bottom:16px;'>"
-            "<div style='font-family:Syne,sans-serif;font-size:11px;font-weight:700;color:#63b3ed;"
-            "text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;'>Investment Mode Split — SIP vs Lump Sum</div>"
-            "<div style='display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;'>"
-            "<div style='background:#111627;border:1px solid rgba(99,179,237,0.15);border-radius:10px;padding:14px 18px;'>"
-            "<div style='font-size:10px;color:#718096;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;'>🔄 SIP Invested</div>"
-            f"<div style='font-family:IBM Plex Mono,monospace;font-size:20px;font-weight:700;color:#63b3ed;'>{fmt_inr(total_sip)}</div>"
-            f"<div style='font-size:11px;color:#4a5568;margin-top:3px;'>{sip_pct:.1f}% of total invested</div></div>"
-            "<div style='background:#111627;border:1px solid rgba(159,122,234,0.15);border-radius:10px;padding:14px 18px;'>"
-            "<div style='font-size:10px;color:#718096;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;'>💰 Lump Sum Invested</div>"
-            f"<div style='font-family:IBM Plex Mono,monospace;font-size:20px;font-weight:700;color:#9f7aea;'>{fmt_inr(total_lump)}</div>"
-            f"<div style='font-size:11px;color:#4a5568;margin-top:3px;'>{lump_pct:.1f}% of total invested</div></div></div>"
-            "<div style='background:#07090f;border-radius:8px;height:12px;overflow:hidden;display:flex;'>"
-            f"<div class='bfill' style='--w:{sip_pct:.1f}%;height:100%;background:linear-gradient(90deg,#2b6cb0,#63b3ed);border-radius:8px 0 0 8px;'></div>"
-            f"<div class='bfill' style='--w:{lump_pct:.1f}%;height:100%;background:linear-gradient(90deg,#553c9a,#9f7aea);border-radius:0 8px 8px 0;'></div></div>"
-            "<div style='display:flex;justify-content:space-between;margin-top:6px;'>"
-            f"<div style='font-size:10px;color:#63b3ed;font-family:IBM Plex Mono,monospace;'>● SIP {sip_pct:.1f}%</div>"
-            f"<div style='font-size:10px;color:#9f7aea;font-family:IBM Plex Mono,monospace;'>Lump Sum {lump_pct:.1f}% ●</div></div></div>"
-        )
-        st.markdown(split_html, unsafe_allow_html=True)
+        def _kpi_md(col, label, value, sub, color, bg_tint, bdr_tint):
+            col.markdown(f"""
+            <div style="background:#fff;border:1px solid {bdr_tint};border-radius:14px;
+                        padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,0.06);
+                        height:100%;transition:transform .2s,box-shadow .2s;">
+              <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;
+                          letter-spacing:1.4px;font-weight:600;margin-bottom:8px;">{label}</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:700;
+                          color:{color};letter-spacing:-0.5px;line-height:1.2;
+                          background:{bg_tint};border-radius:8px;padding:4px 8px;
+                          display:inline-block;">{value}</div>
+              <div style="font-size:10px;color:#94a3b8;margin-top:6px;">{sub}</div>
+            </div>""", unsafe_allow_html=True)
+
+        k1, k2, k3, k4, k5 = st.columns(5, gap="small")
+        _kpi_md(k1, "Total Wealth",    fmt_inr(display_wealth),
+                "Portfolio value",       "#2563eb", "rgba(37,99,235,0.06)",  "rgba(37,99,235,0.15)")
+        _kpi_md(k2, "Total Invested",  fmt_inr(data["total_invested"]),
+                "Cost basis (CAS)",      "#7c3aed", "rgba(124,58,237,0.06)", "rgba(124,58,237,0.15)")
+        _kpi_md(k3, "Unrealized P&L",  f"{pnl_arrow} {fmt_inr(display_pnl)}",
+                f"{pnl_arrow} {abs(pnl_pct):.2f}% all-time", pnl_color, pnl_bg, pnl_bdr)
+        _kpi_md(k4, "Monthly SIP",     fmt_inr(sip_monthly),
+                f"{live_count} active · {dead_count} stopped",
+                "#059669", "rgba(5,150,105,0.06)", "rgba(5,150,105,0.15)")
+        with k5:
+            st.markdown(f"""
+            <div style="background:#fff;border:1px solid {score_color}33;border-radius:14px;
+                        padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,0.06);height:100%;">
+              <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;
+                          letter-spacing:1.4px;font-weight:600;margin-bottom:10px;">
+                SIP Health Score</div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <svg width="48" height="48" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="#f1f5f9" stroke-width="10"/>
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="{score_color}" stroke-width="10"
+                   stroke-dasharray="283" stroke-dashoffset="{score_dash}"
+                   stroke-linecap="round" transform="rotate(-90 50 50)"/>
+                </svg>
+                <div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;
+                              font-weight:700;color:{score_color};">{score}</div>
+                  <div style="font-size:10px;color:{score_color};font-weight:600;">{score_label}</div>
+                </div>
+              </div>
+            </div>""", unsafe_allow_html=True)
+        st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
+
+        # ── SIP vs LUMP BAR ──────────────────────────────────────────────────
+        sp1, sp2 = st.columns(2, gap="medium")
+        with sp1:
+            st.markdown(f"""
+            <div style="background:#fff;border:1px solid rgba(37,99,235,0.15);border-radius:14px;
+                        padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+              <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;
+                          letter-spacing:1.2px;margin-bottom:8px;">🔄 SIP Invested</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;
+                          font-weight:700;color:#2563eb;">{fmt_inr(total_sip)}</div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:4px;">{sip_pct:.1f}% of total invested</div>
+            </div>""", unsafe_allow_html=True)
+        with sp2:
+            st.markdown(f"""
+            <div style="background:#fff;border:1px solid rgba(124,58,237,0.15);border-radius:14px;
+                        padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+              <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;
+                          letter-spacing:1.2px;margin-bottom:8px;">💰 Lump Sum Invested</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;
+                          font-weight:700;color:#7c3aed;">{fmt_inr(total_lump)}</div>
+              <div style="font-size:11px;color:#94a3b8;margin-top:4px;">{lump_pct:.1f}% of total invested</div>
+            </div>""", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div style="background:#fff;border:1px solid rgba(0,0,0,0.07);border-radius:14px;
+                    padding:14px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-top:10px;">
+          <div style="font-size:10px;font-weight:700;color:#64748b;
+                      text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;">
+            Investment Mode Split — SIP vs Lump Sum
+          </div>
+          <div style="background:#f1f5f9;border-radius:8px;height:10px;overflow:hidden;">
+            <div style="width:{sip_pct:.1f}%;height:100%;
+                        background:linear-gradient(90deg,#2563eb,#3b82f6);
+                        border-radius:8px 0 0 8px;float:left;"></div>
+            <div style="width:{lump_pct:.1f}%;height:100%;
+                        background:linear-gradient(90deg,#7c3aed,#8b5cf6);
+                        border-radius:0 8px 8px 0;float:left;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px;">
+            <div style="font-size:10px;color:#2563eb;font-family:'IBM Plex Mono',monospace;">
+              ● SIP {sip_pct:.1f}%</div>
+            <div style="font-size:10px;color:#7c3aed;font-family:'IBM Plex Mono',monospace;">
+              Lump Sum {lump_pct:.1f}% ●</div>
+          </div>
+        </div>
+        <div style="height:14px"></div>
+        """, unsafe_allow_html=True)
 
         # ── WEALTH CHART ─────────────────────────────────────────────────────
         ch, al = st.columns([3, 2])
@@ -2241,7 +2262,7 @@ def render_dashboard(data):
             pill_cls = "pill-gain" if display_pnl >= 0 else "pill-loss"
             st.markdown(
                 f'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:26px;font-weight:700;'
-                f'color:#f7fafc;letter-spacing:-1px;margin-bottom:8px;">{fmt_inr(display_wealth)}</div>'
+                f'color:#0f172a;letter-spacing:-1px;margin-bottom:8px;">{fmt_inr(display_wealth)}</div>'
                 f'<span class="{pill_cls}">{gain_arrow(display_pnl)} {fmt_inr(display_pnl)}</span>',
                 unsafe_allow_html=True,
             )
@@ -2267,10 +2288,10 @@ def render_dashboard(data):
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
             st.markdown('</div>', unsafe_allow_html=True)
 
-        # ── ANIMATED SVG DONUT ───────────────────────────────────────────────
+        # ── SVG DONUT ────────────────────────────────────────────────────────
         with al:
-            alloc_colors_map = {"Equity Funds": "#63b3ed", "Debt Funds": "#f6ad55",
-                                 "Gold Funds": "#48bb78", "International": "#9f7aea"}
+            alloc_colors_map = {"Equity Funds": "#3b82f6", "Debt Funds": "#f59e0b",
+                                 "Gold Funds": "#10b981", "International": "#8b5cf6"}
             alloc_items = list(data["alloc_pct"].items())
             cx, cy, r_out, r_in = 100, 100, 80, 52
             seg_angle = 0.0
@@ -2278,7 +2299,7 @@ def render_dashboard(data):
             legend_html  = ""
             gap_deg = 3.0
             for idx, (label, pct) in enumerate(alloc_items):
-                color = alloc_colors_map.get(label, "#9f7aea")
+                color = alloc_colors_map.get(label, "#8b5cf6")
                 sweep = (pct / 100) * 360 - gap_deg
                 if sweep <= 0:
                     seg_angle += (pct / 100) * 360
@@ -2291,49 +2312,42 @@ def render_dashboard(data):
                 x1i = cx + r_in  * math.cos(er); y1i = cy + r_in  * math.sin(er)
                 x2i = cx + r_in  * math.cos(sr); y2i = cy + r_in  * math.sin(sr)
                 lf  = 1 if sweep > 180 else 0
-                delay = idx * 0.15
                 path = (f"M {x1o:.1f} {y1o:.1f} A {r_out} {r_out} 0 {lf} 1 {x2o:.1f} {y2o:.1f} "
                         f"L {x1i:.1f} {y1i:.1f} A {r_in} {r_in} 0 {lf} 0 {x2i:.1f} {y2i:.1f} Z")
-                segments_svg += (f'<path d="{path}" fill="{color}" opacity="0" '
-                    f'style="animation:segIn .55s ease {delay:.2f}s forwards;cursor:pointer;'
-                    f'transition:filter .2s;" onmouseover="this.style.filter=\'brightness(1.3)\'"'
-                    f' onmouseout="this.style.filter=\'brightness(1)\'">'
+                segments_svg += (f'<path d="{path}" fill="{color}">'
                     f'<title>{label}: {pct:.1f}%</title></path>')
                 val = data["alloc_values"].get(label, 0.0)
                 legend_html += (
                     f'<div style="display:flex;justify-content:space-between;align-items:center;'
-                    f'padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);">'
+                    f'padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.06);">'
                     f'<div style="display:flex;align-items:center;gap:8px;">'
-                    f'<span style="width:8px;height:8px;border-radius:50%;background:{color};'
-                    f'box-shadow:0 0 6px {color}88;display:inline-block;"></span>'
-                    f'<span style="font-size:12px;color:#e2e8f0;font-weight:500;">{label}</span></div>'
+                    f'<span style="width:10px;height:10px;border-radius:50%;background:{color};'
+                    f'display:inline-block;flex-shrink:0;"></span>'
+                    f'<span style="font-size:12px;color:#0f172a;font-weight:500;">{label}</span></div>'
                     f'<div style="text-align:right;">'
-                    f'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:600;color:#f7fafc;">&#8377;{val:,.0f}</div>'
-                    f'<div style="font-size:10px;color:#4a5568;">{pct:.1f}%</div></div></div>'
+                    f'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;font-weight:600;color:#0f172a;">&#8377;{val:,.0f}</div>'
+                    f'<div style="font-size:10px;color:#94a3b8;">{pct:.1f}%</div></div></div>'
                 )
                 seg_angle += (pct / 100) * 360
 
             donut_html = (
-                "<style>@keyframes segIn{from{opacity:0;transform:scale(.82);transform-origin:100px 100px;}"
-                "to{opacity:1;transform:scale(1);transform-origin:100px 100px;}}"
-                "@keyframes cIn{from{opacity:0;}to{opacity:1;}}</style>"
-                "<div style='background:#0c0f1a;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px 20px;'>"
-                "<div style='font-family:Syne,sans-serif;font-size:11px;font-weight:700;color:#63b3ed;"
-                "text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;'>Asset Allocation</div>"
-                "<div style='display:flex;align-items:center;gap:14px;'>"
-                f"<svg width='200' height='200' viewBox='0 0 200 200' style='flex-shrink:0;'>"
+                f"<div style='background:#fff;border:1px solid rgba(0,0,0,0.07);border-radius:14px;"
+                f"padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);'>"
+                f"<div style='font-size:11px;font-weight:700;color:#3b82f6;"
+                f"text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;'>Asset Allocation</div>"
+                f"<svg width='200' height='200' viewBox='0 0 200 200' style='display:block;margin:0 auto 12px;'>"
                 f"{segments_svg}"
-                f"<circle cx='{cx}' cy='{cy}' r='{r_in-3}' fill='#07090f'/>"
-                f"<text x='{cx}' y='{cy-8}' text-anchor='middle' style='font-family:IBM Plex Mono,monospace;"
-                f"font-size:13px;font-weight:700;fill:#f7fafc;animation:cIn 1s .6s ease forwards;opacity:0;'>"
+                f"<circle cx='{cx}' cy='{cy}' r='{r_in-3}' fill='#fff'/>"
+                f"<text x='{cx}' y='{cy-6}' text-anchor='middle' "
+                f"style='font-family:IBM Plex Mono,monospace;font-size:14px;font-weight:700;fill:#0f172a;'>"
                 f"{len(alloc_items)}</text>"
-                f"<text x='{cx}' y='{cy+10}' text-anchor='middle' style='font-size:10px;fill:#718096;"
-                f"animation:cIn 1s .7s ease forwards;opacity:0;'>classes</text>"
+                f"<text x='{cx}' y='{cy+12}' text-anchor='middle' "
+                f"style='font-size:10px;fill:#94a3b8;'>classes</text>"
                 f"</svg>"
-                f"<div style='flex:1;'>{legend_html}</div>"
-                "</div></div>"
+                f"<div>{legend_html}</div>"
+                f"</div>"
             )
-            components.html(donut_html, height=280, scrolling=True)
+            st.markdown(donut_html, unsafe_allow_html=True)
 
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
@@ -2361,7 +2375,7 @@ def render_dashboard(data):
                     heat_html += (
                         f'<div style="background:{bg};border:1px solid {br};border-radius:10px;'
                         f'padding:10px 12px;" title="{name}">'
-                        f'<div style="font-size:10px;color:#718096;margin-bottom:5px;'
+                        f'<div style="font-size:10px;color:#64748b;margin-bottom:5px;'
                         f'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{short}</div>'
                         f'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;'
                         f'font-weight:700;color:{vc};">{ar} {abs(pct_h):.1f}%</div>'
@@ -2376,13 +2390,13 @@ def render_dashboard(data):
             top_g = sorted([h for h in data["holdings"] if h["pnl"] > 0], key=lambda x: x["pnl"], reverse=True)[:4]
             top_l = sorted([h for h in data["holdings"] if h["pnl"] < 0], key=lambda x: x["pnl"])[:4]
             if top_g:
-                st.markdown('<div style="font-size:11px;color:#48bb78;font-weight:600;margin-bottom:6px;">✅ Top Gainers</div>', unsafe_allow_html=True)
+                st.markdown('<div style="font-size:11px;color:#059669;font-weight:600;margin-bottom:6px;">✅ Top Gainers</div>', unsafe_allow_html=True)
                 render_table([
                     {"Scheme": clean_name(h["scheme"]), "P&L": fmt_inr(h["pnl"]), "XIRR": f"{h['xirr']:.1f}%"}
                     for h in top_g
                 ])
             if top_l:
-                st.markdown('<div style="font-size:11px;color:#fc8181;font-weight:600;margin:10px 0 6px;">⚠️ In Loss</div>', unsafe_allow_html=True)
+                st.markdown('<div style="font-size:11px;color:#dc2626;font-weight:600;margin:10px 0 6px;">⚠️ In Loss</div>', unsafe_allow_html=True)
                 render_table([
                     {"Scheme": clean_name(h["scheme"]), "P&L": fmt_inr(h["pnl"]), "XIRR": f"{h['xirr']:.1f}%"}
                     for h in top_l
@@ -2394,25 +2408,34 @@ def render_dashboard(data):
             st.markdown('<div class="card-title">⏱ SIP Countdown</div>', unsafe_allow_html=True)
             sorted_sips = sorted(data["live_sips"], key=lambda x: x["next_iso"])
             if sorted_sips:
-                ticker_html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">'
+                tc1, tc2 = st.columns(2, gap="small")
                 for idx, sip in enumerate(sorted_sips[:4]):
-                    sn = clean_name(sip["scheme"]); ti = sip["next_iso"]; did = f"sip_{idx}"
-                    ticker_html += (
-                        f'<div style="background:#111627;border:1px solid rgba(255,255,255,0.06);'
-                        f'border-radius:8px;padding:10px 12px;">'
-                        f'<div style="font-size:11px;color:#718096;overflow:hidden;text-overflow:ellipsis;'
-                        f'white-space:nowrap;margin-bottom:4px;" title="{sn}">{sn[:26]}…</div>'
-                        f'<div id="{did}" style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;'
-                        f'font-weight:700;color:#63b3ed;">—</div></div>'
-                        f'<script>(function(){{var t=new Date("{ti}T00:00:00").getTime();'
-                        f'function tick(){{var diff=t-Date.now();var el=document.getElementById("{did}");'
-                        f'if(!el)return;if(isNaN(t)||diff<=0){{el.textContent="DUE TODAY";return;}}'
-                        f'var d=Math.floor(diff/86400000);var h=Math.floor(diff%86400000/3600000);'
-                        f'var m=Math.floor(diff%3600000/60000);el.textContent=d+"d "+h+"h "+m+"m";}}'
-                        f'setInterval(tick,30000);tick();}})();</script>'
+                    sn = clean_name(sip["scheme"])
+                    try:
+                        due_date = to_date(sip["next_iso"])
+                        days_left = (due_date - date.today()).days
+                        if days_left <= 0:
+                            countdown_str = "DUE TODAY"
+                            cnt_color = "#dc2626"
+                        elif days_left <= 3:
+                            countdown_str = f"{days_left}d left"
+                            cnt_color = "#d97706"
+                        else:
+                            countdown_str = f"{days_left}d"
+                            cnt_color = "#2563eb"
+                    except Exception:
+                        countdown_str = "—"; cnt_color = "#94a3b8"
+                    col = tc1 if idx % 2 == 0 else tc2
+                    col.markdown(
+                        f'<div style="background:#fff;border:1px solid rgba(0,0,0,0.07);'
+                        f'border-radius:10px;padding:10px 12px;margin-bottom:8px;'
+                        f'box-shadow:0 1px 3px rgba(0,0,0,0.05);">'
+                        f'<div style="font-size:10px;color:#94a3b8;overflow:hidden;text-overflow:ellipsis;'
+                        f'white-space:nowrap;margin-bottom:4px;" title="{sn}">{sn[:24]}…</div>'
+                        f'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:13px;'
+                        f'font-weight:700;color:{cnt_color};">{countdown_str}</div></div>',
+                        unsafe_allow_html=True
                     )
-                ticker_html += "</div>"
-                components.html(ticker_html, height=140, scrolling=False)
                 render_table([
                     {"Scheme": clean_name(s["scheme"]), "Amount": fmt_inr(s["amount"]),
                      "Day": s["day_label"], "Next": s["next_date"]}
@@ -2428,7 +2451,7 @@ def render_dashboard(data):
                 df_c = pd.DataFrame([{"Scheme": clean_name(h["scheme"]), "Value": h["value"],
                     "Pct": h["value"] / (display_wealth or 1) * 100} for h in top5])
                 fig_c = px.bar(df_c, x="Value", y="Scheme", orientation="h", color="Pct",
-                    color_continuous_scale=["#1a365d", C_ACCENT, "#bee3f8"])
+                    color_continuous_scale=["#dbeafe", C_ACCENT, "#1d4ed8"])
                 fig_c.update_layout(height=200, xaxis=dict(visible=False),
                     yaxis=dict(tickfont=dict(size=10, color="#718096"), title=""),
                     coloraxis_showscale=False, **PLOT_BASE)
@@ -2454,13 +2477,13 @@ def render_dashboard(data):
                 units_str = f'{t["Units"]:+.3f} units' if t["Units"] != 0 else ""
                 with act_cols[i % 3]:
                     st.markdown(
-                        f'<div style="background:#0c0f1a;border:1px solid rgba(255,255,255,0.05);'
+                        f'<div style="background:#ffffff;border:1px solid rgba(0,0,0,0.07);'
                         f'border-left:3px solid {meta["color"]};border-radius:0 8px 8px 0;'
                         f'padding:8px 12px;margin-bottom:8px;">'
                         f'<span style="font-size:10px;font-weight:700;color:{meta["color"]};'
                         f'font-family:\'IBM Plex Mono\',monospace;">{meta["icon"]} {t["Type"]}</span>'
-                        f'<div style="font-size:11px;color:#e2e8f0;font-weight:500;margin-top:2px;">{t["Scheme"]}</div>'
-                        f'<div style="font-size:10px;color:#4a5568;margin-top:1px;">{t["Date"]} · {units_str}</div>'
+                        f'<div style="font-size:11px;color:#0f172a;font-weight:500;margin-top:2px;">{t["Scheme"]}</div>'
+                        f'<div style="font-size:10px;color:#94a3b8;margin-top:1px;">{t["Date"]} · {units_str}</div>'
                         f'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:12px;'
                         f'font-weight:700;color:{meta["color"]};margin-top:3px;">{fmt_inr(t["Amount"])}</div>'
                         f'</div>',
@@ -2468,7 +2491,7 @@ def render_dashboard(data):
                     )
             if len(activity) > 6:
                 st.markdown(
-                    f'<div style="font-size:11px;color:#4a5568;text-align:center;padding:4px 0;">'
+                    f'<div style="font-size:11px;color:#94a3b8;text-align:center;padding:4px 0;">'
                     f'+ {len(activity)-6} more — see My Portfolio</div>',
                     unsafe_allow_html=True,
                 )
@@ -2507,10 +2530,10 @@ def render_dashboard(data):
             "padding:20px 22px;animation:hIn .55s ease forwards,pulse 4s ease infinite;"
             "transition:transform .2s,border-color .25s;cursor:default;}"
             ".hcard:hover{transform:translateY(-4px);}"
-            ".hlbl{font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1.6px;"
+            ".hlbl{font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1.6px;"
             "font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;}"
             ".hval{font-family:'IBM Plex Mono',monospace;font-weight:700;letter-spacing:-.5px;line-height:1;}"
-            ".hsub{font-size:10px;color:#4a5568;margin-top:6px;}"
+            ".hsub{font-size:10px;color:#94a3b8;margin-top:6px;}"
             ".ring-wrap{display:flex;align-items:center;gap:10px;}"
             "</style>"
             "<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;'>"
@@ -2519,14 +2542,14 @@ def render_dashboard(data):
             f"<div class='hcard' style='border:1px solid rgba(99,179,237,0.25);animation-delay:.0s;'>"
             f"<div class='hlbl'><span style='width:6px;height:6px;border-radius:50%;background:#63b3ed;"
             f"box-shadow:0 0 6px #63b3ed;display:inline-block;'></span>Total SIP Invested</div>"
-            f"<div class='hval' style='font-size:22px;color:#63b3ed;'>{fmt_inr(total_sip_invested)}</div>"
+            f"<div class='hval' style='font-size:22px;color:#3b82f6;'>{fmt_inr(total_sip_invested)}</div>"
             f"<div class='hsub'>{len(sip_by_scheme)} schemes · {len(sip_txs)} transactions</div></div>"
 
             # Card 2 — Monthly SIP
             f"<div class='hcard' style='border:1px solid rgba(72,187,120,0.25);animation-delay:.1s;'>"
             f"<div class='hlbl'><span style='width:6px;height:6px;border-radius:50%;background:#48bb78;"
             f"box-shadow:0 0 6px #48bb78;display:inline-block;'></span>Monthly SIP</div>"
-            f"<div class='hval' style='font-size:22px;color:#48bb78;'>{fmt_inr(sip_monthly)}</div>"
+            f"<div class='hval' style='font-size:22px;color:#059669;'>{fmt_inr(sip_monthly)}</div>"
             f"<div class='hsub'>{len(live_sips)} active · {len(dead_sips)} stopped</div></div>"
 
             # Card 3 — Bounce Rate
@@ -2585,14 +2608,14 @@ def render_dashboard(data):
                          f'<title>{lbl}\n{fmt_inr(val)} ({pct:.1f}%)</title></path>')
                 short = lbl[:24]+"…" if len(lbl)>24 else lbl
                 leg  += (f'<div style="display:flex;justify-content:space-between;align-items:center;'
-                         f'padding:6px 0;border-bottom:1px solid rgba(255,255,255,0.04);">'
+                         f'padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.06);">'
                          f'<div style="display:flex;align-items:center;gap:7px;">'
                          f'<span style="width:8px;height:8px;border-radius:50%;background:{c};'
                          f'box-shadow:0 0 5px {c}66;display:inline-block;flex-shrink:0;"></span>'
-                         f'<span style="font-size:11px;color:#e2e8f0;">{short}</span></div>'
+                         f'<span style="font-size:11px;color:#0f172a;">{short}</span></div>'
                          f'<div style="text-align:right;min-width:80px;">'
-                         f'<div style="font-family:IBM Plex Mono,monospace;font-size:11px;font-weight:700;color:#f7fafc;">{fmt_inr(val)}</div>'
-                         f'<div style="font-size:10px;color:#4a5568;">{pct:.1f}%</div></div></div>')
+                         f'<div style="font-family:IBM Plex Mono,monospace;font-size:11px;font-weight:700;color:#0f172a;">{fmt_inr(val)}</div>'
+                         f'<div style="font-size:10px;color:#94a3b8;">{pct:.1f}%</div></div></div>')
                 ang  += (pct/100)*360
 
             keyframes = "".join(
@@ -2601,24 +2624,19 @@ def render_dashboard(data):
                 for i in range(len(items_d))
             )
             donut_html = (
-                f"<style>{keyframes}"
-                "@keyframes cFade{from{opacity:0;}to{opacity:1;}}</style>"
-                "<div style='background:linear-gradient(135deg,#0c0f1a,#0d1020);border:1px solid rgba(99,179,237,0.12);"
-                "border-radius:16px;padding:20px;'>"
-                "<div style='font-family:Syne,sans-serif;font-size:10px;font-weight:700;color:#63b3ed;"
+                f"<style>{keyframes}</style>"
+                "<div style='background:#ffffff;border:1px solid rgba(0,0,0,0.07);"
+                "border-radius:16px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);'>"
+                "<div style='font-size:10px;font-weight:700;color:#3b82f6;"
                 "text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;'>🍩 SIP Distribution by Scheme</div>"
-                "<div style='display:flex;align-items:center;gap:16px;'>"
-                f"<svg width='240' height='240' viewBox='0 0 240 240' style='flex-shrink:0;'>{segs}"
-                f"<circle cx='{cx}' cy='{cy}' r='{ri-3}' fill='#07090f'/>"
-                f"<text x='{cx}' y='{cy-10}' text-anchor='middle' style='font-family:IBM Plex Mono,monospace;"
-                f"font-size:14px;font-weight:700;fill:#f7fafc;animation:cFade 1s .8s forwards;opacity:0;'>{len(items_d)}</text>"
-                f"<text x='{cx}' y='{cy+8}' text-anchor='middle' style='font-size:10px;fill:#718096;"
-                f"animation:cFade 1s .9s forwards;opacity:0;'>schemes</text>"
-                f"<text x='{cx}' y='{cy+24}' text-anchor='middle' style='font-size:9px;fill:#4a5568;"
-                f"animation:cFade 1s 1s forwards;opacity:0;'>hover to inspect</text>"
-                f"</svg><div style='flex:1;'>{leg}</div></div></div>"
+                f"<svg width='240' height='240' viewBox='0 0 240 240' style='display:block;margin:0 auto 12px;'>{segs}"
+                f"<circle cx='{cx}' cy='{cy}' r='{ri-3}' fill='#fff'/>"
+                f"<text x='{cx}' y='{cy-6}' text-anchor='middle' style='font-family:IBM Plex Mono,monospace;"
+                f"font-size:15px;font-weight:700;fill:#0f172a;'>{len(items_d)}</text>"
+                f"<text x='{cx}' y='{cy+12}' text-anchor='middle' style='font-size:10px;fill:#94a3b8;'>schemes</text>"
+                f"</svg><div>{leg}</div></div>"
             )
-            components.html(donut_html, height=340, scrolling=True)
+            st.markdown(donut_html, unsafe_allow_html=True)
 
         with col_b:
             # Animated radial bars with % labels
@@ -2636,28 +2654,28 @@ def render_dashboard(data):
                 bars_inner += (
                     f"<div style='margin-bottom:16px;'>"
                     f"<div style='display:flex;justify-content:space-between;align-items:baseline;margin-bottom:6px;'>"
-                    f"<span style='font-size:11px;color:#e2e8f0;font-weight:500;'>{short}</span>"
+                    f"<span style='font-size:11px;color:#0f172a;font-weight:500;'>{short}</span>"
                     f"<span style='font-family:IBM Plex Mono,monospace;font-size:11px;font-weight:700;"
                     f"color:{c_b};min-width:90px;text-align:right;'>{fmt_inr(val)}</span></div>"
-                    f"<div style='background:#111627;border-radius:6px;height:10px;overflow:hidden;position:relative;'>"
+                    f"<div style='background:#f8fafc;border-radius:6px;height:10px;overflow:hidden;position:relative;'>"
                     f"<div style='height:100%;width:0%;background:linear-gradient(90deg,{c_b}55,{c_b});"
                     f"border-radius:6px;animation:bw{i} 1.3s cubic-bezier(.4,0,.2,1) {i*.12:.2f}s forwards;"
                     f"position:relative;'>"
                     f"<div style='position:absolute;right:0;top:0;height:100%;width:3px;"
                     f"background:{c_b};box-shadow:0 0 8px {c_b};border-radius:0 6px 6px 0;'></div>"
                     f"</div></div>"
-                    f"<div style='font-size:9px;color:#4a5568;margin-top:3px;text-align:right;'>"
+                    f"<div style='font-size:9px;color:#94a3b8;margin-top:3px;text-align:right;'>"
                     f"{val/total_sip_invested*100:.1f}% of total SIP</div></div>"
                 )
             bars_html = (
                 f"<style>{kf_bars}</style>"
-                "<div style='background:linear-gradient(135deg,#0c0f1a,#0d1020);border:1px solid rgba(159,122,234,0.12);"
-                "border-radius:16px;padding:20px;height:100%;'>"
-                "<div style='font-family:Syne,sans-serif;font-size:10px;font-weight:700;color:#9f7aea;"
+                "<div style='background:#ffffff;border:1px solid rgba(0,0,0,0.07);"
+                "border-radius:16px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);'>"
+                "<div style='font-size:10px;font-weight:700;color:#8b5cf6;"
                 "text-transform:uppercase;letter-spacing:2px;margin-bottom:16px;'>📊 SIP Amount Ranking</div>"
                 f"{bars_inner}</div>"
             )
-            components.html(bars_html, height=340, scrolling=True)
+            st.markdown(bars_html, unsafe_allow_html=True)
 
         # ── ROW 2: Live SIP cards with MISSED highlight ───────────────────────
         _dash_section("✅ Live SIPs — Active Mandates")
@@ -2679,9 +2697,9 @@ def render_dashboard(data):
                 f'<div style="display:flex;align-items:center;gap:10px;">'
                 f'<div style="font-size:22px;">🚨</div>'
                 f'<div>'
-                f'<div style="font-size:13px;font-weight:700;color:#fc8181;margin-bottom:3px;">'
+                f'<div style="font-size:13px;font-weight:700;color:#dc2626;margin-bottom:3px;">'
                 f'{len(missed_live)} SIP(s) may have missed last month ({last_mo_lb})</div>'
-                f'<div style="font-size:11px;color:#718096;">'
+                f'<div style="font-size:11px;color:#64748b;">'
                 f'Last deduction was more than 35 days ago. '
                 f'Could be bounce, pause, or bank issue. Click on the card to see details.</div>'
                 f'</div></div></div>',
@@ -2709,7 +2727,7 @@ def render_dashboard(data):
                         status_badge = (
                             '<span style="background:rgba(252,129,129,0.15);'
                             'border:1px solid rgba(252,129,129,0.4);'
-                            'color:#fc8181;font-size:9px;font-weight:800;'
+                            'color:#dc2626;font-size:9px;font-weight:800;'
                             'padding:2px 7px;border-radius:20px;'
                             'white-space:nowrap;margin-left:8px;">⚠️ CHECK</span>'
                         )
@@ -2717,9 +2735,9 @@ def render_dashboard(data):
                             f'<div style="background:rgba(252,129,129,0.08);'
                             f'border:1px solid rgba(252,129,129,0.2);'
                             f'border-radius:8px;padding:8px 10px;margin-top:8px;">'
-                            f'<div style="font-size:10px;color:#fc8181;font-weight:700;">'
+                            f'<div style="font-size:10px;color:#dc2626;font-weight:700;">'
                             f'⚠️ No deduction in {days_since} days</div>'
-                            f'<div style="font-size:9px;color:#718096;margin-top:2px;">'
+                            f'<div style="font-size:9px;color:#64748b;margin-top:2px;">'
                             f'Last: {s["last_date"]} · Expected: {s["day_label"]} of month</div>'
                             f'</div>'
                         )
@@ -2730,7 +2748,7 @@ def render_dashboard(data):
                         status_badge = (
                             '<span style="background:rgba(72,187,120,0.15);'
                             'border:1px solid rgba(72,187,120,0.3);'
-                            'color:#48bb78;font-size:9px;font-weight:700;'
+                            'color:#059669;font-size:9px;font-weight:700;'
                             'padding:2px 7px;border-radius:20px;'
                             'white-space:nowrap;margin-left:8px;">LIVE</span>'
                         )
@@ -2743,21 +2761,21 @@ def render_dashboard(data):
                             f'border-radius:14px;padding:16px 18px;margin-bottom:8px;">'
                             f'<div style="display:flex;justify-content:space-between;'
                             f'align-items:flex-start;margin-bottom:10px;">'
-                            f'<div style="font-size:11px;color:#e2e8f0;font-weight:600;'
+                            f'<div style="font-size:11px;color:#0f172a;font-weight:600;'
                             f'line-height:1.4;">{sn}</div>'
                             f'{status_badge}</div>'
                             f'<div style="font-family:IBM Plex Mono,monospace;font-size:18px;'
                             f'font-weight:700;color:{amt_color};margin-bottom:8px;">'
                             f'{fmt_inr(s["amount"])}</div>'
-                            f'<div style="font-size:10px;color:#718096;margin-bottom:8px;">'
+                            f'<div style="font-size:10px;color:#64748b;margin-bottom:8px;">'
                             f'📅 {s["day_label"]} every month &nbsp;·&nbsp; '
-                            f'Next: <span style="color:#63b3ed;">{s["next_date"]}</span></div>'
-                            f'<div style="background:#111627;border-radius:4px;'
+                            f'Next: <span style="color:#3b82f6;">{s["next_date"]}</span></div>'
+                            f'<div style="background:#f8fafc;border-radius:4px;'
                             f'height:4px;overflow:hidden;">'
                             f'<div style="height:100%;width:{min(pct_s,100):.0f}%;'
                             f'background:linear-gradient(90deg,{amt_color}55,{amt_color});'
                             f'border-radius:4px;"></div></div>'
-                            f'<div style="font-size:9px;color:#4a5568;margin-top:3px;">'
+                            f'<div style="font-size:9px;color:#94a3b8;margin-top:3px;">'
                             f'{pct_s:.0f}% of monthly total</div>'
                             f'{extra_info}'
                             f'</div>',
@@ -2775,35 +2793,35 @@ def render_dashboard(data):
                             if st.session_state.get(f"show_missed_{sn}"):
                                 with st.expander("📋 Missed SIP Details", expanded=True):
                                     st.markdown(
-                                        f'<div style="background:#0c0f1a;border-radius:10px;'
+                                        f'<div style="background:#ffffff;border-radius:10px;'
                                         f'padding:14px;">'
                                         f'<div style="font-size:13px;font-weight:700;'
-                                        f'color:#f7fafc;margin-bottom:12px;">{sn}</div>'
+                                        f'color:#0f172a;margin-bottom:12px;">{sn}</div>'
                                         f'<div style="display:grid;grid-template-columns:1fr 1fr;'
                                         f'gap:10px;margin-bottom:10px;">'
-                                        f'<div><div style="font-size:9px;color:#718096;'
+                                        f'<div><div style="font-size:9px;color:#64748b;'
                                         f'text-transform:uppercase;margin-bottom:3px;">SIP Amount</div>'
                                         f'<div style="font-family:IBM Plex Mono,monospace;'
-                                        f'font-size:14px;font-weight:700;color:#fc8181;">'
+                                        f'font-size:14px;font-weight:700;color:#dc2626;">'
                                         f'{fmt_inr(s["amount"])}</div></div>'
-                                        f'<div><div style="font-size:9px;color:#718096;'
+                                        f'<div><div style="font-size:9px;color:#64748b;'
                                         f'text-transform:uppercase;margin-bottom:3px;">Due Day</div>'
                                         f'<div style="font-size:13px;color:#f6ad55;font-weight:600;">'
                                         f'{s["day_label"]} of every month</div></div>'
-                                        f'<div><div style="font-size:9px;color:#718096;'
+                                        f'<div><div style="font-size:9px;color:#64748b;'
                                         f'text-transform:uppercase;margin-bottom:3px;">Last Deducted</div>'
-                                        f'<div style="font-size:13px;color:#e2e8f0;font-weight:600;">'
+                                        f'<div style="font-size:13px;color:#0f172a;font-weight:600;">'
                                         f'{s["last_date"]}</div></div>'
-                                        f'<div><div style="font-size:9px;color:#718096;'
+                                        f'<div><div style="font-size:9px;color:#64748b;'
                                         f'text-transform:uppercase;margin-bottom:3px;">Days Since Last</div>'
-                                        f'<div style="font-size:13px;color:#fc8181;font-weight:600;">'
+                                        f'<div style="font-size:13px;color:#dc2626;font-weight:600;">'
                                         f'{days_since} days</div></div></div>'
                                         f'<div style="background:rgba(252,129,129,0.08);'
                                         f'border:1px solid rgba(252,129,129,0.2);'
                                         f'border-radius:8px;padding:10px 12px;">'
-                                        f'<div style="font-size:11px;color:#fc8181;font-weight:700;'
+                                        f'<div style="font-size:11px;color:#dc2626;font-weight:700;'
                                         f'margin-bottom:4px;">🔍 What to check:</div>'
-                                        f'<div style="font-size:11px;color:#718096;line-height:1.8;">'
+                                        f'<div style="font-size:11px;color:#64748b;line-height:1.8;">'
                                         f'• Check if your bank account had sufficient balance<br>'
                                         f'• Check if the SIP mandate is still active<br>'
                                         f'• Check your bank statement for debit on {s["day_label"]} of last month<br>'
@@ -2858,17 +2876,17 @@ def render_dashboard(data):
                                 f'padding:16px 18px;margin-bottom:8px;">'
                                 f'<div style="display:flex;justify-content:space-between;'
                                 f'align-items:flex-start;margin-bottom:10px;">'
-                                f'<div style="font-size:11px;color:#e2e8f0;font-weight:600;'
+                                f'<div style="font-size:11px;color:#0f172a;font-weight:600;'
                                 f'line-height:1.4;">{sn}</div>'
                                 f'<span style="background:rgba(252,129,129,0.15);'
                                 f'border:1px solid rgba(252,129,129,0.3);'
-                                f'color:#fc8181;font-size:9px;font-weight:700;'
+                                f'color:#dc2626;font-size:9px;font-weight:700;'
                                 f'padding:2px 7px;border-radius:20px;'
                                 f'white-space:nowrap;margin-left:8px;">STOPPED</span></div>'
                                 f'<div style="font-family:IBM Plex Mono,monospace;font-size:18px;'
-                                f'font-weight:700;color:#fc8181;margin-bottom:8px;">'
+                                f'font-weight:700;color:#dc2626;margin-bottom:8px;">'
                                 f'{fmt_inr(s["amount"])}</div>'
-                                f'<div style="font-size:10px;color:#718096;">'
+                                f'<div style="font-size:10px;color:#64748b;">'
                                 f'⚠️ Last: {s["last_date"]} · {recency}</div>'
                                 f'</div>',
                                 unsafe_allow_html=True,
@@ -2880,7 +2898,7 @@ def render_dashboard(data):
                     expanded=False,
                 ):
                     st.markdown(
-                        f'<div style="font-size:11px;color:#4a5568;margin-bottom:10px;">'
+                        f'<div style="font-size:11px;color:#94a3b8;margin-bottom:10px;">'
                         f'These SIPs stopped more than 1 year ago. '
                         f'Shown here for reference only.</div>',
                         unsafe_allow_html=True,
@@ -2888,16 +2906,16 @@ def render_dashboard(data):
                     for s in sorted(old_dead,
                         key=lambda x: x.get("last_date",""), reverse=True):
                         st.markdown(
-                            f'<div style="background:#0a0d14;border:1px solid rgba(255,255,255,0.05);'
+                            f'<div style="background:#0a0d14;border:1px solid rgba(0,0,0,0.07);'
                             f'border-radius:8px;padding:10px 14px;margin-bottom:4px;'
                             f'display:flex;justify-content:space-between;align-items:center;">'
                             f'<div>'
-                            f'<div style="font-size:11px;color:#718096;">'
+                            f'<div style="font-size:11px;color:#64748b;">'
                             f'{clean_name(s["scheme"])}</div>'
-                            f'<div style="font-size:10px;color:#4a5568;margin-top:2px;">'
+                            f'<div style="font-size:10px;color:#94a3b8;margin-top:2px;">'
                             f'Last: {s["last_date"]}</div></div>'
                             f'<div style="font-family:IBM Plex Mono,monospace;font-size:11px;'
-                            f'color:#4a5568;">{fmt_inr(s["amount"])}</div>'
+                            f'color:#94a3b8;">{fmt_inr(s["amount"])}</div>'
                             f'</div>',
                             unsafe_allow_html=True,
                         )
@@ -2907,12 +2925,12 @@ def render_dashboard(data):
             _dash_section("↩️ Bounced / Reversed SIPs")
             for t in sorted(sip_rev, key=lambda x: x["date_obj"], reverse=True):
                 st.markdown(
-                    f'<div style="background:#0c0f1a;border:1px solid rgba(252,129,129,0.2);'
+                    f'<div style="background:#ffffff;border:1px solid rgba(252,129,129,0.2);'
                     f'border-left:3px solid #fc8181;border-radius:0 12px 12px 0;'
                     f'padding:12px 16px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'
-                    f'<div><div style="font-size:12px;color:#e2e8f0;font-weight:500;">{t["Scheme"]}</div>'
-                    f'<div style="font-size:10px;color:#718096;margin-top:3px;">{t["Date"]} &nbsp;·&nbsp; {t.get("Description","")[:60]}</div></div>'
-                    f'<div style="font-family:IBM Plex Mono,monospace;font-size:14px;font-weight:700;color:#fc8181;">{fmt_inr(t["Amount"])}</div>'
+                    f'<div><div style="font-size:12px;color:#0f172a;font-weight:500;">{t["Scheme"]}</div>'
+                    f'<div style="font-size:10px;color:#64748b;margin-top:3px;">{t["Date"]} &nbsp;·&nbsp; {t.get("Description","")[:60]}</div></div>'
+                    f'<div style="font-family:IBM Plex Mono,monospace;font-size:14px;font-weight:700;color:#dc2626;">{fmt_inr(t["Amount"])}</div>'
                     f'</div>',
                     unsafe_allow_html=True,
                 )
@@ -2956,7 +2974,7 @@ def render_dashboard(data):
                 f'<div style="background:rgba(252,129,129,0.05);border:1px solid rgba(252,129,129,0.2);'
                 f'border-radius:12px;padding:12px 16px;margin-bottom:14px;display:flex;gap:10px;align-items:center;">'
                 f'<div style="font-size:18px;">🚨</div>'
-                f'<div style="font-size:12px;color:#fc8181;line-height:1.6;">'
+                f'<div style="font-size:12px;color:#dc2626;line-height:1.6;">'
                 f'<b>{len(missed_sips)} SIP(s)</b> did not deduct in <b>{last_month_lbl}</b>. '
                 f'These may have been paused, bounced, or missed. Please check with your bank.</div></div>',
                 unsafe_allow_html=True,
@@ -2968,20 +2986,20 @@ def render_dashboard(data):
                     f'border:1px solid rgba(252,129,129,0.3);border-radius:14px;'
                     f'padding:16px 18px;margin-bottom:8px;">'
                     f'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">'
-                    f'<div style="font-size:12px;color:#e2e8f0;font-weight:600;line-height:1.4;">{sn}</div>'
+                    f'<div style="font-size:12px;color:#0f172a;font-weight:600;line-height:1.4;">{sn}</div>'
                     f'<span style="background:rgba(252,129,129,0.15);border:1px solid rgba(252,129,129,0.4);'
-                    f'color:#fc8181;font-size:9px;font-weight:800;padding:3px 8px;'
+                    f'color:#dc2626;font-size:9px;font-weight:800;padding:3px 8px;'
                     f'border-radius:20px;letter-spacing:1px;white-space:nowrap;">'
                     f'❌ MISSED {last_month_lbl.upper()}</span></div>'
                     f'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">'
-                    f'<div><div style="font-size:9px;color:#718096;text-transform:uppercase;'
+                    f'<div><div style="font-size:9px;color:#64748b;text-transform:uppercase;'
                     f'letter-spacing:1px;margin-bottom:3px;">SIP Amount</div>'
                     f'<div style="font-family:IBM Plex Mono,monospace;font-size:13px;'
-                    f'font-weight:700;color:#fc8181;">{fmt_inr(s["amount"])}</div></div>'
-                    f'<div><div style="font-size:9px;color:#718096;text-transform:uppercase;'
+                    f'font-weight:700;color:#dc2626;">{fmt_inr(s["amount"])}</div></div>'
+                    f'<div><div style="font-size:9px;color:#64748b;text-transform:uppercase;'
                     f'letter-spacing:1px;margin-bottom:3px;">Last Deducted</div>'
-                    f'<div style="font-size:12px;color:#e2e8f0;font-weight:600;">{s["last_date"]}</div></div>'
-                    f'<div><div style="font-size:9px;color:#718096;text-transform:uppercase;'
+                    f'<div style="font-size:12px;color:#0f172a;font-weight:600;">{s["last_date"]}</div></div>'
+                    f'<div><div style="font-size:9px;color:#64748b;text-transform:uppercase;'
                     f'letter-spacing:1px;margin-bottom:3px;">Due Day</div>'
                     f'<div style="font-size:12px;color:#f6ad55;font-weight:600;">{s["day_label"]} every month</div></div>'
                     f'</div></div>',
@@ -3038,21 +3056,21 @@ def render_dashboard(data):
                     months_html += (
                         f'<div style="display:flex;justify-content:space-between;'
                         f'align-items:center;padding:8px 0;'
-                        f'border-bottom:1px solid rgba(255,255,255,0.04);">'
+                        f'border-bottom:1px solid rgba(0,0,0,0.06);">'
                         f'<div>'
                         f'<span style="background:{badge_color}18;border:1px solid {badge_color}44;'
                         f'color:{badge_color};font-size:9px;font-weight:800;padding:2px 8px;'
                         f'border-radius:20px;margin-right:8px;">{m["count"]}x IN {m["month"].upper()}</span>'
-                        f'<span style="font-size:11px;color:#718096;">{m["dates"]}</span>'
+                        f'<span style="font-size:11px;color:#64748b;">{m["dates"]}</span>'
                         f'</div>'
                         f'<span style="font-family:IBM Plex Mono,monospace;font-size:12px;'
                         f'font-weight:700;color:{badge_color};">{fmt_inr(m["total"])}</span>'
                         f'</div>'
                     )
                 st.markdown(
-                    f'<div style="background:#0c0f1a;border:1px solid rgba(246,173,85,0.2);'
+                    f'<div style="background:#ffffff;border:1px solid rgba(246,173,85,0.2);'
                     f'border-radius:14px;padding:16px 18px;margin-bottom:8px;">'
-                    f'<div style="font-size:13px;font-weight:700;color:#f7fafc;margin-bottom:12px;">{sn}</div>'
+                    f'<div style="font-size:13px;font-weight:700;color:#0f172a;margin-bottom:12px;">{sn}</div>'
                     f'{months_html}</div>',
                     unsafe_allow_html=True,
                 )
@@ -3130,22 +3148,22 @@ def render_dashboard(data):
             ".lhc{background:linear-gradient(135deg,#0c0f1a,#111627);border-radius:16px;padding:20px 22px;"
             "animation:lhIn .55s ease forwards,lPulse 4s ease infinite;transition:transform .2s,border-color .25s;}"
             ".lhc:hover{transform:translateY(-4px);}"
-            ".lhl{font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1.6px;font-weight:700;"
+            ".lhl{font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1.6px;font-weight:700;"
             "margin-bottom:10px;display:flex;align-items:center;gap:6px;}"
             ".lhv{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:22px;letter-spacing:-.5px;}"
-            ".lhs{font-size:10px;color:#4a5568;margin-top:6px;}</style>"
+            ".lhs{font-size:10px;color:#94a3b8;margin-top:6px;}</style>"
             "<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;'>"
 
             f"<div class='lhc' style='border:1px solid rgba(159,122,234,0.25);animation-delay:.0s;'>"
             f"<div class='lhl'><span style='width:6px;height:6px;border-radius:50%;background:#9f7aea;"
             f"box-shadow:0 0 6px #9f7aea;display:inline-block;'></span>Lumpsum Invested</div>"
-            f"<div class='lhv' style='color:#9f7aea;'>{fmt_inr(total_ls)}</div>"
+            f"<div class='lhv' style='color:#8b5cf6;'>{fmt_inr(total_ls)}</div>"
             f"<div class='lhs'>{len(ls_by_scheme)} schemes · {len(ls_txs)} purchases</div></div>"
 
             f"<div class='lhc' style='border:1px solid rgba(252,129,129,0.25);animation-delay:.1s;'>"
             f"<div class='lhl'><span style='width:6px;height:6px;border-radius:50%;background:#fc8181;"
             f"box-shadow:0 0 6px #fc8181;display:inline-block;'></span>Attributed Redemptions</div>"
-            f"<div class='lhv' style='color:#fc8181;'>{fmt_inr(total_ls_red)}</div>"
+            f"<div class='lhv' style='color:#dc2626;'>{fmt_inr(total_ls_red)}</div>"
             f"<div class='lhs'>Lumpsum-portion only · {ls_schemes_with_red} schemes</div></div>"
 
             f"<div class='lhc' style='border:1px solid {net_border};animation-delay:.2s;'>"
@@ -3175,7 +3193,7 @@ def render_dashboard(data):
             st.markdown(
                 f'<div style="background:rgba(99,179,237,0.06);border:1px solid rgba(99,179,237,0.15);"'
                 f'border-left:3px solid #63b3ed;border-radius:0 10px 10px 0;'
-                f'padding:10px 16px;margin-bottom:18px;font-size:12px;color:#718096;">'
+                f'padding:10px 16px;margin-bottom:18px;font-size:12px;color:#64748b;">'
                 f'ℹ️ Smart Attribution: {" · ".join(info_parts)}</div>',
                 unsafe_allow_html=True,
             )
@@ -3187,18 +3205,18 @@ def render_dashboard(data):
         gauge_label  = "Low — Good" if gauge_pct < 30 else "Moderate" if gauge_pct < 70 else "High — Review"
         gauge_html   = (
             "<div style='background:linear-gradient(135deg,#0c0f1a,#111627);"
-            "border:1px solid rgba(255,255,255,0.06);border-radius:16px;padding:18px 22px;margin-bottom:18px;'>"
+            "border:1px solid rgba(0,0,0,0.07);border-radius:16px;padding:18px 22px;margin-bottom:18px;'>"
             "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;'>"
-            "<div style='font-size:11px;font-weight:700;color:#718096;text-transform:uppercase;letter-spacing:1.5px;'>"
+            "<div style='font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;'>"
             "Lumpsum Capital Retention</div>"
             f"<span style='font-family:IBM Plex Mono,monospace;font-size:12px;font-weight:700;color:{gauge_color};'>"
             f"{gauge_label}</span></div>"
-            "<div style='background:#111627;border-radius:8px;height:14px;overflow:hidden;'>"
+            "<div style='background:#f8fafc;border-radius:8px;height:14px;overflow:hidden;'>"
             f"<div style='height:100%;width:{remain_pct:.1f}%;background:linear-gradient(90deg,#9f7aea,#63b3ed);"
             "border-radius:8px;'></div></div>"
             "<div style='display:flex;justify-content:space-between;margin-top:6px;'>"
-            f"<div style='font-size:10px;color:#9f7aea;font-family:IBM Plex Mono,monospace;'>● Still Invested {remain_pct:.1f}%</div>"
-            f"<div style='font-size:10px;color:#fc8181;font-family:IBM Plex Mono,monospace;'>Redeemed {gauge_pct:.1f}% ●</div>"
+            f"<div style='font-size:10px;color:#8b5cf6;font-family:IBM Plex Mono,monospace;'>● Still Invested {remain_pct:.1f}%</div>"
+            f"<div style='font-size:10px;color:#dc2626;font-family:IBM Plex Mono,monospace;'>Redeemed {gauge_pct:.1f}% ●</div>"
             "</div></div>"
         )
         st.markdown(gauge_html, unsafe_allow_html=True)
@@ -3235,14 +3253,14 @@ def render_dashboard(data):
                            f'<title>{lbl}: {fmt_inr(val)} ({pct_x:.1f}%)</title></path>')
                 short_x = lbl[:22]+"…" if len(lbl)>22 else lbl
                 leg_x  += (f'<div style="display:flex;justify-content:space-between;align-items:center;'
-                           f'padding:5px 0;border-bottom:1px solid rgba(255,255,255,0.04);">'
+                           f'padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.06);">'
                            f'<div style="display:flex;align-items:center;gap:6px;">'
                            f'<span style="width:7px;height:7px;border-radius:50%;background:{c_x};'
                            f'box-shadow:0 0 5px {c_x}66;display:inline-block;flex-shrink:0;"></span>'
-                           f'<span style="font-size:10px;color:#e2e8f0;">{short_x}</span></div>'
+                           f'<span style="font-size:10px;color:#0f172a;">{short_x}</span></div>'
                            f'<div style="text-align:right;">'
-                           f'<div style="font-family:IBM Plex Mono,monospace;font-size:10px;font-weight:700;color:#f7fafc;">{fmt_inr(val)}</div>'
-                           f'<div style="font-size:9px;color:#4a5568;">{pct_x:.1f}%</div></div></div>')
+                           f'<div style="font-family:IBM Plex Mono,monospace;font-size:10px;font-weight:700;color:#0f172a;">{fmt_inr(val)}</div>'
+                           f'<div style="font-size:9px;color:#94a3b8;">{pct_x:.1f}%</div></div></div>')
                 ang_x  += (pct_x/100)*360
             return kf_x, segs_x, leg_x
 
@@ -3251,44 +3269,42 @@ def render_dashboard(data):
             if ls_by_scheme:
                 kf_i, segs_i, leg_i = _build_donut(ls_by_scheme, pal_inv, 95, 95, 78, 48, "inv")
                 inv_html = (
-                    f"<style>{kf_i}@keyframes icF{{from{{opacity:0;}}to{{opacity:1;}}}}</style>"
-                    "<div style='background:linear-gradient(135deg,#0c0f1a,#0d1020);"
-                    "border:1px solid rgba(159,122,234,0.15);border-radius:16px;padding:18px;'>"
-                    "<div style='font-family:Syne,sans-serif;font-size:10px;font-weight:700;color:#9f7aea;"
+                    f"<style>{kf_i}</style>"
+                    "<div style='background:#ffffff;border:1px solid rgba(139,92,246,0.15);"
+                    "border-radius:16px;padding:18px;box-shadow:0 1px 4px rgba(0,0,0,0.06);'>"
+                    "<div style='font-size:10px;font-weight:700;color:#8b5cf6;"
                     "text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;'>💜 Where You Invested (Lumpsum)</div>"
-                    "<div style='display:flex;align-items:center;gap:14px;'>"
-                    f"<svg width='190' height='190' viewBox='0 0 190 190' style='flex-shrink:0;'>"
-                    f"{segs_i}<circle cx='95' cy='95' r='46' fill='#07090f'/>"
-                    f"<text x='95' y='91' text-anchor='middle' style='font-size:9px;fill:#718096;animation:icF 1s .7s forwards;opacity:0;'>invested</text>"
-                    f"<text x='95' y='106' text-anchor='middle' style='font-family:IBM Plex Mono,monospace;font-size:12px;font-weight:700;fill:#9f7aea;animation:icF 1s .8s forwards;opacity:0;'>{len(ls_by_scheme)}</text>"
-                    f"</svg><div style='flex:1;'>{leg_i}</div></div></div>"
+                    f"<svg width='190' height='190' viewBox='0 0 190 190' style='display:block;margin:0 auto 10px;'>"
+                    f"{segs_i}<circle cx='95' cy='95' r='46' fill='#fff'/>"
+                    f"<text x='95' y='91' text-anchor='middle' style='font-size:9px;fill:#94a3b8;'>invested</text>"
+                    f"<text x='95' y='106' text-anchor='middle' style='font-family:IBM Plex Mono,monospace;font-size:13px;font-weight:700;fill:#8b5cf6;'>{len(ls_by_scheme)}</text>"
+                    f"</svg><div>{leg_i}</div></div>"
                 )
-                components.html(inv_html, height=260, scrolling=True)
+                st.markdown(inv_html, unsafe_allow_html=True)
 
         with dc2:
             if red_by_scheme:
                 kf_r, segs_r, leg_r = _build_donut(red_by_scheme, pal_red, 95, 95, 78, 48, "red")
                 red_html = (
-                    f"<style>{kf_r}@keyframes rcF{{from{{opacity:0;}}to{{opacity:1;}}}}</style>"
-                    "<div style='background:linear-gradient(135deg,#0c0f1a,#1a0808);"
-                    "border:1px solid rgba(252,129,129,0.15);border-radius:16px;padding:18px;'>"
-                    "<div style='font-family:Syne,sans-serif;font-size:10px;font-weight:700;color:#fc8181;"
+                    f"<style>{kf_r}</style>"
+                    "<div style='background:#fff9f9;border:1px solid rgba(220,38,38,0.15);"
+                    "border-radius:16px;padding:18px;box-shadow:0 1px 4px rgba(0,0,0,0.06);'>"
+                    "<div style='font-size:10px;font-weight:700;color:#dc2626;"
                     "text-transform:uppercase;letter-spacing:2px;margin-bottom:12px;'>❤️ Redeemed (Lumpsum Portion)</div>"
-                    "<div style='display:flex;align-items:center;gap:14px;'>"
-                    f"<svg width='190' height='190' viewBox='0 0 190 190' style='flex-shrink:0;'>"
-                    f"{segs_r}<circle cx='95' cy='95' r='46' fill='#07090f'/>"
-                    f"<text x='95' y='91' text-anchor='middle' style='font-size:9px;fill:#718096;animation:rcF 1s .7s forwards;opacity:0;'>redeemed</text>"
-                    f"<text x='95' y='106' text-anchor='middle' style='font-family:IBM Plex Mono,monospace;font-size:12px;font-weight:700;fill:#fc8181;animation:rcF 1s .8s forwards;opacity:0;'>{len(red_by_scheme)}</text>"
-                    f"</svg><div style='flex:1;'>{leg_r}</div></div></div>"
+                    f"<svg width='190' height='190' viewBox='0 0 190 190' style='display:block;margin:0 auto 10px;'>"
+                    f"{segs_r}<circle cx='95' cy='95' r='46' fill='#fff9f9'/>"
+                    f"<text x='95' y='91' text-anchor='middle' style='font-size:9px;fill:#94a3b8;'>redeemed</text>"
+                    f"<text x='95' y='106' text-anchor='middle' style='font-family:IBM Plex Mono,monospace;font-size:13px;font-weight:700;fill:#dc2626;'>{len(red_by_scheme)}</text>"
+                    f"</svg><div>{leg_r}</div></div>"
                 )
-                components.html(red_html, height=260, scrolling=True)
+                st.markdown(red_html, unsafe_allow_html=True)
             else:
                 st.markdown(
                     '<div style="background:rgba(72,187,120,0.06);border:1px solid rgba(72,187,120,0.2);"'
                     'border-radius:14px;padding:40px;text-align:center;">'
                     '<div style="font-size:32px;margin-bottom:8px;">🎉</div>'
-                    '<div style="font-size:14px;font-weight:700;color:#48bb78;">No Lumpsum Redemptions!</div>'
-                    '<div style="font-size:12px;color:#718096;margin-top:4px;">All your lumpsum capital is still invested.</div>'
+                    '<div style="font-size:14px;font-weight:700;color:#059669;">No Lumpsum Redemptions!</div>'
+                    '<div style="font-size:12px;color:#64748b;margin-top:4px;">All your lumpsum capital is still invested.</div>'
                     '</div>',
                     unsafe_allow_html=True,
                 )
@@ -3316,13 +3332,13 @@ def render_dashboard(data):
                 pnl_label  = "Profit Booked" if pnl_a >= 0 else "Loss on Exit"
 
                 st.markdown(
-                    f'<div style="background:#0c0f1a;border:1px solid rgba(255,255,255,0.08);"'
+                    f'<div style="background:#ffffff;border:1px solid rgba(0,0,0,0.07);"'
                     f'border-radius:16px;padding:22px 26px;margin-bottom:14px;">'
                     # Header
                     f'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">'
                     f'<div>'
-                    f'<div style="font-size:14px;color:#f7fafc;font-weight:700;line-height:1.3;margin-bottom:4px;">{clean_name(scheme)}</div>'
-                    + (f'<div style="font-size:10px;color:#63b3ed;">🔀 Mixed: also has '
+                    f'<div style="font-size:14px;color:#0f172a;font-weight:700;line-height:1.3;margin-bottom:4px;">{clean_name(scheme)}</div>'
+                    + (f'<div style="font-size:10px;color:#3b82f6;">🔀 Mixed: also has '
                        f'{fmt_inr(sip_inv)} SIP investment · redemptions split proportionally</div>' if is_mixed else '') +
                     f'</div>'
                     f'<span style="background:{sc}1a;border:1px solid {sc}55;color:{sc};font-size:9px;"'
@@ -3330,29 +3346,29 @@ def render_dashboard(data):
                     f'white-space:nowrap;margin-left:12px;">{status}</span></div>'
                     # 4-col stats
                     f'<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px;margin-bottom:16px;">'
-                    f'<div style="background:#111627;border-radius:10px;padding:12px 14px;">'
-                    f'<div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">💜 Lumpsum Invested</div>'
-                    f'<div style="font-family:IBM Plex Mono,monospace;font-size:14px;font-weight:700;color:#9f7aea;">{fmt_inr(inv_a)}</div>'
-                    + (f'<div style="font-size:9px;color:#4a5568;margin-top:3px;">+ {fmt_inr(sip_inv)} via SIP</div>' if is_mixed else '') +
+                    f'<div style="background:#f8fafc;border-radius:10px;padding:12px 14px;">'
+                    f'<div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">💜 Lumpsum Invested</div>'
+                    f'<div style="font-family:IBM Plex Mono,monospace;font-size:14px;font-weight:700;color:#8b5cf6;">{fmt_inr(inv_a)}</div>'
+                    + (f'<div style="font-size:9px;color:#94a3b8;margin-top:3px;">+ {fmt_inr(sip_inv)} via SIP</div>' if is_mixed else '') +
                     f'</div>'
-                    f'<div style="background:#111627;border-radius:10px;padding:12px 14px;">'
-                    f'<div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">❤️ Attributed Redemption</div>'
-                    f'<div style="font-family:IBM Plex Mono,monospace;font-size:14px;font-weight:700;color:#fc8181;">{fmt_inr(red_a) if red_a else "—"}</div>'
-                    + (f'<div style="font-size:9px;color:#4a5568;margin-top:3px;">of {fmt_inr(full_red)} total redeemed</div>' if is_mixed and full_red else '') +
+                    f'<div style="background:#f8fafc;border-radius:10px;padding:12px 14px;">'
+                    f'<div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">❤️ Attributed Redemption</div>'
+                    f'<div style="font-family:IBM Plex Mono,monospace;font-size:14px;font-weight:700;color:#dc2626;">{fmt_inr(red_a) if red_a else "—"}</div>'
+                    + (f'<div style="font-size:9px;color:#94a3b8;margin-top:3px;">of {fmt_inr(full_red)} total redeemed</div>' if is_mixed and full_red else '') +
                     f'</div>'
-                    f'<div style="background:#111627;border-radius:10px;padding:12px 14px;">'
-                    f'<div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">🏦 {net_label}</div>'
+                    f'<div style="background:#f8fafc;border-radius:10px;padding:12px 14px;">'
+                    f'<div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">🏦 {net_label}</div>'
                     f'<div style="font-family:IBM Plex Mono,monospace;font-size:14px;font-weight:700;color:{nc};">{"▲" if net_a>=0 else "▼"} {fmt_inr(abs(net_a))}</div></div>'
-                    f'<div style="background:#111627;border-radius:10px;padding:12px 14px;">'
-                    f'<div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">📈 {pnl_label}</div>'
+                    f'<div style="background:#f8fafc;border-radius:10px;padding:12px 14px;">'
+                    f'<div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">📈 {pnl_label}</div>'
                     f'<div style="font-family:IBM Plex Mono,monospace;font-size:14px;font-weight:700;color:{pnl_c};">{"▲" if pnl_a>=0 else "▼"} {fmt_inr(abs(pnl_a)) if red_a else "—"}</div></div></div>'
                     # Progress bar
                     f'<div style="background:#0a0d14;border-radius:8px;height:10px;overflow:hidden;margin-bottom:6px;">'
                     f'<div style="height:100%;width:{remain:.1f}%;background:linear-gradient(90deg,#9f7aea66,#9f7aea);'
                     f'border-radius:8px;"></div></div>'
                     f'<div style="display:flex;justify-content:space-between;">'
-                    f'<span style="font-size:10px;color:#9f7aea;font-family:IBM Plex Mono,monospace;">● Remaining {remain:.0f}%</span>'
-                    f'<span style="font-size:10px;color:#fc8181;font-family:IBM Plex Mono,monospace;">Redeemed {red_pct:.0f}% ●</span>'
+                    f'<span style="font-size:10px;color:#8b5cf6;font-family:IBM Plex Mono,monospace;">● Remaining {remain:.0f}%</span>'
+                    f'<span style="font-size:10px;color:#dc2626;font-family:IBM Plex Mono,monospace;">Redeemed {red_pct:.0f}% ●</span>'
                     f'</div></div>',
                     unsafe_allow_html=True,
                 )
@@ -3373,11 +3389,11 @@ def render_dashboard(data):
         # ── Animated KPIs ──────────────────────────────────────────────────
         sw_kpi = (
             "<style>@keyframes swIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}"
-            ".swk{background:#0c0f1a;border-radius:14px;padding:16px 18px;animation:swIn .5s ease forwards;"
+            ".swk{background:#ffffff;border-radius:14px;padding:16px 18px;animation:swIn .5s ease forwards;"
             "transition:border-color .25s,transform .2s;}.swk:hover{transform:translateY(-3px);}"
-            ".swl{font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1.4px;font-weight:600;margin-bottom:8px;}"
+            ".swl{font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1.4px;font-weight:600;margin-bottom:8px;}"
             ".swv{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:700;}"
-            ".sws{font-size:10px;color:#4a5568;margin-top:5px;}</style>"
+            ".sws{font-size:10px;color:#94a3b8;margin-top:5px;}</style>"
             "<div style='display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px;'>"
             f"<div class='swk' style='border:1px solid rgba(246,173,85,0.2);animation-delay:.0s;'>"
             f"<div class='swl'>STP Out</div><div class='swv' style='color:#f6ad55;'>{fmt_inr(total_stp_out)}</div>"
@@ -3392,7 +3408,7 @@ def render_dashboard(data):
             f"<div class='swl'>Switch In</div><div class='swv' style='color:#4fd1c5;'>{fmt_inr(total_switch_in)}</div>"
             f"<div class='sws'>{len(switch_in_txs)} events</div></div>"
             f"<div class='swk' style='border:1px solid rgba(99,179,237,0.2);animation-delay:.32s;'>"
-            f"<div class='swl'>Total Moved</div><div class='swv' style='color:#63b3ed;'>{fmt_inr(total_moved)}</div>"
+            f"<div class='swl'>Total Moved</div><div class='swv' style='color:#3b82f6;'>{fmt_inr(total_moved)}</div>"
             f"<div class='sws'>STP + Switch combined</div></div></div>"
         )
         st.markdown(sw_kpi, unsafe_allow_html=True)
@@ -3415,7 +3431,7 @@ def render_dashboard(data):
             flow_html = (
                 "<style>@keyframes fIn{from{opacity:0;transform:scaleX(0);}to{opacity:1;transform:scaleX(1);}}"
                 "@keyframes aIn{from{opacity:0;}to{opacity:1;}}</style>"
-                "<div style='background:#0c0f1a;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px;'>"
+                "<div style='background:#ffffff;border:1px solid rgba(0,0,0,0.07);border-radius:14px;padding:18px;'>"
                 "<div style='display:grid;grid-template-columns:1fr 60px 1fr;gap:0;align-items:center;'>"
                 "<div>"
             )
@@ -3425,15 +3441,15 @@ def render_dashboard(data):
                 flow_html += (
                     f"<div style='margin-bottom:12px;'>"
                     f"<div style='display:flex;justify-content:space-between;margin-bottom:4px;'>"
-                    f"<span style='font-size:11px;color:#e2e8f0;'>{short}</span>"
+                    f"<span style='font-size:11px;color:#0f172a;'>{short}</span>"
                     f"<span style='font-family:IBM Plex Mono,monospace;font-size:10px;color:#f6ad55;font-weight:600;'>{fmt_inr(val)}</span></div>"
-                    f"<div style='background:#111627;border-radius:4px;height:7px;overflow:hidden;transform-origin:right;'>"
+                    f"<div style='background:#f8fafc;border-radius:4px;height:7px;overflow:hidden;transform-origin:right;'>"
                     f"<div style='height:100%;width:{w:.0f}%;background:linear-gradient(90deg,#f6ad55,#f6ad5588);border-radius:4px;"
                     f"animation:fIn .9s ease forwards;transform-origin:right;'></div></div></div>"
                 )
             flow_html += "</div>"
             flow_html += (
-                "<div style='text-align:center;font-size:24px;animation:aIn 1s .5s forwards;opacity:0;color:#63b3ed;'>→</div>"
+                "<div style='text-align:center;font-size:24px;animation:aIn 1s .5s forwards;opacity:0;color:#3b82f6;'>→</div>"
                 "<div>"
             )
             for lbl, val in in_items:
@@ -3443,13 +3459,13 @@ def render_dashboard(data):
                     f"<div style='margin-bottom:12px;'>"
                     f"<div style='display:flex;justify-content:space-between;margin-bottom:4px;'>"
                     f"<span style='font-family:IBM Plex Mono,monospace;font-size:10px;color:#68d391;font-weight:600;'>{fmt_inr(val)}</span>"
-                    f"<span style='font-size:11px;color:#e2e8f0;'>{short}</span></div>"
-                    f"<div style='background:#111627;border-radius:4px;height:7px;overflow:hidden;'>"
+                    f"<span style='font-size:11px;color:#0f172a;'>{short}</span></div>"
+                    f"<div style='background:#f8fafc;border-radius:4px;height:7px;overflow:hidden;'>"
                     f"<div style='height:100%;width:{w:.0f}%;background:linear-gradient(90deg,#68d39188,#68d391);border-radius:4px;"
                     f"animation:fIn .9s ease .2s forwards;'></div></div></div>"
                 )
             flow_html += "</div></div></div>"
-            components.html(flow_html, height=max(260, max(len(out_items), len(in_items)) * 65 + 80), scrolling=True)
+            st.markdown(flow_html, unsafe_allow_html=True)
 
         # ── Switch flow ───────────────────────────────────────────────────────
         if switch_out_txs or switch_in_txs:
@@ -3466,9 +3482,9 @@ def render_dashboard(data):
                 _dash_section("⬅️ Switched Out From")
                 for scheme, val in sorted(sw_out_by.items(), key=lambda x: -x[1]):
                     st.markdown(
-                        f'<div style="background:#0c0f1a;border:1px solid rgba(237,137,54,0.2);border-radius:10px;'
+                        f'<div style="background:#ffffff;border:1px solid rgba(237,137,54,0.2);border-radius:10px;'
                         f'padding:11px 14px;margin-bottom:6px;display:flex;justify-content:space-between;">'
-                        f'<span style="font-size:12px;color:#e2e8f0;">{clean_name(scheme)}</span>'
+                        f'<span style="font-size:12px;color:#0f172a;">{clean_name(scheme)}</span>'
                         f'<span style="font-family:IBM Plex Mono,monospace;font-size:12px;font-weight:700;color:#ed8936;">{fmt_inr(val)}</span>'
                         f'</div>',
                         unsafe_allow_html=True,
@@ -3477,9 +3493,9 @@ def render_dashboard(data):
                 _dash_section("➡️ Switched Into")
                 for scheme, val in sorted(sw_in_by.items(), key=lambda x: -x[1]):
                     st.markdown(
-                        f'<div style="background:#0c0f1a;border:1px solid rgba(79,209,197,0.2);border-radius:10px;'
+                        f'<div style="background:#ffffff;border:1px solid rgba(79,209,197,0.2);border-radius:10px;'
                         f'padding:11px 14px;margin-bottom:6px;display:flex;justify-content:space-between;">'
-                        f'<span style="font-size:12px;color:#e2e8f0;">{clean_name(scheme)}</span>'
+                        f'<span style="font-size:12px;color:#0f172a;">{clean_name(scheme)}</span>'
                         f'<span style="font-family:IBM Plex Mono,monospace;font-size:12px;font-weight:700;color:#4fd1c5;">{fmt_inr(val)}</span>'
                         f'</div>',
                         unsafe_allow_html=True,
@@ -3492,10 +3508,10 @@ def render_dashboard(data):
             for t in reversals:
                 meta = TX_META.get(t["Type"], TX_META["Other"])
                 st.markdown(
-                    f'<div style="background:#0c0f1a;border:1px solid {meta["color"]}33;border-left:3px solid {meta["color"]};'
+                    f'<div style="background:#ffffff;border:1px solid {meta["color"]}33;border-left:3px solid {meta["color"]};'
                     f'border-radius:0 10px 10px 0;padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between;">'
-                    f'<div><div style="font-size:12px;color:#e2e8f0;">{t["Scheme"]}</div>'
-                    f'<div style="font-size:10px;color:#718096;">{t["Date"]} · {t["Type"]}</div></div>'
+                    f'<div><div style="font-size:12px;color:#0f172a;">{t["Scheme"]}</div>'
+                    f'<div style="font-size:10px;color:#64748b;">{t["Date"]} · {t["Type"]}</div></div>'
                     f'<span style="font-family:IBM Plex Mono,monospace;font-size:12px;font-weight:700;color:{meta["color"]};">{fmt_inr(t["Amount"])}</span>'
                     f'</div>',
                     unsafe_allow_html=True,
@@ -3524,17 +3540,17 @@ def render_dashboard(data):
         # ── Animated KPIs ────────────────────────────────────────────────────
         rkpi = (
             "<style>@keyframes rIn{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}"
-            ".rk{background:#0c0f1a;border-radius:14px;padding:16px 18px;animation:rIn .5s ease forwards;"
+            ".rk{background:#ffffff;border-radius:14px;padding:16px 18px;animation:rIn .5s ease forwards;"
             "transition:border-color .25s,transform .2s;}.rk:hover{transform:translateY(-3px);}"
-            ".rl{font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1.4px;font-weight:600;margin-bottom:8px;}"
+            ".rl{font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1.4px;font-weight:600;margin-bottom:8px;}"
             ".rv{font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:700;}"
-            ".rs{font-size:10px;color:#4a5568;margin-top:5px;}</style>"
+            ".rs{font-size:10px;color:#94a3b8;margin-top:5px;}</style>"
             "<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;'>"
             f"<div class='rk' style='border:1px solid rgba(252,129,129,0.2);animation-delay:.0s;'>"
-            f"<div class='rl'>SWP Withdrawn</div><div class='rv' style='color:#fc8181;'>{fmt_inr(total_swp)}</div>"
+            f"<div class='rl'>SWP Withdrawn</div><div class='rv' style='color:#dc2626;'>{fmt_inr(total_swp)}</div>"
             f"<div class='rs'>{len(swp_txs)} events</div></div>"
             f"<div class='rk' style='border:1px solid rgba(252,129,129,0.2);animation-delay:.08s;'>"
-            f"<div class='rl'>Total Redeemed</div><div class='rv' style='color:#fc8181;'>{fmt_inr(total_red)}</div>"
+            f"<div class='rl'>Total Redeemed</div><div class='rv' style='color:#dc2626;'>{fmt_inr(total_red)}</div>"
             f"<div class='rs'>{len(red_txs)} redemptions</div></div>"
             f"<div class='rk' style='border:1px solid rgba(246,173,85,0.2);animation-delay:.16s;'>"
             f"<div class='rl'>Total Cash Out</div><div class='rv' style='color:#f6ad55;'>{fmt_inr(total_out)}</div>"
@@ -3583,22 +3599,22 @@ def render_dashboard(data):
                                f'onmouseover="this.style.filter=\'brightness(1.3)\'" onmouseout="this.style.filter=\'brightness(1)\'">'
                                f'<title>{lbl}: {fmt_inr(val)} ({pct_r:.1f}%)</title></path>')
                     short_r = lbl[:20] + "…" if len(lbl) > 20 else lbl
-                    leg_r  += (f'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.04);">'
+                    leg_r  += (f'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(0,0,0,0.06);">'
                                f'<div style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:{col_r};display:inline-block;"></span>'
-                               f'<span style="font-size:10px;color:#e2e8f0;">{short_r}</span></div>'
-                               f'<span style="font-family:IBM Plex Mono,monospace;font-size:10px;color:#f7fafc;font-weight:600;">{fmt_inr(val)}</span></div>')
+                               f'<span style="font-size:10px;color:#0f172a;">{short_r}</span></div>'
+                               f'<span style="font-family:IBM Plex Mono,monospace;font-size:10px;color:#0f172a;font-weight:600;">{fmt_inr(val)}</span></div>')
                     ang_r  += (pct_r/100)*360
                 rd_html = (
                     "<style>@keyframes rdIn{from{opacity:0;transform:scale(.75);transform-origin:90px 90px;}"
                     "to{opacity:1;transform:scale(1);transform-origin:90px 90px;}}</style>"
-                    "<div style='background:#0c0f1a;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:16px;'>"
-                    "<div style='display:flex;align-items:center;gap:12px;'>"
-                    f"<svg width='180' height='180' viewBox='0 0 180 180' style='flex-shrink:0;'>"
-                    f"{segs_r}<circle cx='{cxr}' cy='{cyr}' r='{rir-2}' fill='#07090f'/>"
-                    f"<text x='{cxr}' y='{cyr+4}' text-anchor='middle' style='font-size:9px;fill:#718096;'>redeemed</text>"
-                    f"</svg><div style='flex:1;'>{leg_r}</div></div></div>"
+                    "<div style='background:#ffffff;border:1px solid rgba(0,0,0,0.07);border-radius:14px;"
+                    "padding:16px;box-shadow:0 1px 4px rgba(0,0,0,0.06);'>"
+                    f"<svg width='180' height='180' viewBox='0 0 180 180' style='display:block;margin:0 auto 10px;'>"
+                    f"{segs_r}<circle cx='{cxr}' cy='{cyr}' r='{rir-2}' fill='#fff'/>"
+                    f"<text x='{cxr}' y='{cyr+4}' text-anchor='middle' style='font-size:9px;fill:#94a3b8;'>redeemed</text>"
+                    f"</svg><div>{leg_r}</div></div>"
                 )
-                components.html(rd_html, height=260, scrolling=True)
+                st.markdown(rd_html, unsafe_allow_html=True)
             else:
                 st.info("No redemptions found.")
 
@@ -3610,7 +3626,7 @@ def render_dashboard(data):
                 names_e  = [clean_name(r["scheme"])[:22] for r in exit_items]
                 profits  = [r["profit"] for r in exit_items]
                 pct_rets = [(r["profit"]/r["invested"]*100) if r["invested"] else 0 for r in exit_items]
-                colors_e = ["#48bb78" if p >= 0 else "#fc8181" for p in profits]
+                colors_e = ["#059669" if p >= 0 else "#dc2626" for p in profits]
                 fig_exit.add_trace(go.Bar(
                     x=names_e, y=pct_rets,
                     marker_color=colors_e,
@@ -3619,7 +3635,7 @@ def render_dashboard(data):
                     textfont=dict(size=10, color="#718096"),
                     hovertemplate="<b>%{x}</b><br>Return: %{y:.1f}%<extra></extra>",
                 ))
-                fig_exit.add_hline(y=0, line_color="rgba(255,255,255,0.1)", line_width=1)
+                fig_exit.add_hline(y=0, line_color="rgba(0,0,0,0.15)", line_width=1)
                 fig_exit.update_layout(
                     height=220, showlegend=False,
                     xaxis=dict(tickfont=dict(size=9, color="#718096"), tickangle=-30),
@@ -3643,14 +3659,14 @@ def render_dashboard(data):
                 st.markdown(
                     f'<div style="background:{bc};border:1px solid {bc2};border-radius:12px;padding:14px 18px;margin-bottom:8px;">'
                     f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'
-                    f'<div style="font-size:13px;color:#f7fafc;font-weight:600;">{clean_name(r["scheme"])}</div>'
+                    f'<div style="font-size:13px;color:#0f172a;font-weight:600;">{clean_name(r["scheme"])}</div>'
                     f'<div style="font-family:IBM Plex Mono,monospace;font-size:14px;font-weight:700;color:{pc};">'
                     f'{"▲" if profit>=0 else "▼"} {fmt_inr(profit)} &nbsp;<span style="font-size:11px;">({abs(pnl_pct):.1f}%)</span></div></div>'
                     f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">'
-                    f'<div><div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Invested</div>'
-                    f'<div style="font-family:IBM Plex Mono,monospace;font-size:12px;color:#9f7aea;font-weight:600;">{fmt_inr(r["invested"])}</div></div>'
-                    f'<div><div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Redeemed</div>'
-                    f'<div style="font-family:IBM Plex Mono,monospace;font-size:12px;color:#fc8181;font-weight:600;">{fmt_inr(r["redeemed"])}</div></div>'
+                    f'<div><div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Invested</div>'
+                    f'<div style="font-family:IBM Plex Mono,monospace;font-size:12px;color:#8b5cf6;font-weight:600;">{fmt_inr(r["invested"])}</div></div>'
+                    f'<div><div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:2px;">Redeemed</div>'
+                    f'<div style="font-family:IBM Plex Mono,monospace;font-size:12px;color:#dc2626;font-weight:600;">{fmt_inr(r["redeemed"])}</div></div>'
                     f'</div></div>',
                     unsafe_allow_html=True,
                 )
@@ -3660,11 +3676,11 @@ def render_dashboard(data):
             _dash_section("💸 SWP Transactions")
             for t in sorted(swp_txs, key=lambda x: x["date_obj"], reverse=True):
                 st.markdown(
-                    f'<div style="background:#0c0f1a;border:1px solid rgba(252,129,129,0.15);border-radius:10px;'
+                    f'<div style="background:#ffffff;border:1px solid rgba(252,129,129,0.15);border-radius:10px;'
                     f'padding:11px 14px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'
-                    f'<div><div style="font-size:12px;color:#e2e8f0;font-weight:500;">{t["Scheme"]}</div>'
-                    f'<div style="font-size:10px;color:#718096;margin-top:2px;">{t["Date"]} · {t.get("Description","")[:55]}</div></div>'
-                    f'<span style="font-family:IBM Plex Mono,monospace;font-size:13px;font-weight:700;color:#fc8181;">{fmt_inr(t["Amount"])}</span>'
+                    f'<div><div style="font-size:12px;color:#0f172a;font-weight:500;">{t["Scheme"]}</div>'
+                    f'<div style="font-size:10px;color:#64748b;margin-top:2px;">{t["Date"]} · {t.get("Description","")[:55]}</div></div>'
+                    f'<span style="font-family:IBM Plex Mono,monospace;font-size:13px;font-weight:700;color:#dc2626;">{fmt_inr(t["Amount"])}</span>'
                     f'</div>',
                     unsafe_allow_html=True,
                 )
@@ -3674,10 +3690,10 @@ def render_dashboard(data):
             for t in sorted(swp_rev + red_rev, key=lambda x: x["date_obj"], reverse=True):
                 meta = TX_META.get(t["Type"], TX_META["Other"])
                 st.markdown(
-                    f'<div style="background:#0c0f1a;border:1px solid {meta["color"]}33;border-left:3px solid {meta["color"]};'
+                    f'<div style="background:#ffffff;border:1px solid {meta["color"]}33;border-left:3px solid {meta["color"]};'
                     f'border-radius:0 10px 10px 0;padding:10px 14px;margin-bottom:6px;display:flex;justify-content:space-between;">'
-                    f'<div><div style="font-size:12px;color:#e2e8f0;">{t["Scheme"]}</div>'
-                    f'<div style="font-size:10px;color:#718096;">{t["Date"]} · {t["Type"]}</div></div>'
+                    f'<div><div style="font-size:12px;color:#0f172a;">{t["Scheme"]}</div>'
+                    f'<div style="font-size:10px;color:#64748b;">{t["Date"]} · {t["Type"]}</div></div>'
                     f'<span style="font-family:IBM Plex Mono,monospace;font-size:12px;font-weight:700;color:{meta["color"]};">{fmt_inr(t["Amount"])}</span>'
                     f'</div>',
                     unsafe_allow_html=True,
@@ -3708,7 +3724,7 @@ def render_my_portfolio(data):
             <div style="display:flex;align-items:center;gap:8px;margin:22px 0 10px;">
               <div style="width:7px;height:7px;border-radius:50%;background:{color};box-shadow:0 0 5px {color};"></div>
               <span style="font-size:11px;font-weight:700;color:{color};text-transform:uppercase;letter-spacing:2px;">{label}</span>
-              <div style="flex:1;height:1px;background:rgba(255,255,255,0.05);"></div>
+              <div style="flex:1;height:1px;background:rgba(0,0,0,0.06);"></div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -3936,12 +3952,12 @@ def render_sip_center(data):
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;
                         letter-spacing:1.5px;margin-bottom:4px;">Total Monthly Outflow</div>
             <div style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:700;
-                        color:#f7fafc;letter-spacing:-1px;">{fmt_inr(total_outflow)}</div>
+                        color:#0f172a;letter-spacing:-1px;">{fmt_inr(total_outflow)}</div>
           </div>
           <div>
             <div style="font-size:12px;font-weight:700;color:'{'#48bb78' if is_live else '#fc8181'}';">
               {len(target_list)} {status_label}</div>
-            {f'<div style="font-size:10px;color:#4a5568;margin-top:3px;">{len(old_dead)} older stopped SIPs hidden</div>' if not is_live and old_dead else ''}
+            {f'<div style="font-size:10px;color:#94a3b8;margin-top:3px;">{len(old_dead)} older stopped SIPs hidden</div>' if not is_live and old_dead else ''}
           </div>
         </div>
         """,
@@ -3982,7 +3998,7 @@ def render_sip_center(data):
             for item in live_sips
         ])
         fig_bar = px.bar(df_bar, x="Amount", y="Scheme", orientation="h",
-            color="Amount", color_continuous_scale=["#1a365d", C_ACCENT, "#bee3f8"])
+            color="Amount", color_continuous_scale=["#dbeafe", C_ACCENT, "#1d4ed8"])
         fig_bar.update_layout(
             height=max(200, len(live_sips) * 35),
             xaxis=dict(visible=False),
@@ -4011,7 +4027,7 @@ def render_transactions(data):
 
     # Use selectbox — wrapped in a container to prevent black overlay
     st.markdown(
-        '<div style="margin-bottom:4px;font-size:12px;color:#718096;">Select Scheme</div>',
+        '<div style="margin-bottom:4px;font-size:12px;color:#64748b;">Select Scheme</div>',
         unsafe_allow_html=True,
     )
     selected_display = st.selectbox(
@@ -4136,8 +4152,8 @@ def render_alerts(data):
             """
             <div style="text-align:center;padding:60px 20px;">
               <div style="font-size:48px;margin-bottom:12px;">◎</div>
-              <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:#f7fafc;margin-bottom:6px;">All Clear</div>
-              <div style="font-size:13px;color:#718096;">No alerts detected in your portfolio.</div>
+              <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:700;color:#0f172a;margin-bottom:6px;">All Clear</div>
+              <div style="font-size:13px;color:#64748b;">No alerts detected in your portfolio.</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -4154,8 +4170,8 @@ def render_alerts(data):
             <div class="alert-card" style="border-color:{color};">
               <div style="font-size:9px;font-weight:700;color:{color};text-transform:uppercase;
                           letter-spacing:1.5px;font-family:'IBM Plex Mono',monospace;margin-bottom:4px;">{label}</div>
-              <div style="font-size:14px;font-weight:600;color:#f7fafc;margin-bottom:3px;">{title}</div>
-              <div style="font-size:13px;color:#718096;">{detail}</div>
+              <div style="font-size:14px;font-weight:600;color:#0f172a;margin-bottom:3px;">{title}</div>
+              <div style="font-size:13px;color:#64748b;">{detail}</div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -4236,23 +4252,23 @@ def render_family_overview():
         "animation:famIn .5s ease forwards,famGlow 4s ease infinite;"
         "transition:transform .2s,border-color .25s;cursor:default;}"
         ".fk:hover{transform:translateY(-4px);}"
-        ".fl{font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1.6px;font-weight:700;"
+        ".fl{font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1.6px;font-weight:700;"
         "margin-bottom:10px;display:flex;align-items:center;gap:6px;}"
         ".fv{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:20px;letter-spacing:-.5px;}"
-        ".fs{font-size:10px;color:#4a5568;margin-top:6px;}"
+        ".fs{font-size:10px;color:#94a3b8;margin-top:6px;}"
         "</style>"
         "<div style='display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:24px;'>"
 
         f"<div class='fk' style='border:1px solid rgba(99,179,237,0.25);animation-delay:.0s;'>"
         f"<div class='fl'><span style='width:6px;height:6px;border-radius:50%;background:#63b3ed;"
         f"box-shadow:0 0 6px #63b3ed;display:inline-block;'></span>Family Wealth</div>"
-        f"<div class='fv' style='color:#63b3ed;'>{fmt_inr(fam_wealth)}</div>"
+        f"<div class='fv' style='color:#3b82f6;'>{fmt_inr(fam_wealth)}</div>"
         f"<div class='fs'>{len(selected)} members combined</div></div>"
 
         f"<div class='fk' style='border:1px solid rgba(159,122,234,0.25);animation-delay:.08s;'>"
         f"<div class='fl'><span style='width:6px;height:6px;border-radius:50%;background:#9f7aea;"
         f"box-shadow:0 0 6px #9f7aea;display:inline-block;'></span>Total Invested</div>"
-        f"<div class='fv' style='color:#9f7aea;'>{fmt_inr(fam_invested)}</div>"
+        f"<div class='fv' style='color:#8b5cf6;'>{fmt_inr(fam_invested)}</div>"
         f"<div class='fs'>Across all portfolios</div></div>"
 
         f"<div class='fk' style='border:1px solid rgba({'72,187,120' if fam_pnl>=0 else '252,129,129'},0.25);animation-delay:.16s;'>"
@@ -4264,7 +4280,7 @@ def render_family_overview():
         f"<div class='fk' style='border:1px solid rgba(72,187,120,0.25);animation-delay:.24s;'>"
         f"<div class='fl'><span style='width:6px;height:6px;border-radius:50%;background:#48bb78;"
         f"box-shadow:0 0 6px #48bb78;display:inline-block;'></span>Monthly SIP</div>"
-        f"<div class='fv' style='color:#48bb78;'>{fmt_inr(fam_sip)}</div>"
+        f"<div class='fv' style='color:#059669;'>{fmt_inr(fam_sip)}</div>"
         f"<div class='fs'>Combined family SIP</div></div>"
 
         f"<div class='fk' style='border:1px solid rgba(246,173,85,0.25);animation-delay:.32s;'>"
@@ -4304,8 +4320,8 @@ def render_family_overview():
                 f'<div style="width:32px;height:32px;border-radius:50%;background:{c}22;'
                 f'border:2px solid {c}55;display:flex;align-items:center;justify-content:center;">'
                 f'<span style="font-size:14px;font-weight:800;color:{c};">{name[0].upper()}</span></div>'
-                f'<div><div style="font-size:13px;font-weight:700;color:#f7fafc;">{name}</div>'
-                f'<div style="font-size:10px;color:#4a5568;">{stmt}</div></div></div>'
+                f'<div><div style="font-size:13px;font-weight:700;color:#0f172a;">{name}</div>'
+                f'<div style="font-size:10px;color:#94a3b8;">{stmt}</div></div></div>'
                 f'<div style="font-family:IBM Plex Mono,monospace;font-size:20px;font-weight:700;'
                 f'color:{c};margin-bottom:4px;">{fmt_inr(wealth)}</div>'
                 f'<div style="font-size:11px;color:{pnl_c};margin-bottom:12px;">'
@@ -4313,13 +4329,13 @@ def render_family_overview():
                 # Share bar
                 f'<div style="background:#0a0d14;border-radius:4px;height:6px;overflow:hidden;margin-bottom:4px;">'
                 f'<div style="height:100%;width:{share:.1f}%;background:{c};border-radius:4px;"></div></div>'
-                f'<div style="font-size:10px;color:#4a5568;margin-bottom:10px;">{share:.1f}% of family wealth</div>'
+                f'<div style="font-size:10px;color:#94a3b8;margin-bottom:10px;">{share:.1f}% of family wealth</div>'
                 # SIP info
-                f'<div style="border-top:1px solid rgba(255,255,255,0.05);padding-top:10px;">'
-                f'<div style="font-size:10px;color:#718096;">Monthly SIP</div>'
+                f'<div style="border-top:1px solid rgba(0,0,0,0.06);padding-top:10px;">'
+                f'<div style="font-size:10px;color:#64748b;">Monthly SIP</div>'
                 f'<div style="font-family:IBM Plex Mono,monospace;font-size:13px;font-weight:600;'
-                f'color:#48bb78;">{fmt_inr(sip_amt)}</div>'
-                f'<div style="font-size:10px;color:#4a5568;">{live_s} active SIPs</div></div>'
+                f'color:#059669;">{fmt_inr(sip_amt)}</div>'
+                f'<div style="font-size:10px;color:#94a3b8;">{live_s} active SIPs</div></div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -4358,31 +4374,29 @@ def render_family_overview():
                        f'onmouseout="this.style.filter=\'brightness(1)\'">'
                        f'<title>{name}: {fmt_inr(val)} ({pct_f:.1f}%)</title></path>')
             leg_f  += (f'<div style="display:flex;justify-content:space-between;align-items:center;'
-                       f'padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.04);">'
+                       f'padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.06);">'
                        f'<div style="display:flex;align-items:center;gap:8px;">'
                        f'<span style="width:10px;height:10px;border-radius:50%;background:{c_f};'
                        f'box-shadow:0 0 6px {c_f}88;display:inline-block;"></span>'
-                       f'<span style="font-size:12px;color:#e2e8f0;font-weight:600;">{name}</span></div>'
+                       f'<span style="font-size:12px;color:#0f172a;font-weight:600;">{name}</span></div>'
                        f'<div style="text-align:right;">'
-                       f'<div style="font-family:IBM Plex Mono,monospace;font-size:12px;font-weight:700;color:#f7fafc;">{fmt_inr(val)}</div>'
-                       f'<div style="font-size:10px;color:#4a5568;">{pct_f:.1f}%</div></div></div>')
+                       f'<div style="font-family:IBM Plex Mono,monospace;font-size:12px;font-weight:700;color:#0f172a;">{fmt_inr(val)}</div>'
+                       f'<div style="font-size:10px;color:#94a3b8;">{pct_f:.1f}%</div></div></div>')
             ang_f  += (pct_f/100)*360
 
         fam_donut = (
-            f"<style>{kf_f}@keyframes fcF{{from{{opacity:0;}}to{{opacity:1;}}}}</style>"
-            "<div style='background:linear-gradient(135deg,#0c0f1a,#111627);"
-            "border:1px solid rgba(99,179,237,0.12);border-radius:16px;padding:20px;'>"
-            "<div style='display:flex;align-items:center;gap:18px;'>"
-            f"<svg width='220' height='220' viewBox='0 0 220 220' style='flex-shrink:0;'>"
+            f"<style>{kf_f}</style>"
+            "<div style='background:#ffffff;border:1px solid rgba(0,0,0,0.07);"
+            "border-radius:16px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);'>"
+            f"<svg width='220' height='220' viewBox='0 0 220 220' style='display:block;margin:0 auto 12px;'>"
             f"{segs_f}"
-            f"<circle cx='{cx_f}' cy='{cy_f}' r='{ri_f-3}' fill='#07090f'/>"
-            f"<text x='{cx_f}' y='{cy_f-8}' text-anchor='middle' style='font-family:IBM Plex Mono,monospace;"
-            f"font-size:12px;font-weight:700;fill:#f7fafc;animation:fcF 1s .8s forwards;opacity:0;'>{len(selected)}</text>"
-            f"<text x='{cx_f}' y='{cy_f+8}' text-anchor='middle' style='font-size:10px;fill:#718096;"
-            f"animation:fcF 1s .9s forwards;opacity:0;'>members</text>"
-            f"</svg><div style='flex:1;'>{leg_f}</div></div></div>"
+            f"<circle cx='{cx_f}' cy='{cy_f}' r='{ri_f-3}' fill='#fff'/>"
+            f"<text x='{cx_f}' y='{cy_f-4}' text-anchor='middle' style='font-family:IBM Plex Mono,monospace;"
+            f"font-size:13px;font-weight:700;fill:#0f172a;'>{len(selected)}</text>"
+            f"<text x='{cx_f}' y='{cy_f+12}' text-anchor='middle' style='font-size:10px;fill:#94a3b8;'>members</text>"
+            f"</svg><div>{leg_f}</div></div>"
         )
-        components.html(fam_donut, height=260, scrolling=True)
+        st.markdown(fam_donut, unsafe_allow_html=True)
 
     with fa2:
         st.markdown(
@@ -4398,7 +4412,7 @@ def render_family_overview():
 
         fig_fam.add_trace(go.Bar(
             name="Invested", x=member_names, y=inv_vals,
-            marker_color="#9f7aea",
+            marker_color="#8b5cf6",
             text=[fmt_inr(v) for v in inv_vals],
             textposition="outside", textfont=dict(size=9, color="#718096"),
         ))
@@ -4562,23 +4576,23 @@ def render_pnl_summary(data, live_data=None):
         rr1, rr2, rr3 = st.columns(3)
         with rr1:
             st.markdown(
-                f'<div style="background:#0c0f1a;border:1px solid rgba(159,122,234,0.2);border-radius:12px;padding:16px;">'
-                f'<div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">Total Invested (Exited)</div>'
-                f'<div style="font-family:IBM Plex Mono,monospace;font-size:18px;font-weight:700;color:#9f7aea;">{fmt_inr(total_r_inv)}</div></div>',
+                f'<div style="background:#ffffff;border:1px solid rgba(159,122,234,0.2);border-radius:12px;padding:16px;">'
+                f'<div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">Total Invested (Exited)</div>'
+                f'<div style="font-family:IBM Plex Mono,monospace;font-size:18px;font-weight:700;color:#8b5cf6;">{fmt_inr(total_r_inv)}</div></div>',
                 unsafe_allow_html=True,
             )
         with rr2:
             st.markdown(
-                f'<div style="background:#0c0f1a;border:1px solid rgba(99,179,237,0.2);border-radius:12px;padding:16px;">'
-                f'<div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">Total Redeemed (Received)</div>'
-                f'<div style="font-family:IBM Plex Mono,monospace;font-size:18px;font-weight:700;color:#63b3ed;">{fmt_inr(total_r_red)}</div></div>',
+                f'<div style="background:#ffffff;border:1px solid rgba(99,179,237,0.2);border-radius:12px;padding:16px;">'
+                f'<div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">Total Redeemed (Received)</div>'
+                f'<div style="font-family:IBM Plex Mono,monospace;font-size:18px;font-weight:700;color:#3b82f6;">{fmt_inr(total_r_red)}</div></div>',
                 unsafe_allow_html=True,
             )
         with rr3:
             pnl_c3 = "#48bb78" if total_r_pnl >= 0 else "#fc8181"
             st.markdown(
-                f'<div style="background:#0c0f1a;border:1px solid {pnl_c3}33;border-radius:12px;padding:16px;">'
-                f'<div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">Net Profit / Loss</div>'
+                f'<div style="background:#ffffff;border:1px solid {pnl_c3}33;border-radius:12px;padding:16px;">'
+                f'<div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:6px;">Net Profit / Loss</div>'
                 f'<div style="font-family:IBM Plex Mono,monospace;font-size:18px;font-weight:700;color:{pnl_c3};">{"▲" if total_r_pnl>=0 else "▼"} {fmt_inr(abs(total_r_pnl))}</div></div>',
                 unsafe_allow_html=True,
             )
@@ -4595,15 +4609,15 @@ def render_pnl_summary(data, live_data=None):
                 f'<div style="background:{pb};border:1px solid {pbrd};border-radius:12px;'
                 f'padding:16px 20px;margin-bottom:8px;">'
                 f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">'
-                f'<div style="font-size:13px;font-weight:700;color:#f7fafc;">{clean_name(r["scheme"])}</div>'
+                f'<div style="font-size:13px;font-weight:700;color:#0f172a;">{clean_name(r["scheme"])}</div>'
                 f'<div style="font-family:IBM Plex Mono,monospace;font-size:14px;font-weight:700;color:{pc};">'
                 f'{"▲" if profit>=0 else "▼"} {fmt_inr(profit)}&nbsp;'
                 f'<span style="font-size:11px;opacity:.7;">({abs(ret_pct):.1f}%)</span></div></div>'
                 f'<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">'
-                f'<div><div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Invested</div>'
-                f'<div style="font-family:IBM Plex Mono,monospace;font-size:13px;color:#9f7aea;font-weight:600;">{fmt_inr(r["invested"])}</div></div>'
-                f'<div><div style="font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Redeemed</div>'
-                f'<div style="font-family:IBM Plex Mono,monospace;font-size:13px;color:#63b3ed;font-weight:600;">{fmt_inr(r["redeemed"])}</div></div>'
+                f'<div><div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Invested</div>'
+                f'<div style="font-family:IBM Plex Mono,monospace;font-size:13px;color:#8b5cf6;font-weight:600;">{fmt_inr(r["invested"])}</div></div>'
+                f'<div><div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1px;margin-bottom:3px;">Redeemed</div>'
+                f'<div style="font-family:IBM Plex Mono,monospace;font-size:13px;color:#3b82f6;font-weight:600;">{fmt_inr(r["redeemed"])}</div></div>'
                 f'</div></div>',
                 unsafe_allow_html=True,
             )
@@ -4611,7 +4625,7 @@ def render_pnl_summary(data, live_data=None):
         st.markdown(
             '<div style="background:rgba(99,179,237,0.05);border:1px solid rgba(99,179,237,0.15);"'
             'border-radius:12px;padding:24px;text-align:center;">'
-            '<div style="font-size:13px;color:#718096;">No fully exited positions yet. '
+            '<div style="font-size:13px;color:#64748b;">No fully exited positions yet. '
             'Realised P&L will appear here when you redeem a scheme completely.</div></div>',
             unsafe_allow_html=True,
         )
@@ -4625,12 +4639,12 @@ def render_pnl_summary(data, live_data=None):
         )
         for r in recent[:10]:
             st.markdown(
-                f'<div style="background:#0c0f1a;border:1px solid rgba(252,129,129,0.15);"'
+                f'<div style="background:#ffffff;border:1px solid rgba(252,129,129,0.15);"'
                 f'border-left:3px solid #fc8181;border-radius:0 10px 10px 0;"'
                 f'padding:10px 16px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;">'
-                f'<div><div style="font-size:12px;color:#e2e8f0;font-weight:500;">{r["Scheme"]}</div>'
-                f'<div style="font-size:10px;color:#718096;margin-top:2px;">{r["Date"]}</div></div>'
-                f'<div style="font-family:IBM Plex Mono,monospace;font-size:13px;font-weight:700;color:#fc8181;">{fmt_inr(r["Payout"])}</div>'
+                f'<div><div style="font-size:12px;color:#0f172a;font-weight:500;">{r["Scheme"]}</div>'
+                f'<div style="font-size:10px;color:#64748b;margin-top:2px;">{r["Date"]}</div></div>'
+                f'<div style="font-family:IBM Plex Mono,monospace;font-size:13px;font-weight:700;color:#dc2626;">{fmt_inr(r["Payout"])}</div>'
                 f'</div>',
                 unsafe_allow_html=True,
             )
@@ -4654,44 +4668,44 @@ def generate_custom_html(d, sections, report_type, live_data=None):
 
     css = """
     <style>
-    @media print{body{background:#07090f!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
+    @media print{body{background:#f1f5f9!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;}}
     *{box-sizing:border-box;}
-    body{background:#07090f;color:#e2e8f0;font-family:'Helvetica Neue',Helvetica,sans-serif;
+    body{background:#f1f5f9;color:#0f172a;font-family:'Helvetica Neue',Helvetica,sans-serif;
          padding:32px;line-height:1.6;max-width:1100px;margin:0 auto;}
     h1{font-size:26px;font-weight:800;color:#fff;margin:0 0 4px;letter-spacing:-0.5px;}
-    h2{font-size:13px;font-weight:700;color:#63b3ed;text-transform:uppercase;letter-spacing:2px;
+    h2{font-size:13px;font-weight:700;color:#3b82f6;text-transform:uppercase;letter-spacing:2px;
        border-left:3px solid #63b3ed;padding-left:10px;margin:32px 0 14px;}
     .badge{display:inline-block;background:rgba(99,179,237,0.1);border:1px solid rgba(99,179,237,0.3);
-           color:#63b3ed;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:1px;}
-    .sub{font-size:12px;color:#718096;margin-bottom:24px;}
-    .card{background:#0c0f1a;border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:22px;margin-bottom:20px;}
+           color:#3b82f6;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;letter-spacing:1px;}
+    .sub{font-size:12px;color:#64748b;margin-bottom:24px;}
+    .card{background:#ffffff;border:1px solid rgba(0,0,0,0.07);border-radius:14px;padding:22px;margin-bottom:20px;}
     .grid{display:grid;gap:12px;margin:16px 0;}
     .grid-5{grid-template-columns:repeat(5,1fr);}
     .grid-4{grid-template-columns:repeat(4,1fr);}
     .grid-3{grid-template-columns:repeat(3,1fr);}
     .grid-2{grid-template-columns:repeat(2,1fr);}
-    .kpi{background:#111627;border:1px solid rgba(255,255,255,0.06);border-radius:10px;padding:14px 16px;}
-    .kpi-lbl{font-size:9px;color:#718096;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:5px;}
+    .kpi{background:#f8fafc;border:1px solid rgba(0,0,0,0.07);border-radius:10px;padding:14px 16px;}
+    .kpi-lbl{font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:5px;}
     .kpi-val{font-size:18px;font-weight:700;font-family:monospace;color:#fff;}
-    .kpi-sub{font-size:10px;color:#4a5568;margin-top:4px;}
-    table{width:100%;border-collapse:collapse;border:1px solid rgba(255,255,255,0.07);
+    .kpi-sub{font-size:10px;color:#94a3b8;margin-top:4px;}
+    table{width:100%;border-collapse:collapse;border:1px solid rgba(0,0,0,0.07);
           border-radius:10px;overflow:hidden;margin:10px 0;}
-    th{background:#111627;color:#9f7aea;font-size:10px;font-weight:700;text-transform:uppercase;
+    th{background:#f8fafc;color:#8b5cf6;font-size:10px;font-weight:700;text-transform:uppercase;
        letter-spacing:1px;padding:11px 14px;text-align:left;}
-    td{background:#0c0f1a;color:#e2e8f0;font-size:12px;padding:11px 14px;
-       border-bottom:1px solid rgba(255,255,255,0.04);}
+    td{background:#ffffff;color:#0f172a;font-size:12px;padding:11px 14px;
+       border-bottom:1px solid rgba(0,0,0,0.06);}
     tr:nth-child(even) td{background:#0d1020;}
-    .gain{color:#48bb78;font-weight:600;}
-    .loss{color:#fc8181;font-weight:600;}
+    .gain{color:#059669;font-weight:600;}
+    .loss{color:#dc2626;font-weight:600;}
     .pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;}
-    .pill-green{background:rgba(72,187,120,0.1);border:1px solid rgba(72,187,120,0.3);color:#48bb78;}
-    .pill-red{background:rgba(252,129,129,0.1);border:1px solid rgba(252,129,129,0.3);color:#fc8181;}
+    .pill-green{background:rgba(72,187,120,0.1);border:1px solid rgba(72,187,120,0.3);color:#059669;}
+    .pill-red{background:rgba(252,129,129,0.1);border:1px solid rgba(252,129,129,0.3);color:#dc2626;}
     .pill-yellow{background:rgba(246,173,85,0.1);border:1px solid rgba(246,173,85,0.3);color:#f6ad55;}
-    .footer{text-align:center;font-size:10px;color:#2d3748;border-top:1px solid rgba(255,255,255,0.05);
+    .footer{text-align:center;font-size:10px;color:#2d3748;border-top:1px solid rgba(0,0,0,0.06);
             padding-top:14px;margin-top:40px;}
     .info-box{background:rgba(99,179,237,0.05);border:1px solid rgba(99,179,237,0.15);
               border-left:3px solid #63b3ed;border-radius:0 10px 10px 0;padding:12px 16px;
-              font-size:12px;color:#718096;margin-bottom:16px;}
+              font-size:12px;color:#64748b;margin-bottom:16px;}
     </style>"""
 
     try:
@@ -4710,10 +4724,10 @@ def generate_custom_html(d, sections, report_type, live_data=None):
           <span class="badge">{report_type.upper()} REPORT</span>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:11px;color:#718096;">Investor</div>
-          <div style="font-size:16px;font-weight:700;color:#f7fafc;">{d['investor_name'].title()}</div>
-          <div style="font-size:11px;color:#718096;margin-top:2px;">{d.get('investor_email','')}</div>
-          <div style="font-size:11px;color:#9f7aea;font-family:monospace;margin-top:2px;">{d.get('investor_pan','—')}</div>
+          <div style="font-size:11px;color:#64748b;">Investor</div>
+          <div style="font-size:16px;font-weight:700;color:#0f172a;">{d['investor_name'].title()}</div>
+          <div style="font-size:11px;color:#64748b;margin-top:2px;">{d.get('investor_email','')}</div>
+          <div style="font-size:11px;color:#8b5cf6;font-family:monospace;margin-top:2px;">{d.get('investor_pan','—')}</div>
         </div>
       </div>
     </div>"""
@@ -4723,9 +4737,9 @@ def generate_custom_html(d, sections, report_type, live_data=None):
         html += f"""<h2>Overall Summary</h2>
         <div class="grid grid-5">
           <div class="kpi"><div class="kpi-lbl">Total Wealth</div>
-            <div class="kpi-val" style="color:#63b3ed;">{fmt_inr(dv)}</div></div>
+            <div class="kpi-val" style="color:#3b82f6;">{fmt_inr(dv)}</div></div>
           <div class="kpi"><div class="kpi-lbl">Total Invested</div>
-            <div class="kpi-val" style="color:#9f7aea;">{fmt_inr(d['total_invested'])}</div></div>
+            <div class="kpi-val" style="color:#8b5cf6;">{fmt_inr(d['total_invested'])}</div></div>
           <div class="kpi"><div class="kpi-lbl">Unrealised P&L</div>
             <div class="kpi-val" style="color:{'#48bb78' if display_pnl>=0 else '#fc8181'};">
             {'▲' if display_pnl>=0 else '▼'} {fmt_inr(display_pnl)}</div>
@@ -4767,9 +4781,9 @@ def generate_custom_html(d, sections, report_type, live_data=None):
         html += f"""<h2>SIP Registry</h2>
         <div class="grid grid-3" style="margin-bottom:16px;">
           <div class="kpi"><div class="kpi-lbl">Total SIP Invested</div>
-            <div class="kpi-val" style="color:#63b3ed;">{fmt_inr(d.get('total_sip_invested',0))}</div></div>
+            <div class="kpi-val" style="color:#3b82f6;">{fmt_inr(d.get('total_sip_invested',0))}</div></div>
           <div class="kpi"><div class="kpi-lbl">Monthly SIP</div>
-            <div class="kpi-val" style="color:#48bb78;">{fmt_inr(sip_monthly)}</div>
+            <div class="kpi-val" style="color:#059669;">{fmt_inr(sip_monthly)}</div>
             <div class="kpi-sub">{len(live_sips)} active</div></div>
           <div class="kpi"><div class="kpi-lbl">Inactive SIPs</div>
             <div class="kpi-val" style="color:#f6ad55;">{len(dead_sips)}</div></div>
@@ -4822,7 +4836,7 @@ def generate_custom_html(d, sections, report_type, live_data=None):
                          f"<td class='{cls}'>{'▲' if pct>=0 else '▼'} {abs(pct):.1f}%</td></tr>")
             html += "</tbody></table>"
         else:
-            html += "<h2>Realised P&L</h2><p style='color:#718096;'>No fully exited positions.</p>"
+            html += "<h2>Realised P&L</h2><p style='color:#64748b;'>No fully exited positions.</p>"
 
     # ── SECTION: Special Transactions ─────────────────────────────────
     if "special_tx" in sections:
@@ -4937,11 +4951,11 @@ def render_custom_report(data):
         st.markdown(
             f'<div style="background:rgba(99,179,237,0.06);border:1px solid rgba(99,179,237,0.15);"'
             f'border-radius:12px;padding:14px 18px;margin-bottom:16px;">'
-            f'<div style="font-size:11px;font-weight:700;color:#63b3ed;margin-bottom:8px;">'
+            f'<div style="font-size:11px;font-weight:700;color:#3b82f6;margin-bottom:8px;">'
             f'✅ Your {rtype.upper()} Report will include {len(selected_sections)} sections:</div>'
             f'<div style="display:flex;flex-wrap:wrap;gap:6px;">'
-            + "".join(f'<span style="background:#111627;border:1px solid rgba(255,255,255,0.08);'
-                      f'color:#e2e8f0;font-size:11px;padding:3px 10px;border-radius:20px;">{p}</span>'
+            + "".join(f'<span style="background:#f8fafc;border:1px solid rgba(0,0,0,0.07);'
+                      f'color:#0f172a;font-size:11px;padding:3px 10px;border-radius:20px;">{p}</span>'
                       for p in preview_items)
             + '</div></div>',
             unsafe_allow_html=True,
@@ -4957,7 +4971,7 @@ def render_custom_report(data):
             type="primary",
         )
         st.markdown(
-            '<div style="font-size:11px;color:#4a5568;text-align:center;margin-top:8px;">'
+            '<div style="font-size:11px;color:#94a3b8;text-align:center;margin-top:8px;">'
             '💡 Open the downloaded file in Chrome/Edge → Press Ctrl+P → Save as PDF</div>',
             unsafe_allow_html=True,
         )
@@ -5121,9 +5135,9 @@ def render_returns_analysis(data, live_data=None):
         pct = (pnl/inv*100) if inv else 0
         with kc[i % len(kc)]:
             st.markdown(
-                f'<div style="background:#0c0f1a;border:1px solid rgba(255,255,255,0.07);'
+                f'<div style="background:#ffffff;border:1px solid rgba(0,0,0,0.07);'
                 f'border-radius:12px;padding:14px 16px;margin-bottom:8px;">'
-                f'<div style="font-size:10px;color:#718096;margin-bottom:6px;'
+                f'<div style="font-size:10px;color:#64748b;margin-bottom:6px;'
                 f'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{sc[:30]}</div>'
                 f'<div style="font-family:IBM Plex Mono,monospace;font-size:15px;'
                 f'font-weight:700;color:{pc};">{"▲" if pnl>=0 else "▼"} {fmt_inr(abs(pnl))}</div>'
@@ -5200,20 +5214,20 @@ def render_returns_analysis(data, live_data=None):
     header_html = (
         "<div style='overflow-x:auto;'>"
         "<table style='width:100%;border-collapse:collapse;border-radius:10px;"
-        "overflow:hidden;border:1px solid rgba(255,255,255,0.07);'>"
+        "overflow:hidden;border:1px solid rgba(0,0,0,0.07);'>"
         "<thead><tr>"
-        "<th style='background:#111627;color:#9f7aea;font-size:10px;font-weight:700;"
+        "<th style='background:#f8fafc;color:#8b5cf6;font-size:10px;font-weight:700;"
         "text-transform:uppercase;letter-spacing:1px;padding:11px 14px;text-align:left;"
         "min-width:180px;'>Scheme</th>"
     )
     for prd in all_periods[-12:]:  # show last 12 periods
         header_html += (
-            f"<th style='background:#111627;color:#9f7aea;font-size:10px;font-weight:700;"
+            f"<th style='background:#f8fafc;color:#8b5cf6;font-size:10px;font-weight:700;"
             f"text-transform:uppercase;letter-spacing:1px;padding:11px 10px;"
             f"text-align:center;white-space:nowrap;'>{prd}</th>"
         )
     header_html += (
-        "<th style='background:#111627;color:#63b3ed;font-size:10px;font-weight:700;"
+        "<th style='background:#f8fafc;color:#3b82f6;font-size:10px;font-weight:700;"
         "text-transform:uppercase;letter-spacing:1px;padding:11px 10px;"
         "text-align:center;'>Total</th>"
         "</tr></thead><tbody>"
@@ -5228,8 +5242,8 @@ def render_returns_analysis(data, live_data=None):
         )
         row_html = (
             f"<tr>"
-            f"<td style='background:#0c0f1a;color:#e2e8f0;font-size:11px;"
-            f"padding:10px 14px;border-bottom:1px solid rgba(255,255,255,0.04);"
+            f"<td style='background:#ffffff;color:#0f172a;font-size:11px;"
+            f"padding:10px 14px;border-bottom:1px solid rgba(0,0,0,0.06);"
             f"display:flex;align-items:center;gap:8px;'>"
             f"<span style='width:8px;height:8px;border-radius:50%;"
             f"background:{color};display:inline-block;flex-shrink:0;'></span>"
@@ -5245,10 +5259,10 @@ def render_returns_analysis(data, live_data=None):
                 bg        = f"rgba{tuple(int(color.lstrip('#')[i:i+2], 16) for i in (0,2,4)) + (round(0.08 + intensity*0.35, 2),)}"
                 cell      = (
                     f"<td style='background:{bg};"
-                    f"color:#f7fafc;font-size:10px;font-family:monospace;"
+                    f"color:#0f172a;font-size:10px;font-family:monospace;"
                     f"padding:10px 8px;text-align:center;"
-                    f"border-bottom:1px solid rgba(255,255,255,0.04);"
-                    f"border-left:1px solid rgba(255,255,255,0.03);'>"
+                    f"border-bottom:1px solid rgba(0,0,0,0.06);"
+                    f"border-left:1px solid rgba(0,0,0,0.05);'>"
                     f"<div style='font-weight:700;'>{fmt_inr_short(inv)}</div>"
                     f"<div style='font-size:9px;opacity:.6;'>{cnt} SIP{'s' if cnt>1 else ''}</div>"
                     f"</td>"
@@ -5257,16 +5271,16 @@ def render_returns_analysis(data, live_data=None):
                 cell = (
                     "<td style='background:#0a0d14;color:#2d3748;"
                     "font-size:10px;padding:10px 8px;text-align:center;"
-                    "border-bottom:1px solid rgba(255,255,255,0.04);"
-                    "border-left:1px solid rgba(255,255,255,0.03);'>—</td>"
+                    "border-bottom:1px solid rgba(0,0,0,0.06);"
+                    "border-left:1px solid rgba(0,0,0,0.05);'>—</td>"
                 )
             row_html += cell
 
         row_html += (
-            f"<td style='background:#0c0f1a;color:#63b3ed;"
+            f"<td style='background:#ffffff;color:#3b82f6;"
             f"font-size:11px;font-weight:700;font-family:monospace;"
             f"padding:10px 10px;text-align:center;"
-            f"border-bottom:1px solid rgba(255,255,255,0.04);'>"
+            f"border-bottom:1px solid rgba(0,0,0,0.06);'>"
             f"{fmt_inr_short(total_inv)}</td>"
             f"</tr>"
         )
