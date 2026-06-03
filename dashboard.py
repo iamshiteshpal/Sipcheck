@@ -140,33 +140,48 @@ def _table_style():
 </style>
 """
 
+_TH_STYLE = (
+    "background:#f1f5f9;color:#8b5cf6;font-size:10px;font-weight:700;"
+    "text-transform:uppercase;letter-spacing:1px;padding:10px 14px;"
+    "text-align:left;border-bottom:2px solid rgba(0,0,0,0.07);white-space:nowrap;"
+)
+_TD_BASE  = "font-size:12px;padding:10px 14px;border-bottom:1px solid rgba(0,0,0,0.05);"
+_TD_EVEN  = _TD_BASE + "background:#ffffff;color:#0f172a;"
+_TD_ODD   = _TD_BASE + "background:#f8fafc;color:#0f172a;"
+_TD_GAIN  = _TD_BASE + "background:#ffffff;color:#059669;font-weight:600;"
+_TD_LOSS  = _TD_BASE + "background:#ffffff;color:#dc2626;font-weight:600;"
+_TD_MUTED = _TD_BASE + "background:#ffffff;color:#94a3b8;"
+_TD_MONO  = "font-family:'IBM Plex Mono',monospace;"
+_WRAP_STYLE = (
+    "overflow-x:auto;border-radius:12px;border:1px solid rgba(0,0,0,0.08);"
+    "box-shadow:0 1px 4px rgba(0,0,0,0.05);margin-bottom:8px;"
+)
+
 def render_table(rows, key=""):
     if not rows:
         st.info("No data to display.")
         return
     cols = list(rows[0].keys())
-    header = "".join(
-        f'<th class="cas-tbl-th">{c}</th>'
-        for c in cols
-    )
+    header = "".join(f'<th style="{_TH_STYLE}">{c}</th>' for c in cols)
     body = ""
     for i, row in enumerate(rows):
-        stripe = "even" if i % 2 == 0 else "odd"
+        base = _TD_EVEN if i % 2 == 0 else _TD_ODD
         cells = ""
         for c in cols:
             val = str(row.get(c, "—"))
             if val.startswith("▲"):
-                cls = "cas-gain"
+                style = _TD_GAIN
             elif val.startswith("▼"):
-                cls = "cas-loss"
+                style = _TD_LOSS
+            elif val == "—":
+                style = _TD_MUTED
             else:
-                cls = ""
-            cells += f'<td class="{cls}">{val}</td>'
-        body += f'<tr class="{stripe}">{cells}</tr>'
+                style = base
+            cells += f'<td style="{style}">{val}</td>'
+        body += f'<tr>{cells}</tr>'
     html = (
-        _table_style() +
-        f'<div class="cas-wrap">'
-        f'<table class="cas-tbl">'
+        f'<div style="{_WRAP_STYLE}">'
+        f'<table style="width:100%;border-collapse:collapse;">'
         f'<thead><tr>{header}</tr></thead>'
         f'<tbody>{body}</tbody>'
         f'</table></div>'
@@ -456,16 +471,26 @@ def inject_global_styles():
         /* ── Selectbox / dropdown ────────────────────────────────────────── */
         [data-baseweb="select"] * {{ color: {text} !important; }}
         [data-baseweb="select"] > div {{ background: {input_bg} !important; border-color: {border} !important; }}
-        [data-baseweb="popover"] {{ background: #ffffff !important; border: 1px solid {border} !important; box-shadow: var(--shadow-md) !important; }}
-        [data-baseweb="popover"] * {{ background: transparent !important; color: {text} !important; }}
-        [data-baseweb="menu"] {{ background: #ffffff !important; }}
-        [data-baseweb="menu"] ul {{ background: #ffffff !important; }}
-        [data-baseweb="menu"] li {{ background: #ffffff !important; color: {text} !important; }}
+        [data-baseweb="popover"] {{ background: #ffffff !important; border: 1px solid {border} !important; box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important; border-radius: 12px !important; }}
+        [data-baseweb="popover"] * {{ color: {text} !important; }}
+        [data-baseweb="popover"] [role="listbox"] {{ background: #ffffff !important; }}
+        [data-baseweb="menu"] {{ background: #ffffff !important; border-radius: 10px !important; }}
+        [data-baseweb="menu"] ul {{ background: #ffffff !important; padding: 4px !important; }}
+        [data-baseweb="menu"] li {{
+          background: #ffffff !important;
+          color: {text} !important;
+          font-size: 13px !important;
+          font-weight: 500 !important;
+          border-radius: 8px !important;
+          padding: 8px 12px !important;
+        }}
         [data-baseweb="menu"] li:hover,
         [data-baseweb="menu"] li[aria-selected="true"] {{
-          background: {bg3} !important; color: {text} !important;
+          background: {bg3} !important;
+          color: {text} !important;
         }}
-        [data-baseweb="menu"] li span {{ color: {text} !important; }}
+        [data-baseweb="menu"] li * {{ color: {text} !important; background: transparent !important; }}
+        [data-baseweb="option"] {{ color: {text} !important; background: #ffffff !important; }}
         /* ── Widget labels ───────────────────────────────────────────────── */
         [data-testid="stSelectbox"] label {{ color: {muted} !important; font-size: 12px !important; }}
         [data-testid="stSelectbox"] span {{ color: {text} !important; }}
@@ -4150,27 +4175,28 @@ def render_transactions(data):
 
         cols = ["Date", "Description", "Amount", "NAV", "Units", "Type"]
         mono = {"Amount", "NAV", "Units"}
-        header = "".join(f'<th class="cas-tbl-th">{c}</th>' for c in cols)
+        header = "".join(f'<th style="{_TH_STYLE}">{c}</th>' for c in cols)
         body = ""
         for i, r in enumerate(rows):
-            stripe = "even" if i % 2 == 0 else "odd"
+            base = _TD_EVEN if i % 2 == 0 else _TD_ODD
             cells = ""
             for c in cols:
                 v = str(r.get(c, "—"))
-                extra = " cas-mono" if c in mono else ""
+                mono_part = _TD_MONO if c in mono else ""
                 if v.startswith("▲"):
-                    extra += " cas-gain"
+                    style = _TD_GAIN + mono_part
                 elif v.startswith("▼"):
-                    extra += " cas-loss"
+                    style = _TD_LOSS + mono_part
                 elif "STAMP" in v:
-                    extra += " cas-muted"
-                cells += f'<td class="{extra.strip()}">{v}</td>'
-            body += f'<tr class="{stripe}">{cells}</tr>'
+                    style = _TD_MUTED + mono_part
+                else:
+                    style = base + mono_part
+                cells += f'<td style="{style}">{v}</td>'
+            body += f'<tr>{cells}</tr>'
 
         html = (
-            _table_style() +
-            f'<div class="cas-wrap">'
-            f'<table class="cas-tbl">'
+            f'<div style="{_WRAP_STYLE}">'
+            f'<table style="width:100%;border-collapse:collapse;">'
             f'<thead><tr>{header}</tr></thead>'
             f'<tbody>{body}</tbody>'
             f'</table></div>'
@@ -5189,17 +5215,20 @@ def render_returns_analysis(data, live_data=None):
         lv  = live_data.get(h.get("scheme",""), {}).get("live_value", h.get("value",0))
         inv = h.get("invested", 0)
         pnl = lv - inv
-        pc  = "#48bb78" if pnl >= 0 else "#fc8181"
+        pc  = "#059669" if pnl >= 0 else "#dc2626"
+        pc_bg = "rgba(5,150,105,0.07)" if pnl >= 0 else "rgba(220,38,38,0.07)"
         pct = (pnl/inv*100) if inv else 0
         with kc[i % len(kc)]:
             st.markdown(
                 f'<div style="background:#ffffff;border:1px solid rgba(0,0,0,0.07);'
-                f'border-radius:12px;padding:14px 16px;margin-bottom:8px;">'
+                f'border-radius:12px;padding:14px 16px;margin-bottom:8px;'
+                f'box-shadow:0 1px 3px rgba(0,0,0,0.05);">'
                 f'<div style="font-size:10px;color:#64748b;margin-bottom:6px;'
                 f'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{sc[:30]}</div>'
-                f'<div style="font-family:IBM Plex Mono,monospace;font-size:15px;'
-                f'font-weight:700;color:{pc};">{"▲" if pnl>=0 else "▼"} {fmt_inr(abs(pnl))}</div>'
-                f'<div style="font-size:10px;color:{pc};margin-top:3px;">'
+                f'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:15px;'
+                f'font-weight:700;color:{pc};background:{pc_bg};border-radius:6px;'
+                f'padding:3px 8px;display:inline-block;">{"▲" if pnl>=0 else "▼"} {fmt_inr(abs(pnl))}</div>'
+                f'<div style="font-size:10px;color:{pc};margin-top:5px;">'
                 f'{"▲" if pct>=0 else "▼"} {abs(pct):.1f}% overall · '
                 f'XIRR {h.get("xirr",0):.1f}%</div></div>',
                 unsafe_allow_html=True,
@@ -5227,7 +5256,7 @@ def render_returns_analysis(data, live_data=None):
 
         # Bar chart — amount per period per scheme
         fig_bar = go.Figure()
-        colors_bar = ["#63b3ed","#9f7aea","#48bb78","#f6ad55","#fc8181","#4fd1c5","#ed8936"]
+        colors_bar = ["#3b82f6","#8b5cf6","#10b981","#f59e0b","#ef4444","#06b6d4","#f97316"]
         for i, sc in enumerate(selected_schemes):
             df_sc = df_chart[df_chart["Scheme"] == sc[:25]]
             if df_sc.empty:
