@@ -1625,153 +1625,140 @@ def show_upload():
 
     # ── FEATURES BENTO GRID ───────────────────────────────────────────────
     st.markdown("""
-    <div style="max-width:900px;margin:48px auto 0;padding:0 8px;">
-
-      <!-- Section header -->
-      <div style="text-align:center;margin-bottom:36px;">
-        <div style="display:inline-block;background:#f1f5f9;border-radius:40px;
-                    padding:5px 16px;font-size:11px;font-weight:700;color:#64748b;
-                    letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;">
-          Why CAS 360
-        </div>
-        <h2 style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;
-                   color:#0f172a;letter-spacing:-1px;margin:0 0 10px;">
-          Everything your portfolio<br>needs, in one place.
-        </h2>
-        <p style="font-size:15px;color:#64748b;margin:0;">
-          Institutional-grade portfolio intelligence for every Indian investor.
-        </p>
+    <div style="text-align:center;padding:48px 0 28px;">
+      <div style="display:inline-block;background:#f1f5f9;border-radius:40px;
+                  padding:5px 16px;font-size:11px;font-weight:700;color:#64748b;
+                  letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;">
+        Why CAS 360
       </div>
+      <h2 style="font-size:32px;font-weight:800;color:#0f172a;
+                 letter-spacing:-1px;margin:0 0 10px;">
+        Everything your portfolio needs, in one place.
+      </h2>
+      <p style="font-size:15px;color:#64748b;margin:0;">
+        Institutional-grade portfolio intelligence for every Indian investor.
+      </p>
+    </div>
+    """, unsafe_allow_html=True)
 
-      <!-- Bento grid row 1: 3 equal cards -->
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;">
-
+    # Row 1: 3 equal cards
+    c1, c2, c3 = st.columns(3, gap="medium")
+    with c1:
+        st.markdown("""
         <div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;
-                    padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+                    padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);height:100%;">
           <div style="width:44px;height:44px;background:#eef2ff;border-radius:14px;
-                      display:flex;align-items:center;justify-content:center;
-                      font-size:22px;margin-bottom:16px;">📊</div>
-          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">
-            Live NAV & XIRR</div>
+                      font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">📊</div>
+          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">Live NAV &amp; XIRR</div>
           <div style="font-size:13px;color:#64748b;line-height:1.65;">
-            Real-time NAV from MFAPI. Per-scheme XIRR calculated automatically across
-            your entire portfolio history.
+            Real-time NAV from MFAPI. Per-scheme XIRR calculated automatically across your entire portfolio history.
           </div>
         </div>
-
+        """, unsafe_allow_html=True)
+    with c2:
+        st.markdown("""
         <div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;
-                    padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+                    padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);height:100%;">
           <div style="width:44px;height:44px;background:#f5f3ff;border-radius:14px;
-                      display:flex;align-items:center;justify-content:center;
-                      font-size:22px;margin-bottom:16px;">🗂️</div>
-          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">
-            360° Portfolio View</div>
+                      font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">🗂</div>
+          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">360° Portfolio View</div>
           <div style="font-size:13px;color:#64748b;line-height:1.65;">
-            Every folio, scheme, and transaction from both CAMS and KFintech — unified
-            in a single clean dashboard.
+            Every folio, scheme, and transaction from both CAMS and KFintech — unified in a single clean dashboard.
           </div>
         </div>
-
+        """, unsafe_allow_html=True)
+    with c3:
+        st.markdown("""
         <div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;
-                    padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+                    padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);height:100%;">
           <div style="width:44px;height:44px;background:#f0fdf4;border-radius:14px;
-                      display:flex;align-items:center;justify-content:center;
-                      font-size:22px;margin-bottom:16px;">💰</div>
-          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">
-            P&amp;L Analytics</div>
+                      font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">💰</div>
+          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">P&amp;L Analytics</div>
           <div style="font-size:13px;color:#64748b;line-height:1.65;">
-            Realised &amp; unrealised gains broken down by scheme, category,
-            and time period — with a visual P&amp;L summary.
+            Realised &amp; unrealised gains broken down by scheme, category, and time period — with a visual summary.
           </div>
         </div>
+        """, unsafe_allow_html=True)
 
-      </div>
+    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
 
-      <!-- Bento grid row 2: wide + narrow -->
-      <div style="display:grid;grid-template-columns:1.6fr 1fr;gap:16px;margin-bottom:16px;">
-
+    # Row 2: wide SIP card + dark Family card
+    c1, c2 = st.columns([1.6, 1], gap="medium")
+    with c1:
+        st.markdown("""
         <div style="background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);
                     border-radius:20px;padding:32px 28px;
                     box-shadow:0 8px 24px rgba(79,70,229,0.25);">
           <div style="width:44px;height:44px;background:rgba(255,255,255,0.15);border-radius:14px;
-                      display:flex;align-items:center;justify-content:center;
-                      font-size:22px;margin-bottom:16px;">🔄</div>
-          <div style="font-size:18px;font-weight:700;color:#ffffff;margin-bottom:8px;">
-            SIP Health Monitor</div>
-          <div style="font-size:13px;color:rgba(255,255,255,0.75);line-height:1.65;margin-bottom:18px;">
-            Track every active SIP — next due dates, mandate status, bounce alerts, and
-            historical SIP investment timeline with monthly contribution analysis.
+                      font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">🔄</div>
+          <div style="font-size:18px;font-weight:700;color:#ffffff;margin-bottom:8px;">SIP Health Monitor</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.80);line-height:1.65;margin-bottom:18px;">
+            Track every active SIP — next due dates, mandate status, bounce alerts, and historical SIP
+            investment timeline with monthly contribution analysis.
           </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);
-                         color:#fff;font-size:10px;font-weight:600;padding:4px 12px;
-                         border-radius:20px;">Active SIPs</span>
-            <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);
-                         color:#fff;font-size:10px;font-weight:600;padding:4px 12px;
-                         border-radius:20px;">Bounce Alerts</span>
-            <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);
-                         color:#fff;font-size:10px;font-weight:600;padding:4px 12px;
-                         border-radius:20px;">Next Due Date</span>
-          </div>
+          <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);
+                       color:#fff;font-size:10px;font-weight:600;padding:4px 12px;
+                       border-radius:20px;margin-right:8px;">Active SIPs</span>
+          <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);
+                       color:#fff;font-size:10px;font-weight:600;padding:4px 12px;
+                       border-radius:20px;margin-right:8px;">Bounce Alerts</span>
+          <span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);
+                       color:#fff;font-size:10px;font-weight:600;padding:4px 12px;
+                       border-radius:20px;">Next Due Date</span>
         </div>
-
+        """, unsafe_allow_html=True)
+    with c2:
+        st.markdown("""
         <div style="background:#0f172a;border-radius:20px;padding:28px 24px;
-                    box-shadow:0 2px 12px rgba(0,0,0,0.1);">
-          <div style="width:44px;height:44px;background:rgba(255,255,255,0.06);border-radius:14px;
-                      display:flex;align-items:center;justify-content:center;
-                      font-size:22px;margin-bottom:16px;">👨‍👩‍👧‍👦</div>
-          <div style="font-size:16px;font-weight:700;color:#f8fafc;margin-bottom:8px;">
-            Family View</div>
+                    box-shadow:0 2px 12px rgba(0,0,0,0.1);height:100%;">
+          <div style="width:44px;height:44px;background:rgba(255,255,255,0.07);border-radius:14px;
+                      font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">👨‍👩‍👧</div>
+          <div style="font-size:16px;font-weight:700;color:#f8fafc;margin-bottom:8px;">Family View</div>
           <div style="font-size:13px;color:#94a3b8;line-height:1.65;">
-            Analyse multiple CAS files together. Compare portfolios across
-            family members with a consolidated wealth summary.
+            Analyse multiple CAS files together. Compare portfolios across family members
+            with a consolidated wealth summary.
           </div>
         </div>
+        """, unsafe_allow_html=True)
 
-      </div>
+    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
 
-      <!-- Bento grid row 3: narrow + wide -->
-      <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:16px;margin-bottom:48px;">
-
+    # Row 3: asset allocation + privacy card
+    c1, c2 = st.columns([1, 1.6], gap="medium")
+    with c1:
+        st.markdown("""
         <div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;
-                    padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);">
+                    padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);height:100%;">
           <div style="width:44px;height:44px;background:#fffbeb;border-radius:14px;
-                      display:flex;align-items:center;justify-content:center;
-                      font-size:22px;margin-bottom:16px;">🥧</div>
-          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">
-            Asset Allocation</div>
+                      font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">🥧</div>
+          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">Asset Allocation</div>
           <div style="font-size:13px;color:#64748b;line-height:1.65;">
-            Equity vs Debt breakdown with interactive charts. Understand
-            your actual risk exposure at a glance.
+            Equity vs Debt breakdown with interactive charts. Understand your actual risk exposure at a glance.
           </div>
         </div>
-
+        """, unsafe_allow_html=True)
+    with c2:
+        st.markdown("""
         <div style="background:#f8fafc;border:1px solid #f1f5f9;border-radius:20px;
-                    padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.04);">
+                    padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.04);height:100%;">
           <div style="width:44px;height:44px;background:#fff;border:1px solid #e2e8f0;
-                      border-radius:14px;display:flex;align-items:center;
-                      justify-content:center;font-size:22px;margin-bottom:16px;">🔒</div>
-          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">
-            100% Private by Design</div>
+                      border-radius:14px;font-size:22px;line-height:44px;
+                      text-align:center;margin-bottom:16px;">🔒</div>
+          <div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">100% Private by Design</div>
           <div style="font-size:13px;color:#64748b;line-height:1.65;margin-bottom:16px;">
-            Your CAS PDF is parsed entirely on your device using
-            <strong style="color:#0f172a;">casparser</strong>. No data is uploaded, logged, or stored
-            anywhere — not even on our servers.
+            Your CAS PDF is parsed entirely on your device using <strong style="color:#0f172a;">casparser</strong>.
+            No data is uploaded, logged, or stored anywhere — not even on our servers.
           </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <span style="background:#f0fdf4;border:1px solid #bbf7d0;color:#16a34a;
-                         font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;">
-              ✓ No server storage</span>
-            <span style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;
-                         font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;">
-              ✓ Local processing</span>
-          </div>
+          <span style="background:#f0fdf4;border:1px solid #bbf7d0;color:#16a34a;
+                       font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;
+                       margin-right:8px;">✓ No server storage</span>
+          <span style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;
+                       font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;">
+            ✓ Local processing</span>
         </div>
+        """, unsafe_allow_html=True)
 
-      </div>
-
-    </div>
-    """, unsafe_allow_html=True)
+    st.markdown("<div style='height:48px'></div>", unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────
