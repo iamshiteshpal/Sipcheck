@@ -385,9 +385,31 @@ def inject_global_styles():
           display: none !important;
         }}
         [data-testid="stSidebar"] [data-testid="stRadio"] > label:first-child {{ display: none !important; }}
+        /* ── Selectbox / dropdown fixes ─────────────────────────────────── */
         [data-baseweb="select"] * {{ color: {text} !important; }}
-        [data-baseweb="popover"] {{ background: {bg2} !important; }}
+        [data-baseweb="select"] > div {{ background: {input_bg} !important; border-color: {border} !important; }}
+        [data-baseweb="popover"] {{ background: {bg2} !important; border: 1px solid {border} !important; }}
+        [data-baseweb="popover"] * {{ background: transparent !important; color: {text} !important; }}
         [data-baseweb="menu"] {{ background: {bg2} !important; }}
+        [data-baseweb="menu"] ul {{ background: {bg2} !important; }}
+        [data-baseweb="menu"] li {{
+          background: {bg2} !important;
+          color: {text} !important;
+        }}
+        [data-baseweb="menu"] li:hover,
+        [data-baseweb="menu"] li[aria-selected="true"] {{
+          background: {bg3} !important;
+          color: {text} !important;
+        }}
+        [data-baseweb="menu"] li span {{ color: {text} !important; }}
+        /* ── Force all Streamlit widget text to be visible ───────────────── */
+        [data-testid="stSelectbox"] label {{ color: {muted} !important; font-size: 12px !important; }}
+        [data-testid="stSelectbox"] span {{ color: {text} !important; }}
+        /* ── Markdown container — ensure inline color styles are not clobbered */
+        [data-testid="stMarkdownContainer"] {{ color: {text} !important; }}
+        [data-testid="stMarkdownContainer"] * {{ color: inherit; }}
+        /* ── Override any browser/OS default that makes text dark on dark bg */
+        .stApp input, .stApp select, .stApp textarea {{ color: {text} !important; background: {input_bg} !important; }}
         [data-testid="stResizeHandle"], .resize-handle {{ display: none !important; height: 0 !important; }}
         /* Light theme specific overrides */
         {"" if is_dark else f"""
@@ -4026,37 +4048,11 @@ def render_transactions(data):
     pnl   = value - cost
     pc    = "#48bb78" if pnl >= 0 else "#fc8181"
 
-    # Show metrics as styled cards (not st.metric which causes the black gap)
-    st.markdown(
-        f'<div style="display:grid;grid-template-columns:repeat(4,1fr);'
-        f'gap:12px;margin:12px 0 16px;">' +
-        f'<div style="background:#0c0f1a;border:1px solid rgba(255,255,255,0.07);'
-        f'border-radius:12px;padding:14px 18px;">'
-        f'<div style="font-size:9px;color:#718096;text-transform:uppercase;'
-        f'letter-spacing:1.2px;margin-bottom:6px;">Book Cost</div>'
-        f'<div style="font-family:IBM Plex Mono,monospace;font-size:16px;'
-        f'font-weight:700;color:#9f7aea;">{fmt_inr(cost)}</div></div>' +
-        f'<div style="background:#0c0f1a;border:1px solid rgba(255,255,255,0.07);'
-        f'border-radius:12px;padding:14px 18px;">'
-        f'<div style="font-size:9px;color:#718096;text-transform:uppercase;'
-        f'letter-spacing:1.2px;margin-bottom:6px;">Units Held</div>'
-        f'<div style="font-family:IBM Plex Mono,monospace;font-size:16px;'
-        f'font-weight:700;color:#63b3ed;">{units:.3f}</div></div>' +
-        f'<div style="background:#0c0f1a;border:1px solid rgba(255,255,255,0.07);'
-        f'border-radius:12px;padding:14px 18px;">'
-        f'<div style="font-size:9px;color:#718096;text-transform:uppercase;'
-        f'letter-spacing:1.2px;margin-bottom:6px;">Current Value</div>'
-        f'<div style="font-family:IBM Plex Mono,monospace;font-size:16px;'
-        f'font-weight:700;color:#f7fafc;">{fmt_inr(value)}</div></div>' +
-        f'<div style="background:#0c0f1a;border:1px solid rgba({("72,187,120" if pnl>=0 else "252,129,129")},0.15);'
-        f'border-radius:12px;padding:14px 18px;">'
-        f'<div style="font-size:9px;color:#718096;text-transform:uppercase;'
-        f'letter-spacing:1.2px;margin-bottom:6px;">Unrealised P&L</div>'
-        f'<div style="font-family:IBM Plex Mono,monospace;font-size:16px;'
-        f'font-weight:700;color:{pc};">{"▲" if pnl>=0 else "▼"} {fmt_inr(abs(pnl))}</div></div>' +
-        f'</div>',
-        unsafe_allow_html=True,
-    )
+    kc1, kc2, kc3, kc4 = st.columns(4)
+    kc1.metric("Book Cost",       fmt_inr(cost))
+    kc2.metric("Units Held",      f"{units:.3f}")
+    kc3.metric("Current Value",   fmt_inr(value))
+    kc4.metric("Unrealised P&L",  f'{"▲" if pnl>=0 else "▼"} {fmt_inr(abs(pnl))}')
 
     txs = tx_map.get(selected_scheme, [])
     if not txs:
