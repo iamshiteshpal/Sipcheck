@@ -246,19 +246,19 @@ def inject_global_styles():
         noise_op  = "0.025"
         metric_bg = "#0c0f1a"
     else:
-        bg        = "#f0f4f8"
+        bg        = "#f8fafc"
         bg2       = "#ffffff"
-        bg3       = "#e8edf3"
-        border    = "rgba(0,0,0,0.08)"
-        text      = "#1a202c"
-        muted     = "#4a5568"
-        faint     = "#a0aec0"
-        sidebar_bg = "linear-gradient(180deg,#ffffff 0%,#f7fafc 100%)"
+        bg3       = "#f1f5f9"
+        border    = "rgba(0,0,0,0.07)"
+        text      = "#0f172a"
+        muted     = "#64748b"
+        faint     = "#94a3b8"
+        sidebar_bg = "#ffffff"
         card_bg   = "#ffffff"
-        input_bg  = "#f7fafc"
-        th_bg     = "#edf2f7"
+        input_bg  = "#f8fafc"
+        th_bg     = "#f1f5f9"
         td_bg     = "#ffffff"
-        td_bg2    = "#f7fafc"
+        td_bg2    = "#f8fafc"
         noise_op  = "0"
         metric_bg = "#ffffff"
 
@@ -271,15 +271,17 @@ def inject_global_styles():
           --bg2:       {bg2};
           --bg3:       {bg3};
           --border:    {border};
-          --border-hi: rgba(99,179,237,0.35);
-          --accent:    #63b3ed;
-          --accent2:   #9f7aea;
-          --gain:      #38a169;
-          --loss:      #e53e3e;
+          --border-hi: {"rgba(99,179,237,0.35)" if is_dark else "rgba(59,130,246,0.4)"};
+          --accent:    {"#63b3ed" if is_dark else "#3b82f6"};
+          --accent2:   {"#9f7aea" if is_dark else "#8b5cf6"};
+          --gain:      {"#38a169" if is_dark else "#059669"};
+          --loss:      {"#e53e3e" if is_dark else "#dc2626"};
           --warn:      #d97706;
           --text:      {text};
           --muted:     {muted};
           --faint:     {faint};
+          --shadow:    {"none" if is_dark else "0 1px 3px rgba(0,0,0,0.07),0 1px 2px rgba(0,0,0,0.05)"};
+          --shadow-lg: {"none" if is_dark else "0 4px 16px rgba(0,0,0,0.08),0 2px 6px rgba(0,0,0,0.05)"};
         }}
         *, *::before, *::after {{ box-sizing: border-box; }}
         html, body, .stApp {{
@@ -443,11 +445,49 @@ def inject_global_styles():
         /* ── Override any browser/OS default that makes text dark on dark bg */
         .stApp input, .stApp select, .stApp textarea {{ color: {text} !important; background: {input_bg} !important; }}
         [data-testid="stResizeHandle"], .resize-handle {{ display: none !important; height: 0 !important; }}
-        /* Light theme specific overrides */
+        /* ── Light theme overrides ───────────────────────────────────────── */
         {"" if is_dark else f"""
-        [data-testid="stSidebar"] {{ box-shadow: 2px 0 8px rgba(0,0,0,0.08) !important; }}
+        [data-testid="stSidebar"] {{
+          background: #ffffff !important;
+          border-right: 1px solid rgba(0,0,0,0.07) !important;
+          box-shadow: 2px 0 12px rgba(0,0,0,0.05) !important;
+        }}
         .stApp {{ background: {bg} !important; }}
-        button[kind="primary"] {{ background: linear-gradient(135deg,#2b6cb0,#553c9a) !important; color: #fff !important; }}
+        .card {{ box-shadow: var(--shadow) !important; }}
+        div[data-testid="stMetric"] {{
+          box-shadow: var(--shadow) !important;
+          border: 1px solid rgba(0,0,0,0.06) !important;
+        }}
+        div[data-testid="stMetric"]:hover {{
+          box-shadow: var(--shadow-lg) !important;
+          border-color: rgba(59,130,246,0.3) !important;
+          transform: translateY(-2px) !important;
+        }}
+        button[kind="primary"] {{
+          background: linear-gradient(135deg,#2563eb,#7c3aed) !important;
+          color: #fff !important;
+          border: none !important;
+          box-shadow: 0 2px 8px rgba(37,99,235,0.3) !important;
+          border-radius: 10px !important;
+          font-weight: 600 !important;
+        }}
+        button[kind="primary"]:hover {{
+          box-shadow: 0 4px 16px rgba(37,99,235,0.4) !important;
+          transform: translateY(-1px) !important;
+        }}
+        [data-testid="stFileUploader"] {{
+          background: rgba(59,130,246,0.03) !important;
+          border: 2px dashed rgba(59,130,246,0.25) !important;
+          border-radius: 14px !important;
+        }}
+        [data-testid="stSegmentedControl"] button[aria-checked="true"] {{
+          background: linear-gradient(135deg,#2563eb,#7c3aed) !important;
+          color: #fff !important;
+        }}
+        [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {{
+          background: rgba(59,130,246,0.06) !important;
+          color: {text} !important;
+        }}
         """}
         </style>
         """,
@@ -1386,308 +1426,238 @@ def setup_sheet_headers():
 
 
 def show_upload():
-    # ── Gate check ────────────────────────────────────────────────────────
     is_unlocked = st.session_state.get("coupon_ok", False)
 
-    # ── Premium Page header ───────────────────────────────────────────────
-    st.markdown(
-        """
-        <style>
-        @keyframes heroIn{from{opacity:0;transform:translateY(-10px);}to{opacity:1;transform:translateY(0);}}
-        @keyframes shimmer{0%{background-position:200% center;}100%{background-position:-200% center;}}
-        .hero-title{
-          font-family:'Syne',sans-serif;font-size:38px;font-weight:800;letter-spacing:-1px;
-          background:linear-gradient(135deg,#f7fafc 30%,#63b3ed 60%,#9f7aea 90%);
-          -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-          background-clip:text;background-size:200% auto;
-          animation:heroIn .7s ease forwards,shimmer 4s linear infinite;
-          margin-bottom:8px;text-align:center;
-        }
-        .hero-sub{
-          font-size:12px;color:#4a5568;text-transform:uppercase;letter-spacing:3px;
-          font-weight:600;margin-bottom:8px;text-align:center;
-          animation:heroIn .7s ease .15s forwards;opacity:0;
-        }
-        .hero-pills{
-          display:flex;gap:8px;justify-content:center;flex-wrap:wrap;
-          margin-bottom:32px;animation:heroIn .7s ease .3s forwards;opacity:0;
-        }
-        .hero-pill{
-          background:rgba(99,179,237,0.06);border:1px solid rgba(99,179,237,0.15);
-          color:#718096;font-size:10px;padding:4px 12px;border-radius:20px;
-          font-weight:600;letter-spacing:.5px;
-        }
-        </style>
-        <div style="padding-top:32px;margin-bottom:28px;">
-          <div class="hero-title">CAS 360 View</div>
-          <div class="hero-sub">Portfolio Intelligence</div>
-          <div class="hero-pills">
-            <span class="hero-pill">📊 Live NAV</span>
-            <span class="hero-pill">🔄 SIP Tracker</span>
-            <span class="hero-pill">💰 P&L Analytics</span>
-            <span class="hero-pill">👨‍👩‍👧‍👦 Family View</span>
-            <span class="hero-pill">🔒 100% Private</span>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    # ── Hero ──────────────────────────────────────────────────────────────
+    st.markdown("""
+    <style>
+    @keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes shimmer{0%{background-position:200% center;}100%{background-position:-200% center;}}
+    .lp-hero{padding:48px 0 36px;text-align:center;animation:fadeUp .6s ease forwards;}
+    .lp-title{
+      font-family:'Syne',sans-serif;font-size:44px;font-weight:800;letter-spacing:-1.5px;
+      background:linear-gradient(135deg,#1e3a8a 0%,#3b82f6 45%,#8b5cf6 100%);
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+      background-clip:text;background-size:200% auto;
+      animation:shimmer 5s linear infinite;margin-bottom:10px;
+    }
+    .lp-sub{font-size:11px;color:#64748b;text-transform:uppercase;letter-spacing:4px;
+      font-weight:700;margin-bottom:20px;}
+    .lp-pills{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:0;}
+    .lp-pill{background:#fff;border:1px solid rgba(59,130,246,0.18);color:#475569;
+      font-size:10px;padding:5px 14px;border-radius:20px;font-weight:600;letter-spacing:.3px;
+      box-shadow:0 1px 3px rgba(0,0,0,0.06);}
+    .guide-card{background:#fff;border:1px solid rgba(0,0,0,0.07);border-radius:20px;
+      padding:28px 24px;box-shadow:0 4px 20px rgba(0,0,0,0.06);
+      font-family:'Instrument Sans',sans-serif;}
+    .step-row{display:flex;gap:16px;margin-bottom:20px;}
+    .step-num{width:36px;height:36px;border-radius:12px;display:flex;align-items:center;
+      justify-content:center;font-size:15px;flex-shrink:0;font-weight:800;}
+    .step-tag{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:2px;
+      padding:2px 8px;border-radius:20px;display:inline-block;margin-bottom:5px;}
+    .step-title{font-size:13px;font-weight:700;color:#0f172a;margin-bottom:3px;}
+    .step-desc{font-size:11px;color:#64748b;line-height:1.6;margin-bottom:10px;}
+    .mock-card{background:#f8fafc;border:1px solid rgba(0,0,0,0.07);border-radius:10px;
+      overflow:hidden;}
+    .mock-bar{background:#f1f5f9;border-bottom:1px solid rgba(0,0,0,0.06);
+      padding:7px 12px;display:flex;align-items:center;gap:8px;}
+    .mock-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+    .mock-url{flex:1;background:#fff;border-radius:4px;padding:3px 8px;font-size:9px;
+      color:#94a3b8;font-family:monospace;border:1px solid rgba(0,0,0,0.06);}
+    .mock-body{padding:12px 14px;}
+    .upload-card{background:#fff;border:1px solid rgba(0,0,0,0.07);border-radius:20px;
+      padding:32px 28px;box-shadow:0 4px 20px rgba(0,0,0,0.06);}
+    .feat-row{display:flex;align-items:center;gap:12px;padding:10px 0;
+      border-bottom:1px solid rgba(0,0,0,0.05);font-size:13px;color:#475569;}
+    .feat-icon{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;
+      justify-content:center;font-size:15px;flex-shrink:0;}
+    </style>
+    <div class="lp-hero">
+      <div class="lp-title">CAS 360 View</div>
+      <div class="lp-sub">Portfolio Intelligence Platform</div>
+      <div class="lp-pills">
+        <span class="lp-pill">📊 Live NAV</span>
+        <span class="lp-pill">🔄 SIP Tracker</span>
+        <span class="lp-pill">💰 P&L Analytics</span>
+        <span class="lp-pill">👨‍👩‍👧‍👦 Family View</span>
+        <span class="lp-pill">🔒 100% Private</span>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    # ── Two column layout: left = how-to guide, right = upload ───────────
     left, right = st.columns([1, 1], gap="large")
 
-    # ────────────────────────────────────────────
-    # LEFT: Beautiful Animated CAS Guide
-    # ────────────────────────────────────────────
+    # ── LEFT: How-to Guide ────────────────────────────────────────────────
     with left:
-        # Build each step as a mock browser screenshot card
-        steps_data = [
+        steps = [
             {
-                "num": "01", "color": "#63b3ed", "bg": "rgba(99,179,237,0.08)",
-                "tag": "STEP 1", "emoji": "🌐",
+                "emoji": "🌐", "tag": "Step 1", "tag_color": "#3b82f6", "tag_bg": "#eff6ff",
                 "title": "Visit camsonline.com",
                 "desc": "Go to MF Investor Services → Statements → CAS",
-                "mock_title": "camsonline.com",
                 "mock_content": """
-                  <div style="display:flex;gap:8px;margin-bottom:10px;">
-                    <div style="background:#1a365d;border-radius:6px;padding:6px 14px;font-size:11px;
-                                font-weight:700;color:#63b3ed;border:1px solid rgba(99,179,237,0.3);">
-                      MF Investors ▾</div>
-                    <div style="background:rgba(99,179,237,0.15);border-radius:6px;padding:6px 14px;
-                                font-size:11px;font-weight:700;color:#63b3ed;
-                                border:1px solid rgba(99,179,237,0.4);">
-                      ✦ Statements</div>
-                    <div style="background:rgba(255,255,255,0.04);border-radius:6px;padding:6px 14px;
-                                font-size:11px;color:#4a5568;">Transactions</div>
+                  <div style="display:flex;gap:6px;margin-bottom:8px;">
+                    <div style="background:#1e40af;color:#fff;border-radius:6px;padding:5px 12px;
+                                font-size:10px;font-weight:700;">MF Investors ▾</div>
+                    <div style="background:#dbeafe;color:#1d4ed8;border-radius:6px;padding:5px 12px;
+                                font-size:10px;font-weight:700;border:1px solid #93c5fd;">✦ Statements</div>
+                    <div style="background:#f1f5f9;color:#64748b;border-radius:6px;padding:5px 12px;
+                                font-size:10px;">Transactions</div>
                   </div>
-                  <div style="background:rgba(99,179,237,0.06);border:1px solid rgba(99,179,237,0.2);
-                              border-radius:8px;padding:10px 14px;font-size:11px;color:#718096;">
-                    📄 CAS - CAMS+KFintech &nbsp;→&nbsp;
-                    <span style="color:#63b3ed;font-weight:600;">Click here</span>
+                  <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;
+                              padding:9px 12px;font-size:11px;color:#3b82f6;font-weight:500;">
+                    📄 CAS - CAMS+KFintech → <span style="color:#1d4ed8;font-weight:700;">Click here</span>
                   </div>""",
             },
             {
-                "num": "02", "color": "#9f7aea", "bg": "rgba(159,122,234,0.08)",
-                "tag": "STEP 2", "emoji": "⚙️",
+                "emoji": "⚙️", "tag": "Step 2", "tag_color": "#8b5cf6", "tag_bg": "#f5f3ff",
                 "title": "Configure the form",
-                "desc": "Select Detailed · Date 01/01/1991 to today · Zero balance folios ✓",
-                "mock_title": "CAS Statement Form",
+                "desc": "Detailed · Date 01/01/1991 to today · Zero balance folios ✓",
                 "mock_content": """
-                  <div style="display:flex;flex-direction:column;gap:7px;">
+                  <div style="display:flex;flex-direction:column;gap:6px;">
                     <div style="display:flex;align-items:center;gap:8px;">
-                      <div style="width:14px;height:14px;border-radius:50%;
-                                  background:#9f7aea;border:2px solid #9f7aea;flex-shrink:0;"></div>
-                      <span style="font-size:11px;color:#e2e8f0;font-weight:600;">
-                        Detailed <span style="color:#4a5568;font-weight:400;">(includes transactions)</span></span>
+                      <div style="width:14px;height:14px;border-radius:50%;background:#8b5cf6;flex-shrink:0;"></div>
+                      <span style="font-size:11px;color:#1e293b;font-weight:600;">Detailed
+                        <span style="color:#64748b;font-weight:400;">(includes all transactions)</span></span>
                     </div>
                     <div style="display:flex;gap:6px;">
-                      <div style="flex:1;background:#0c0f1a;border:1px solid rgba(159,122,234,0.3);
-                                  border-radius:6px;padding:5px 8px;font-size:10px;color:#9f7aea;">
-                        📅 01-Jan-1991</div>
-                      <div style="flex:1;background:#0c0f1a;border:1px solid rgba(159,122,234,0.3);
-                                  border-radius:6px;padding:5px 8px;font-size:10px;color:#9f7aea;">
-                        📅 Today</div>
+                      <div style="flex:1;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:6px;
+                                  padding:5px 8px;font-size:10px;color:#7c3aed;">📅 01-Jan-1991</div>
+                      <div style="flex:1;background:#f5f3ff;border:1px solid #c4b5fd;border-radius:6px;
+                                  padding:5px 8px;font-size:10px;color:#7c3aed;">📅 Today</div>
                     </div>
                     <div style="display:flex;align-items:center;gap:8px;">
-                      <div style="width:14px;height:14px;border-radius:3px;
-                                  background:#9f7aea;flex-shrink:0;display:flex;align-items:center;
-                                  justify-content:center;font-size:9px;color:#fff;">✓</div>
-                      <span style="font-size:11px;color:#e2e8f0;">With zero balance folios</span>
+                      <div style="width:14px;height:14px;border-radius:3px;background:#8b5cf6;
+                                  display:flex;align-items:center;justify-content:center;font-size:9px;color:#fff;flex-shrink:0;">✓</div>
+                      <span style="font-size:11px;color:#1e293b;">Include zero balance folios</span>
                     </div>
                   </div>""",
             },
             {
-                "num": "03", "color": "#48bb78", "bg": "rgba(72,187,120,0.08)",
-                "tag": "STEP 3", "emoji": "🔑",
+                "emoji": "🔑", "tag": "Step 3", "tag_color": "#059669", "tag_bg": "#ecfdf5",
                 "title": "Enter email & set password",
                 "desc": "Enter your email · Set a password like Rahul@1234 · Click Submit",
-                "mock_title": "Enter Details",
                 "mock_content": """
-                  <div style="display:flex;flex-direction:column;gap:7px;">
-                    <div style="background:#0c0f1a;border:1px solid rgba(72,187,120,0.3);
-                                border-radius:6px;padding:6px 10px;font-size:10px;color:#718096;">
-                      📧 rahul@gmail.com</div>
-                    <div style="background:#0c0f1a;border:1px solid rgba(72,187,120,0.3);
-                                border-radius:6px;padding:6px 10px;font-size:10px;color:#718096;">
-                      🔒 ••••••••••</div>
-                    <div style="background:#48bb78;border-radius:6px;padding:7px 10px;
-                                font-size:11px;font-weight:700;color:#07090f;text-align:center;">
+                  <div style="display:flex;flex-direction:column;gap:6px;">
+                    <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;
+                                padding:6px 10px;font-size:10px;color:#64748b;">📧 rahul@gmail.com</div>
+                    <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:6px;
+                                padding:6px 10px;font-size:10px;color:#64748b;">🔒 ••••••••••</div>
+                    <div style="background:linear-gradient(135deg,#059669,#047857);border-radius:6px;
+                                padding:8px 10px;font-size:11px;font-weight:700;color:#fff;text-align:center;">
                       Submit →</div>
                   </div>""",
             },
             {
-                "num": "04", "color": "#f6ad55", "bg": "rgba(246,173,85,0.08)",
-                "tag": "STEP 4", "emoji": "📬",
-                "title": "Check email & upload",
-                "desc": "PDF arrives in 2 mins · Come back here · Upload it with your password",
-                "mock_title": "Your Inbox",
+                "emoji": "📬", "tag": "Step 4", "tag_color": "#d97706", "tag_bg": "#fffbeb",
+                "title": "Check email & upload here",
+                "desc": "PDF arrives in 2 mins · Come back · Upload with your password",
                 "mock_content": """
-                  <div style="display:flex;flex-direction:column;gap:6px;">
-                    <div style="background:rgba(246,173,85,0.08);border:1px solid rgba(246,173,85,0.25);
-                                border-radius:8px;padding:8px 10px;display:flex;gap:8px;align-items:center;">
-                      <div style="font-size:16px;flex-shrink:0;">📩</div>
-                      <div>
-                        <div style="font-size:10px;font-weight:700;color:#f6ad55;">
-                          CAS-CAMS+KFintech.pdf</div>
-                        <div style="font-size:9px;color:#4a5568;margin-top:1px;">
-                          From: noreply@camsonline.com</div>
-                      </div>
+                  <div style="background:#fffbeb;border:1px solid #fcd34d;border-radius:8px;
+                              padding:8px 10px;display:flex;gap:8px;align-items:center;">
+                    <div style="font-size:18px;">📩</div>
+                    <div>
+                      <div style="font-size:10px;font-weight:700;color:#b45309;">CAS-CAMS+KFintech.pdf</div>
+                      <div style="font-size:9px;color:#64748b;margin-top:1px;">From: noreply@camsonline.com</div>
                     </div>
-                    <div style="font-size:9px;color:#4a5568;text-align:center;">
-                      ↓ Download & upload to CAS 360 View</div>
-                  </div>""",
+                  </div>
+                  <div style="font-size:9px;color:#94a3b8;text-align:center;margin-top:6px;">
+                    ↓ Download & upload to CAS 360 View</div>""",
             },
         ]
 
-        # Build animated steps HTML
         steps_html = ""
-        for i, s in enumerate(steps_data):
-            delay = i * 0.15
+        for i, s in enumerate(steps):
+            connector = (f'<div style="width:2px;flex:1;min-height:12px;margin-top:4px;'
+                         f'background:linear-gradient({s["tag_color"]}44,transparent);'
+                         f'margin-left:17px;"></div>') if i < 3 else ""
             steps_html += f"""
-            <div style="animation:stepIn .5s ease {delay:.2f}s both;opacity:0;margin-bottom:18px;">
-              <div style="display:flex;gap:14px;">
-                <!-- Step number + connector -->
-                <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;">
-                  <div style="width:36px;height:36px;background:{s['bg']};
-                              border:1.5px solid {s['color']}55;border-radius:12px;
-                              display:flex;align-items:center;justify-content:center;
-                              font-size:16px;">{s['emoji']}</div>
-                  {"<div style='width:1px;flex:1;min-height:16px;margin-top:4px;background:linear-gradient(" + s['color'] + "44,transparent);'></div>" if i < 3 else ""}
-                </div>
-                <!-- Content -->
-                <div style="flex:1;padding-top:4px;">
-                  <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-                    <span style="font-size:9px;font-weight:800;color:{s['color']};
-                                 text-transform:uppercase;letter-spacing:2px;
-                                 background:{s['bg']};border:1px solid {s['color']}33;
-                                 padding:2px 8px;border-radius:20px;">{s['tag']}</span>
+            <div class="step-row">
+              <div style="flex-shrink:0;display:flex;flex-direction:column;align-items:center;">
+                <div class="step-num" style="background:{s['tag_bg']};color:{s['tag_color']};
+                     border:1.5px solid {s['tag_color']}44;">{s['emoji']}</div>
+                {connector}
+              </div>
+              <div style="flex:1;padding-top:2px;">
+                <span class="step-tag" style="background:{s['tag_bg']};color:{s['tag_color']};
+                  border:1px solid {s['tag_color']}33;">{s['tag']}</span>
+                <div class="step-title">{s['title']}</div>
+                <div class="step-desc">{s['desc']}</div>
+                <div class="mock-card">
+                  <div class="mock-bar">
+                    <span class="mock-dot" style="background:#ef4444;"></span>
+                    <span class="mock-dot" style="background:#f59e0b;margin:0 3px;"></span>
+                    <span class="mock-dot" style="background:#22c55e;"></span>
+                    <span class="mock-url">{s['title']}</span>
                   </div>
-                  <div style="font-size:13px;font-weight:700;color:#f7fafc;margin-bottom:3px;">
-                    {s['title']}</div>
-                  <div style="font-size:11px;color:#718096;margin-bottom:10px;line-height:1.6;">
-                    {s['desc']}</div>
-                  <!-- Mock screenshot card -->
-                  <div style="background:#07090f;border:1px solid rgba(255,255,255,0.06);
-                              border-radius:10px;overflow:hidden;">
-                    <!-- Browser bar -->
-                    <div style="background:#0c0f1a;border-bottom:1px solid rgba(255,255,255,0.05);
-                                padding:7px 12px;display:flex;align-items:center;gap:8px;">
-                      <div style="display:flex;gap:4px;">
-                        <div style="width:8px;height:8px;border-radius:50%;background:#fc8181;opacity:.5;"></div>
-                        <div style="width:8px;height:8px;border-radius:50%;background:#f6ad55;opacity:.5;"></div>
-                        <div style="width:8px;height:8px;border-radius:50%;background:#48bb78;opacity:.5;"></div>
-                      </div>
-                      <div style="flex:1;background:#07090f;border-radius:4px;padding:3px 8px;
-                                  font-size:9px;color:#4a5568;font-family:monospace;">
-                        {s['mock_title']}</div>
-                    </div>
-                    <!-- Content area -->
-                    <div style="padding:12px 14px;">
-                      {s['mock_content']}
-                    </div>
-                  </div>
+                  <div class="mock-body">{s['mock_content']}</div>
                 </div>
               </div>
             </div>"""
 
-        full_guide_html = f"""
-        <style>
-        @keyframes stepIn{{from{{opacity:0;transform:translateY(10px);}}to{{opacity:1;transform:translateY(0);}}}}
-        @keyframes guideIn{{from{{opacity:0;transform:translateX(-14px);}}to{{opacity:1;transform:translateX(0);}}}}
-        </style>
-        <div style="background:linear-gradient(145deg,#0c0f1a,#080b14);
-                    border:1px solid rgba(99,179,237,0.12);border-radius:20px;
-                    padding:24px 22px;animation:guideIn .6s ease forwards;
-                    font-family:Instrument Sans,sans-serif;">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;">
+        st.markdown(f"""
+        <div class="guide-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
             <div style="display:flex;align-items:center;gap:10px;">
-              <div style="width:34px;height:34px;background:rgba(99,179,237,0.1);
-                          border:1px solid rgba(99,179,237,0.25);border-radius:10px;
-                          display:flex;align-items:center;justify-content:center;font-size:16px;">📋</div>
+              <div style="width:36px;height:36px;background:#eff6ff;border-radius:12px;
+                          display:flex;align-items:center;justify-content:center;font-size:18px;">📋</div>
               <div>
-                <div style="font-size:13px;font-weight:700;color:#63b3ed;
-                            text-transform:uppercase;letter-spacing:2px;">How to get your CAS</div>
-                <div style="font-size:10px;color:#4a5568;margin-top:1px;">4 steps · 2 minutes · one time only</div>
+                <div style="font-size:14px;font-weight:700;color:#0f172a;">How to get your CAS</div>
+                <div style="font-size:10px;color:#94a3b8;margin-top:1px;">4 steps · 2 minutes · one time only</div>
               </div>
             </div>
-            <div style="background:rgba(72,187,120,0.08);border:1px solid rgba(72,187,120,0.2);
-                        border-radius:20px;padding:4px 10px;font-size:9px;font-weight:700;
-                        color:#48bb78;letter-spacing:1px;">FREE</div>
+            <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:20px;
+                        padding:4px 12px;font-size:10px;font-weight:700;color:#059669;">✓ FREE</div>
           </div>
           {steps_html}
-          <div style="background:rgba(99,179,237,0.05);border:1px solid rgba(99,179,237,0.12);
-                      border-radius:10px;padding:10px 14px;display:flex;gap:8px;
-                      align-items:center;margin-top:6px;">
-            <div style="font-size:14px;flex-shrink:0;">🔐</div>
-            <div style="font-size:10px;color:#4a5568;line-height:1.6;">
-              <span style="color:#63b3ed;font-weight:600;">100% Private</span> —
-              Your data is processed on your device only. Nothing stored on any server.
+          <div style="background:#f0f9ff;border:1px solid #bae6fd;border-radius:12px;
+                      padding:12px 16px;display:flex;gap:10px;align-items:center;margin-top:8px;">
+            <div style="font-size:18px;">🔐</div>
+            <div style="font-size:11px;color:#475569;line-height:1.6;">
+              <span style="color:#0369a1;font-weight:600;">100% Private</span> —
+              Your CAS data is processed locally. Nothing is stored on any server.
             </div>
           </div>
-        </div>"""
-        components.html(full_guide_html, height=820, scrolling=True)
+        </div>
+        """, unsafe_allow_html=True)
 
-    # ────────────────────────────────────────────
-    # RIGHT: Sign-up + Coupon gate + Upload
-    # ────────────────────────────────────────────
+    # ── RIGHT: Sign-up + Upload ───────────────────────────────────────────
     with right:
-
-        # ── STEP A: Sign up ────────────────────────────────────────────────
         if not st.session_state.get("user_registered", False):
+            st.markdown("""
+            <div class="upload-card">
+              <div style="display:inline-flex;align-items:center;gap:6px;background:#f0fdf4;
+                          border:1px solid #86efac;color:#059669;font-size:10px;font-weight:700;
+                          padding:4px 12px;border-radius:20px;margin-bottom:20px;letter-spacing:1px;">
+                ✦ FREE ACCESS</div>
+              <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;
+                          color:#0f172a;letter-spacing:-0.5px;margin-bottom:6px;line-height:1.2;">
+                Start your portfolio<br>intelligence journey</div>
+              <div style="font-size:12px;color:#64748b;margin-bottom:24px;line-height:1.7;">
+                Upload your CAS PDF and get a complete 360° view<br>of all your mutual fund investments.</div>
+              <div class="feat-row">
+                <div class="feat-icon" style="background:#eff6ff;">📊</div>
+                Live NAV tracking &amp; XIRR calculation
+              </div>
+              <div class="feat-row">
+                <div class="feat-icon" style="background:#f5f3ff;">🔄</div>
+                SIP health score &amp; bounce alerts
+              </div>
+              <div class="feat-row">
+                <div class="feat-icon" style="background:#f0fdf4;">👨‍👩‍👧‍👦</div>
+                Family portfolio consolidated view
+              </div>
+              <div class="feat-row" style="border:none;">
+                <div class="feat-icon" style="background:#fffbeb;">🔒</div>
+                Your data never leaves your device
+              </div>
+              <div style="height:20px;"></div>
+            """, unsafe_allow_html=True)
 
-            # premium signup card
-            st.markdown(
-                """
-                <style>
-                @keyframes cardIn{from{opacity:0;transform:translateY(16px);}to{opacity:1;transform:translateY(0);}}
-                @keyframes borderGlow{0%,100%{box-shadow:0 0 0 rgba(159,122,234,0);}
-                                       50%{box-shadow:0 0 28px rgba(159,122,234,0.18);}}
-                .signup-card{background:linear-gradient(145deg,#0c0f1a 60%,#120d1f);
-                  border:1px solid rgba(159,122,234,0.25);border-radius:20px;
-                  padding:32px 28px;animation:cardIn .6s ease forwards,borderGlow 4s ease infinite;}
-                .su-title{font-family:'Syne',sans-serif;font-size:22px;font-weight:800;
-                  color:#f7fafc;letter-spacing:-0.5px;margin-bottom:6px;}
-                .su-sub{font-size:12px;color:#4a5568;margin-bottom:24px;line-height:1.6;}
-                .su-badge{display:inline-flex;align-items:center;gap:6px;
-                  background:rgba(72,187,120,0.08);border:1px solid rgba(72,187,120,0.2);
-                  color:#48bb78;font-size:10px;font-weight:700;padding:3px 10px;
-                  border-radius:20px;margin-bottom:20px;letter-spacing:1px;}
-                .su-feature{display:flex;align-items:center;gap:10px;padding:8px 0;
-                  border-bottom:1px solid rgba(255,255,255,0.04);font-size:12px;color:#718096;}
-                .su-icon{width:26px;height:26px;border-radius:8px;display:flex;align-items:center;
-                  justify-content:center;font-size:13px;flex-shrink:0;}
-                </style>
-                <div class="signup-card">
-                  <div class="su-badge">✦ FREE ACCESS</div>
-                  <div class="su-title">Start your portfolio<br>intelligence journey</div>
-                  <div class="su-sub">Upload your CAS PDF and get a complete<br>360° view of all your mutual fund investments.</div>
-                  <div class="su-feature">
-                    <div class="su-icon" style="background:rgba(99,179,237,0.1);">📊</div>
-                    Live NAV tracking & XIRR calculation
-                  </div>
-                  <div class="su-feature">
-                    <div class="su-icon" style="background:rgba(159,122,234,0.1);">🔄</div>
-                    SIP health score & bounce alerts
-                  </div>
-                  <div class="su-feature">
-                    <div class="su-icon" style="background:rgba(72,187,120,0.1);">👨‍👩‍👧‍👦</div>
-                    Family portfolio view
-                  </div>
-                  <div class="su-feature" style="border:none;">
-                    <div class="su-icon" style="background:rgba(246,173,85,0.1);">🔒</div>
-                    Your data never leaves your device
-                  </div>
-                  <div style="height:20px;"></div>
-                """,
-                unsafe_allow_html=True,
-            )
-
-            # ── inputs use different keys to avoid session_state conflict ──
-            name_input  = st.text_input("Your Name",      placeholder="Rahul Sharma",    key="_reg_name_input")
-            email_input = st.text_input("Email Address",  placeholder="rahul@gmail.com", key="_reg_email_input")
+            name_input  = st.text_input("Your Name",     placeholder="Rahul Sharma",    key="_reg_name_input")
+            email_input = st.text_input("Email Address", placeholder="rahul@gmail.com", key="_reg_email_input")
             st.markdown("</div>", unsafe_allow_html=True)
 
-            if st.button("Continue →", use_container_width=True, type="primary", key="reg_btn"):
+            if st.button("Get Started →", use_container_width=True, type="primary", key="reg_btn"):
                 if name_input.strip() and email_input.strip() and "@" in email_input:
                     st.session_state["user_registered"] = True
                     st.session_state["reg_name"]        = name_input.strip()
@@ -1697,13 +1667,10 @@ def show_upload():
                     st.error("Please enter a valid name and email address.")
             st.stop()
 
-        # ── STEP B: Auto-unlock after signup (coupon system removed for now) ──
-        reg_name = st.session_state.get("reg_name", "there")
-        # Auto-grant access immediately after signup — no coupon needed
+        # ── Auto-unlock ───────────────────────────────────────────────────
         if not is_unlocked:
             st.session_state["coupon_ok"]   = True
             st.session_state["coupon_used"] = "DIRECT"
-            # Log signup to sheet if configured
             try:
                 setup_sheet_headers()
                 log_signup_to_sheet(
@@ -1715,53 +1682,43 @@ def show_upload():
                 pass
             st.rerun()
 
-            st.markdown(
-                """
-                <div style="text-align:center;margin-top:12px;">
-                  <div style="font-size:11px;color:#4a5568;">
-                    Don't have a code? Contact us to get access.</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
-            return  # stop here if not unlocked
-
-        # ── STEP C: Auto-request OR Upload (unlocked) ─────────────────────
-        used_code = st.session_state.get("coupon_used", "")
-
-        # Header
-        st.markdown(
-            f"""
-            <div style="display:flex;align-items:center;justify-content:space-between;
-                        margin-bottom:16px;">
-              <div>
-                <div style="font-family:'Syne',sans-serif;font-size:17px;font-weight:800;
-                            color:#f7fafc;">Get your CAS PDF</div>
-                <div style="font-size:11px;color:#48bb78;margin-top:3px;">
-                  🔓 Unlocked · {used_code}</div>
-              </div>
-              <div style="background:rgba(72,187,120,0.12);border:1px solid rgba(72,187,120,0.3);
-                          border-radius:20px;padding:4px 12px;font-size:10px;font-weight:700;
-                          color:#48bb78;letter-spacing:1px;">ACTIVE</div>
+        # ── Upload section ────────────────────────────────────────────────
+        reg_name = st.session_state.get("reg_name", "there")
+        st.markdown(f"""
+        <div class="upload-card">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+            <div>
+              <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;
+                          color:#0f172a;letter-spacing:-0.3px;">
+                Welcome back, {reg_name.split()[0]} 👋</div>
+              <div style="font-size:12px;color:#64748b;margin-top:3px;">
+                Upload your CAS PDF to analyse your portfolio</div>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
+            <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:20px;
+                        padding:5px 14px;font-size:10px;font-weight:700;color:#059669;">
+              🔓 ACTIVE</div>
+          </div>
+          <div style="background:linear-gradient(135deg,#eff6ff,#f5f3ff);border:1px solid #c7d2fe;
+                      border-radius:14px;padding:16px 18px;margin-bottom:20px;">
+            <div style="font-size:11px;font-weight:700;color:#3730a3;margin-bottom:4px;">
+              📄 Your CAS PDF</div>
+            <div style="font-size:11px;color:#6366f1;line-height:1.6;">
+              Password is your <strong>PAN number</strong> (e.g. ABCDE1234F)
+              or <strong>Date of Birth</strong> (DDMMYYYY format)</div>
+          </div>
+        """, unsafe_allow_html=True)
 
-        # ── Mode tabs ──────────────────────────────────────────────────────
-        # ── Clean Upload Section ───────────────────────────────────────────
-        st.markdown("<div style='height:4px'></div>", unsafe_allow_html=True)
-        uploaded = st.file_uploader(
-            "CAS PDF", type=["pdf"], label_visibility="collapsed")
+        uploaded = st.file_uploader("Upload CAS PDF", type=["pdf"], label_visibility="collapsed")
         password = st.text_input(
             "PDF Password",
             type="password",
             placeholder="PAN number or Date of Birth (DDMMYYYY)",
             key="pdf_password",
         )
+        st.markdown("</div>", unsafe_allow_html=True)
+
         if uploaded and password:
-            if st.button("🚀 Analyse Portfolio →",
-                         use_container_width=True, type="primary"):
+            if st.button("🚀 Analyse My Portfolio →", use_container_width=True, type="primary"):
                 with st.spinner("Parsing your CAS…"):
                     data, error = parse_pdf(uploaded.read(), password)
                 if error == "wrong_password":
@@ -1785,102 +1742,82 @@ def show_upload():
 def build_sidebar(data):
     with st.sidebar:
 
-        # ── Premium CSS overrides ──────────────────────────────────────────
+        # ── Sidebar CSS ────────────────────────────────────────────────────
         st.markdown("""
         <style>
         [data-testid="stSidebar"] {
-            background: linear-gradient(180deg, #07090f 0%, #0a0d18 100%) !important;
-            border-right: 1px solid rgba(99,179,237,0.08) !important;
+            background: #ffffff !important;
+            border-right: 1px solid rgba(0,0,0,0.07) !important;
+            box-shadow: 2px 0 12px rgba(0,0,0,0.05) !important;
         }
         [data-testid="stSidebar"] > div:first-child { padding: 0 !important; }
-
-        /* Nav radio — hide default bullets, style as custom pills */
         [data-testid="stSidebar"] [role="radiogroup"] { gap: 2px !important; }
         [data-testid="stSidebar"] [data-testid="stRadio"] label {
-            display: flex !important;
-            align-items: center !important;
-            padding: 9px 14px !important;
-            border-radius: 10px !important;
-            font-size: 13px !important;
-            font-weight: 500 !important;
-            color: #718096 !important;
-            cursor: pointer !important;
-            transition: background .15s, color .15s !important;
-            margin: 0 !important;
+            display: flex !important; align-items: center !important;
+            padding: 10px 16px !important; border-radius: 10px !important;
+            font-size: 13px !important; font-weight: 500 !important;
+            color: #64748b !important; cursor: pointer !important;
+            transition: background .15s, color .15s !important; margin: 0 !important;
         }
         [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
-            background: rgba(99,179,237,0.06) !important;
-            color: #e2e8f0 !important;
+            background: #f1f5f9 !important; color: #0f172a !important;
         }
         [data-testid="stSidebar"] [data-testid="stRadio"] label[data-checked="true"],
         [data-testid="stSidebar"] [data-testid="stRadio"] [aria-checked="true"] + div label {
-            background: rgba(99,179,237,0.1) !important;
-            color: #63b3ed !important;
-            font-weight: 600 !important;
+            background: #eff6ff !important; color: #2563eb !important; font-weight: 600 !important;
         }
-        /* Hide the radio dot */
         [data-testid="stSidebar"] [data-testid="stRadio"] [data-baseweb="radio"] > div:first-child {
             display: none !important;
         }
-        /* Sidebar buttons */
+        [data-testid="stSidebar"] [data-testid="stRadio"] > label:first-child { display: none !important; }
         [data-testid="stSidebar"] button[kind="secondary"] {
-            background: rgba(255,255,255,0.03) !important;
-            border: 1px solid rgba(255,255,255,0.07) !important;
-            color: #718096 !important;
-            border-radius: 10px !important;
-            font-size: 12px !important;
-            transition: all .2s !important;
+            background: #f8fafc !important; border: 1px solid rgba(0,0,0,0.08) !important;
+            color: #64748b !important; border-radius: 10px !important; font-size: 12px !important;
         }
         [data-testid="stSidebar"] button[kind="secondary"]:hover {
-            background: rgba(99,179,237,0.07) !important;
-            border-color: rgba(99,179,237,0.2) !important;
-            color: #e2e8f0 !important;
+            background: #eff6ff !important; border-color: #bfdbfe !important; color: #2563eb !important;
         }
         </style>
         """, unsafe_allow_html=True)
 
-        # ── Logo block ─────────────────────────────────────────────────────
-        st.markdown(
-            """
-            <div style="padding:22px 20px 16px;">
-              <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
-                <div style="width:32px;height:32px;background:linear-gradient(135deg,#1a365d,#2b6cb0);
-                            border-radius:10px;display:flex;align-items:center;justify-content:center;
-                            font-size:16px;box-shadow:0 0 12px rgba(99,179,237,0.2);">◈</div>
-                <div>
-                  <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;
-                              color:#f7fafc;letter-spacing:-0.5px;line-height:1;">
-                    CAS 360 <span style="color:#63b3ed;">View</span></div>
-                  <div style="font-size:9px;color:#2d3748;text-transform:uppercase;
-                              letter-spacing:2.5px;font-weight:600;margin-top:1px;">
-                    Portfolio Intelligence</div>
-                </div>
-              </div>
+        # ── Logo ───────────────────────────────────────────────────────────
+        st.markdown("""
+        <div style="padding:24px 20px 16px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div style="width:36px;height:36px;
+                        background:linear-gradient(135deg,#2563eb,#7c3aed);
+                        border-radius:12px;display:flex;align-items:center;justify-content:center;
+                        font-size:18px;box-shadow:0 4px 12px rgba(37,99,235,0.3);">◈</div>
+            <div>
+              <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;
+                          color:#0f172a;letter-spacing:-0.5px;line-height:1.1;">
+                CAS 360 <span style="color:#2563eb;">View</span></div>
+              <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;
+                          letter-spacing:2.5px;font-weight:600;margin-top:2px;">
+                Portfolio Intelligence</div>
             </div>
-            """,
-            unsafe_allow_html=True,
-        )
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
 
         if data:
             profiles_count = len(st.session_state.profiles)
 
-            # ── NAV section label ─────────────────────────────────────────
             st.markdown(
-                "<div style='font-size:9px;color:#2d3748;text-transform:uppercase;"
+                "<div style='font-size:9px;color:#94a3b8;text-transform:uppercase;"
                 "letter-spacing:2px;font-weight:700;padding:0 20px;margin-bottom:4px;'>Navigate</div>",
                 unsafe_allow_html=True,
             )
 
-            nav_items = ["Dashboard", "💰 P&L Summary", "📈 Returns", "📄 Report Builder",
-                         "My Portfolio", "SIP Center", "Transactions", "Alerts"]
+            nav_items = ["🏠 Dashboard", "💰 P&L Summary", "📈 Returns", "📄 Report Builder",
+                         "📂 My Portfolio", "🔄 SIP Center", "📋 Transactions", "🔔 Alerts"]
             if profiles_count > 1:
                 nav_items = ["👨‍👩‍👧‍👦 Family"] + nav_items
 
             menu = st.radio("", nav_items, label_visibility="hidden")
 
-            # ── Divider ───────────────────────────────────────────────────
             st.markdown(
-                "<div style='height:1px;background:rgba(255,255,255,0.05);margin:12px 0;'></div>",
+                "<div style='height:1px;background:rgba(0,0,0,0.06);margin:12px 8px;'></div>",
                 unsafe_allow_html=True,
             )
 
@@ -1893,43 +1830,42 @@ def build_sidebar(data):
 
             initials = "".join(w[0].upper() for w in data["investor_name"].split()[:2])
             pnl      = data["total_value"] - data["total_invested"]
-            pnl_c    = "#48bb78" if pnl >= 0 else "#fc8181"
+            pnl_c    = "#059669" if pnl >= 0 else "#dc2626"
+            pnl_bg   = "#f0fdf4" if pnl >= 0 else "#fef2f2"
             pnl_ar   = "▲" if pnl >= 0 else "▼"
             pnl_pct  = abs(pnl / data["total_invested"] * 100) if data["total_invested"] else 0
 
             st.markdown(
                 f"""
-                <div style="background:linear-gradient(135deg,#0c0f1a,#0d1020);
-                            border:1px solid rgba(99,179,237,0.12);border-radius:14px;
-                            padding:14px 16px;margin:0 4px 6px;">
-                  <!-- Avatar + name row -->
+                <div style="background:#f8fafc;border:1px solid rgba(0,0,0,0.07);
+                            border-radius:14px;padding:14px 16px;margin:0 4px 8px;
+                            box-shadow:0 1px 4px rgba(0,0,0,0.05);">
                   <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-                    <div style="width:36px;height:36px;border-radius:50%;
-                                background:linear-gradient(135deg,#1a365d,#553c9a);
-                                border:2px solid rgba(99,179,237,0.25);
+                    <div style="width:38px;height:38px;border-radius:50%;
+                                background:linear-gradient(135deg,#2563eb,#7c3aed);
                                 display:flex;align-items:center;justify-content:center;
-                                font-family:'Syne',sans-serif;font-size:13px;
-                                font-weight:800;color:#f7fafc;flex-shrink:0;">
+                                font-family:'Syne',sans-serif;font-size:14px;
+                                font-weight:800;color:#fff;flex-shrink:0;
+                                box-shadow:0 2px 8px rgba(37,99,235,0.3);">
                       {initials}</div>
                     <div style="min-width:0;">
-                      <div style="font-size:13px;font-weight:700;color:#f7fafc;
+                      <div style="font-size:13px;font-weight:700;color:#0f172a;
                                   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                         {data['investor_name'].title()}</div>
-                      <div style="font-size:10px;color:#4a5568;margin-top:1px;">
+                      <div style="font-size:10px;color:#94a3b8;margin-top:1px;">
                         📅 {statement_date}</div>
                     </div>
                   </div>
-                  <!-- Wealth mini stats -->
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
-                    <div style="background:#07090f;border-radius:8px;padding:8px 10px;">
-                      <div style="font-size:9px;color:#4a5568;text-transform:uppercase;
+                    <div style="background:#eff6ff;border-radius:8px;padding:8px 10px;">
+                      <div style="font-size:9px;color:#64748b;text-transform:uppercase;
                                   letter-spacing:1px;margin-bottom:3px;">Wealth</div>
                       <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;
-                                  font-weight:700;color:#63b3ed;">
+                                  font-weight:700;color:#2563eb;">
                         {fmt_inr_short(data['total_value'])}</div>
                     </div>
-                    <div style="background:#07090f;border-radius:8px;padding:8px 10px;">
-                      <div style="font-size:9px;color:#4a5568;text-transform:uppercase;
+                    <div style="background:{pnl_bg};border-radius:8px;padding:8px 10px;">
+                      <div style="font-size:9px;color:#64748b;text-transform:uppercase;
                                   letter-spacing:1px;margin-bottom:3px;">P&L</div>
                       <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;
                                   font-weight:700;color:{pnl_c};">
@@ -1940,11 +1876,10 @@ def build_sidebar(data):
                 unsafe_allow_html=True,
             )
 
-            # Email row with eye toggle
             ec1, ec2 = st.columns([5, 1])
             with ec1:
                 st.markdown(
-                    f"<div style='font-size:10px;color:#4a5568;padding:0 2px;"
+                    f"<div style='font-size:10px;color:#64748b;padding:0 2px;"
                     f"overflow:hidden;text-overflow:ellipsis;white-space:nowrap;'>"
                     f"{email_display}</div>",
                     unsafe_allow_html=True,
@@ -1956,13 +1891,12 @@ def build_sidebar(data):
 
             st.markdown("</div>", unsafe_allow_html=True)
 
-            # ── Family switcher ───────────────────────────────────────────
             if len(st.session_state.profiles) > 1:
                 mc   = len(st.session_state.profiles)
                 keys = list(st.session_state.profiles.keys())
                 index = keys.index(st.session_state.active) if st.session_state.active in keys else 0
                 st.markdown(
-                    f"<div style='font-size:9px;color:#2d3748;text-transform:uppercase;"
+                    f"<div style='font-size:9px;color:#94a3b8;text-transform:uppercase;"
                     f"letter-spacing:2px;font-weight:700;padding:0 4px;margin-bottom:4px;"
                     f"display:flex;align-items:center;gap:6px;'>"
                     f"👨‍👩‍👧‍👦 <span>{mc} Members</span></div>",
@@ -5397,23 +5331,23 @@ def run_app():
     # sidebar shortcut override
     if st.session_state.get("nav_override"):
         menu = st.session_state.pop("nav_override")
-    if menu == "👨‍👩‍👧‍👦 Family":
+    if "Family" in menu:
         render_family_overview()
-    elif menu == "Dashboard":
+    elif "Dashboard" in menu:
         render_dashboard(active)
-    elif menu == "💰 P&L Summary":
+    elif "P&L" in menu:
         render_pnl_summary(active, st.session_state.get("live_data",{}))
-    elif menu == "📈 Returns":
+    elif "Returns" in menu:
         render_returns_analysis(active, st.session_state.get("live_data",{}))
-    elif menu == "📄 Report Builder":
+    elif "Report" in menu:
         render_custom_report(active)
-    elif menu == "My Portfolio":
+    elif "Portfolio" in menu:
         render_my_portfolio(active)
-    elif menu == "SIP Center":
+    elif "SIP" in menu:
         render_sip_center(active)
-    elif menu == "Transactions":
+    elif "Transaction" in menu:
         render_transactions(active)
-    elif menu == "Alerts":
+    elif "Alert" in menu:
         render_alerts(active)
 
 
