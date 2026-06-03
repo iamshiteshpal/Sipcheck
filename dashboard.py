@@ -2517,65 +2517,53 @@ def render_dashboard(data):
         bounce_rate        = (len(sip_rev) / max(len(sip_txs), 1)) * 100
         health_pct         = max(0, 100 - (len(dead_sips)*15) - (len(sip_rev)*8))
         health_pct         = min(100, health_pct)
-        h_color            = "#48bb78" if health_pct >= 70 else "#f6ad55" if health_pct >= 40 else "#fc8181"
-        h_label            = "Healthy" if health_pct >= 70 else "Watch" if health_pct >= 40 else "At Risk"
+        h_color = "#059669" if health_pct >= 70 else "#d97706" if health_pct >= 40 else "#dc2626"
+        h_label = "Healthy" if health_pct >= 70 else "Watch" if health_pct >= 40 else "At Risk"
+        br_color = "#dc2626" if bounce_rate > 5 else "#059669"
 
-        # ── HERO STATS ROW with animated glowing cards ────────────────────────
-        hero = (
-            "<style>"
-            "@keyframes hIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}"
-            "@keyframes pulse{0%,100%{box-shadow:0 0 0 rgba(99,179,237,0);}60%{box-shadow:0 0 20px rgba(99,179,237,0.15);}}"
-            "@keyframes ringFill{from{stroke-dashoffset:283;}to{stroke-dashoffset:var(--d);}}"
-            ".hcard{background:linear-gradient(135deg,#0c0f1a,#111627);border-radius:16px;"
-            "padding:20px 22px;animation:hIn .55s ease forwards,pulse 4s ease infinite;"
-            "transition:transform .2s,border-color .25s;cursor:default;}"
-            ".hcard:hover{transform:translateY(-4px);}"
-            ".hlbl{font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1.6px;"
-            "font-weight:700;margin-bottom:10px;display:flex;align-items:center;gap:6px;}"
-            ".hval{font-family:'IBM Plex Mono',monospace;font-weight:700;letter-spacing:-.5px;line-height:1;}"
-            ".hsub{font-size:10px;color:#94a3b8;margin-top:6px;}"
-            ".ring-wrap{display:flex;align-items:center;gap:10px;}"
-            "</style>"
-            "<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px;'>"
+        # ── HERO STATS ROW ────────────────────────────────────────────────────
+        hc1, hc2, hc3, hc4 = st.columns(4, gap="small")
+        def _sip_kpi(col, label, value, sub, color, bdr):
+            col.markdown(f"""
+            <div style="background:#ffffff;border:1px solid {bdr};border-radius:14px;
+                        padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);height:100%;">
+              <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;
+                          font-weight:700;margin-bottom:10px;">{label}</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;
+                          color:{color};letter-spacing:-.5px;line-height:1;">{value}</div>
+              <div style="font-size:10px;color:#94a3b8;margin-top:6px;">{sub}</div>
+            </div>""", unsafe_allow_html=True)
 
-            # Card 1 — Total SIP Invested
-            f"<div class='hcard' style='border:1px solid rgba(99,179,237,0.25);animation-delay:.0s;'>"
-            f"<div class='hlbl'><span style='width:6px;height:6px;border-radius:50%;background:#63b3ed;"
-            f"box-shadow:0 0 6px #63b3ed;display:inline-block;'></span>Total SIP Invested</div>"
-            f"<div class='hval' style='font-size:22px;color:#3b82f6;'>{fmt_inr(total_sip_invested)}</div>"
-            f"<div class='hsub'>{len(sip_by_scheme)} schemes · {len(sip_txs)} transactions</div></div>"
-
-            # Card 2 — Monthly SIP
-            f"<div class='hcard' style='border:1px solid rgba(72,187,120,0.25);animation-delay:.1s;'>"
-            f"<div class='hlbl'><span style='width:6px;height:6px;border-radius:50%;background:#48bb78;"
-            f"box-shadow:0 0 6px #48bb78;display:inline-block;'></span>Monthly SIP</div>"
-            f"<div class='hval' style='font-size:22px;color:#059669;'>{fmt_inr(sip_monthly)}</div>"
-            f"<div class='hsub'>{len(live_sips)} active · {len(dead_sips)} stopped</div></div>"
-
-            # Card 3 — Bounce Rate
-            f"<div class='hcard' style='border:1px solid rgba({'252,129,129' if bounce_rate>5 else '72,187,120'},0.25);animation-delay:.2s;'>"
-            f"<div class='hlbl'><span style='width:6px;height:6px;border-radius:50%;"
-            f"background:{'#fc8181' if bounce_rate>5 else '#48bb78'};box-shadow:0 0 6px "
-            f"{'#fc8181' if bounce_rate>5 else '#48bb78'};display:inline-block;'></span>Bounce Rate</div>"
-            f"<div class='hval' style='font-size:22px;color:{'#fc8181' if bounce_rate>5 else '#48bb78'};'>{bounce_rate:.1f}%</div>"
-            f"<div class='hsub'>{len(sip_rev)} bounces out of {len(sip_txs)} total SIPs</div></div>"
-
-            # Card 4 — SIP Health (ring gauge)
-            f"<div class='hcard' style='border:1px solid {h_color}44;animation-delay:.3s;'>"
-            f"<div class='hlbl'><span style='width:6px;height:6px;border-radius:50%;background:{h_color};"
-            f"box-shadow:0 0 6px {h_color};display:inline-block;'></span>SIP Health</div>"
-            f"<div class='ring-wrap'>"
-            f"<svg width='52' height='52' viewBox='0 0 100 100'>"
-            f"<circle cx='50' cy='50' r='45' fill='none' stroke='#1a202c' stroke-width='12'/>"
-            f"<circle cx='50' cy='50' r='45' fill='none' stroke='{h_color}' stroke-width='12'"
-            f" stroke-dasharray='283' stroke-dashoffset='{int(283*(1-health_pct/100))}'"
-            f" stroke-linecap='round' transform='rotate(-90 50 50)'"
-            f" style='transition:stroke-dashoffset 1.4s ease .4s;'/></svg>"
-            f"<div><div class='hval' style='font-size:24px;color:{h_color};'>{health_pct}</div>"
-            f"<div style='font-size:10px;color:{h_color};font-weight:700;'>{h_label}</div></div>"
-            f"</div></div></div>"
-        )
-        st.markdown(hero, unsafe_allow_html=True)
+        _sip_kpi(hc1, "Total SIP Invested", fmt_inr(total_sip_invested),
+                 f"{len(sip_by_scheme)} schemes · {len(sip_txs)} transactions",
+                 "#2563eb", "rgba(37,99,235,0.18)")
+        _sip_kpi(hc2, "Monthly SIP", fmt_inr(sip_monthly),
+                 f"{len(live_sips)} active · {len(dead_sips)} stopped",
+                 "#059669", "rgba(5,150,105,0.18)")
+        _sip_kpi(hc3, "Bounce Rate", f"{bounce_rate:.1f}%",
+                 f"{len(sip_rev)} bounces out of {len(sip_txs)} total SIPs",
+                 br_color, f"rgba({'220,38,38' if bounce_rate>5 else '5,150,105'},0.18)")
+        with hc4:
+            st.markdown(f"""
+            <div style="background:#ffffff;border:1px solid {h_color}44;border-radius:14px;
+                        padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);height:100%;">
+              <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;
+                          font-weight:700;margin-bottom:10px;">SIP Health</div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <svg width="52" height="52" viewBox="0 0 100 100">
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="#f1f5f9" stroke-width="12"/>
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="{h_color}" stroke-width="12"
+                   stroke-dasharray="283" stroke-dashoffset="{int(283*(1-health_pct/100))}"
+                   stroke-linecap="round" transform="rotate(-90 50 50)"/>
+                </svg>
+                <div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:24px;
+                              font-weight:700;color:{h_color};">{health_pct}</div>
+                  <div style="font-size:10px;color:{h_color};font-weight:700;">{h_label}</div>
+                </div>
+              </div>
+            </div>""", unsafe_allow_html=True)
+        st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
 
         # ── ROW 1: Animated SVG Donut + Animated Radial Bars ─────────────────
         col_d, col_b = st.columns(2)
@@ -2584,7 +2572,7 @@ def render_dashboard(data):
             # Animated donut — SIP share per scheme
             items_d  = sorted(sip_by_scheme.items(), key=lambda x: -x[1])[:8]
             total_d  = sum(v for _, v in items_d) or 1
-            pal      = ["#63b3ed","#9f7aea","#48bb78","#f6ad55","#fc8181","#4fd1c5","#ed8936","#fbb6ce"]
+            pal      = ["#3b82f6","#8b5cf6","#10b981","#f59e0b","#ef4444","#06b6d4","#f97316","#ec4899"]
             cx, cy, ro, ri = 120, 120, 95, 58
             segs = ""; leg = ""; ang = 0.0
             for i, (lbl, val) in enumerate(items_d):
@@ -2600,40 +2588,29 @@ def render_dashboard(data):
                 lf  = 1 if sw > 180 else 0
                 path= (f"M {x1o:.1f} {y1o:.1f} A {ro} {ro} 0 {lf} 1 {x2o:.1f} {y2o:.1f} "
                        f"L {x1i:.1f} {y1i:.1f} A {ri} {ri} 0 {lf} 0 {x2i:.1f} {y2i:.1f} Z")
-                segs += (f'<path d="{path}" fill="{c}" opacity="0" class="seg{i}" '
-                         f'style="animation:sIn{i} .6s ease {i*.13:.2f}s forwards;cursor:pointer;'
-                         f'transition:filter .2s,transform .2s;transform-origin:{cx}px {cy}px;" '
-                         f'onmouseover="this.style.filter=\'brightness(1.35) drop-shadow(0 0 6px {c})\';this.style.transform=\'scale(1.04)\'" '
-                         f'onmouseout="this.style.filter=\'brightness(1)\';this.style.transform=\'scale(1)\'">'
-                         f'<title>{lbl}\n{fmt_inr(val)} ({pct:.1f}%)</title></path>')
+                segs += f'<path d="{path}" fill="{c}"><title>{lbl}: {fmt_inr(val)} ({pct:.1f}%)</title></path>'
                 short = lbl[:24]+"…" if len(lbl)>24 else lbl
                 leg  += (f'<div style="display:flex;justify-content:space-between;align-items:center;'
-                         f'padding:6px 0;border-bottom:1px solid rgba(0,0,0,0.06);">'
-                         f'<div style="display:flex;align-items:center;gap:7px;">'
-                         f'<span style="width:8px;height:8px;border-radius:50%;background:{c};'
-                         f'box-shadow:0 0 5px {c}66;display:inline-block;flex-shrink:0;"></span>'
-                         f'<span style="font-size:11px;color:#0f172a;">{short}</span></div>'
-                         f'<div style="text-align:right;min-width:80px;">'
+                         f'padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.06);">'
+                         f'<div style="display:flex;align-items:center;gap:8px;">'
+                         f'<span style="width:10px;height:10px;border-radius:50%;background:{c};'
+                         f'display:inline-block;flex-shrink:0;"></span>'
+                         f'<span style="font-size:12px;color:#0f172a;">{short}</span></div>'
+                         f'<div style="text-align:right;min-width:90px;">'
                          f'<div style="font-family:IBM Plex Mono,monospace;font-size:11px;font-weight:700;color:#0f172a;">{fmt_inr(val)}</div>'
                          f'<div style="font-size:10px;color:#94a3b8;">{pct:.1f}%</div></div></div>')
                 ang  += (pct/100)*360
 
-            keyframes = "".join(
-                f"@keyframes sIn{i}{{from{{opacity:0;transform:scale(.78) rotate(-8deg);transform-origin:{cx}px {cy}px;}}"
-                f"to{{opacity:1;transform:scale(1) rotate(0deg);transform-origin:{cx}px {cy}px;}}}}"
-                for i in range(len(items_d))
-            )
             donut_html = (
-                f"<style>{keyframes}</style>"
                 "<div style='background:#ffffff;border:1px solid rgba(0,0,0,0.07);"
                 "border-radius:16px;padding:20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);'>"
                 "<div style='font-size:10px;font-weight:700;color:#3b82f6;"
                 "text-transform:uppercase;letter-spacing:2px;margin-bottom:14px;'>🍩 SIP Distribution by Scheme</div>"
-                f"<svg width='240' height='240' viewBox='0 0 240 240' style='display:block;margin:0 auto 12px;'>{segs}"
+                f"<svg width='240' height='240' viewBox='0 0 240 240' style='display:block;margin:0 auto 14px;'>{segs}"
                 f"<circle cx='{cx}' cy='{cy}' r='{ri-3}' fill='#fff'/>"
-                f"<text x='{cx}' y='{cy-6}' text-anchor='middle' style='font-family:IBM Plex Mono,monospace;"
-                f"font-size:15px;font-weight:700;fill:#0f172a;'>{len(items_d)}</text>"
-                f"<text x='{cx}' y='{cy+12}' text-anchor='middle' style='font-size:10px;fill:#94a3b8;'>schemes</text>"
+                f"<text x='{cx}' y='{cy-4}' text-anchor='middle' "
+                f"style='font-family:IBM Plex Mono,monospace;font-size:16px;font-weight:700;fill:#0f172a;'>{len(items_d)}</text>"
+                f"<text x='{cx}' y='{cy+14}' text-anchor='middle' style='font-size:10px;fill:#94a3b8;'>schemes</text>"
                 f"</svg><div>{leg}</div></div>"
             )
             st.markdown(donut_html, unsafe_allow_html=True)
@@ -2721,19 +2698,19 @@ def render_dashboard(data):
 
                     # Colour scheme: red border for missed, green for normal
                     if is_missed:
-                        card_bg   = "linear-gradient(135deg,#1a0808,#0c0f1a)"
-                        card_brd  = "rgba(252,129,129,0.35)"
-                        amt_color = "#fc8181"
+                        card_bg   = "#fff9f9"
+                        card_brd  = "rgba(220,38,38,0.25)"
+                        amt_color = "#dc2626"
                         status_badge = (
-                            '<span style="background:rgba(252,129,129,0.15);'
-                            'border:1px solid rgba(252,129,129,0.4);'
+                            '<span style="background:rgba(220,38,38,0.08);'
+                            'border:1px solid rgba(220,38,38,0.25);'
                             'color:#dc2626;font-size:9px;font-weight:800;'
                             'padding:2px 7px;border-radius:20px;'
                             'white-space:nowrap;margin-left:8px;">⚠️ CHECK</span>'
                         )
                         extra_info = (
-                            f'<div style="background:rgba(252,129,129,0.08);'
-                            f'border:1px solid rgba(252,129,129,0.2);'
+                            f'<div style="background:rgba(220,38,38,0.06);'
+                            f'border:1px solid rgba(220,38,38,0.15);'
                             f'border-radius:8px;padding:8px 10px;margin-top:8px;">'
                             f'<div style="font-size:10px;color:#dc2626;font-weight:700;">'
                             f'⚠️ No deduction in {days_since} days</div>'
@@ -2742,12 +2719,12 @@ def render_dashboard(data):
                             f'</div>'
                         )
                     else:
-                        card_bg   = "linear-gradient(135deg,#0c0f1a,#0a1f15)"
-                        card_brd  = "rgba(72,187,120,0.22)"
-                        amt_color = "#48bb78"
+                        card_bg   = "#f0fdf4"
+                        card_brd  = "rgba(5,150,105,0.20)"
+                        amt_color = "#059669"
                         status_badge = (
-                            '<span style="background:rgba(72,187,120,0.15);'
-                            'border:1px solid rgba(72,187,120,0.3);'
+                            '<span style="background:rgba(5,150,105,0.10);'
+                            'border:1px solid rgba(5,150,105,0.25);'
                             'color:#059669;font-size:9px;font-weight:700;'
                             'padding:2px 7px;border-radius:20px;'
                             'white-space:nowrap;margin-left:8px;">LIVE</span>'
@@ -3245,12 +3222,7 @@ def render_dashboard(data):
                 kf_x  += (f"@keyframes {anim_prefix}{i}{{from{{opacity:0;transform:scale(.75);"
                           f"transform-origin:{cx_d}px {cy_d}px;}}to{{opacity:1;transform:scale(1);"
                           f"transform-origin:{cx_d}px {cy_d}px;}}}}")
-                segs_x += (f'<path d="{path_x}" fill="{c_x}" opacity="0" '
-                           f'style="animation:{anim_prefix}{i} .55s ease {i*.12:.2f}s forwards;cursor:pointer;'
-                           f'transition:filter .2s,transform .2s;transform-origin:{cx_d}px {cy_d}px;" '
-                           f'onmouseover="this.style.filter=\'brightness(1.3) drop-shadow(0 0 5px {c_x})\';" '
-                           f'onmouseout="this.style.filter=\'brightness(1)\';">'
-                           f'<title>{lbl}: {fmt_inr(val)} ({pct_x:.1f}%)</title></path>')
+                segs_x += f'<path d="{path_x}" fill="{c_x}"><title>{lbl}: {fmt_inr(val)} ({pct_x:.1f}%)</title></path>'
                 short_x = lbl[:22]+"…" if len(lbl)>22 else lbl
                 leg_x  += (f'<div style="display:flex;justify-content:space-between;align-items:center;'
                            f'padding:5px 0;border-bottom:1px solid rgba(0,0,0,0.06);">'
@@ -3594,10 +3566,7 @@ def render_dashboard(data):
                     lf_r  = 1 if sw_r > 180 else 0
                     path_r = (f"M {x1or:.1f} {y1or:.1f} A {ror} {ror} 0 {lf_r} 1 {x2or:.1f} {y2or:.1f} "
                               f"L {x1ir:.1f} {y1ir:.1f} A {rir} {rir} 0 {lf_r} 0 {x2ir:.1f} {y2ir:.1f} Z")
-                    segs_r += (f'<path d="{path_r}" fill="{col_r}" opacity="0" '
-                               f'style="animation:rdIn .5s ease {i*0.1:.1f}s forwards;cursor:pointer;transition:filter .15s;" '
-                               f'onmouseover="this.style.filter=\'brightness(1.3)\'" onmouseout="this.style.filter=\'brightness(1)\'">'
-                               f'<title>{lbl}: {fmt_inr(val)} ({pct_r:.1f}%)</title></path>')
+                    segs_r += f'<path d="{path_r}" fill="{col_r}"><title>{lbl}: {fmt_inr(val)} ({pct_r:.1f}%)</title></path>'
                     short_r = lbl[:20] + "…" if len(lbl) > 20 else lbl
                     leg_r  += (f'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(0,0,0,0.06);">'
                                f'<div style="display:flex;align-items:center;gap:5px;"><span style="width:7px;height:7px;border-radius:50%;background:{col_r};display:inline-block;"></span>'
@@ -4368,11 +4337,7 @@ def render_family_overview():
                      f"L {x1if:.1f} {y1if:.1f} A {ri_f} {ri_f} 0 {lf_f} 0 {x2if:.1f} {y2if:.1f} Z")
             kf_f  += (f"@keyframes fSeg{i}{{from{{opacity:0;transform:scale(.78);transform-origin:{cx_f}px {cy_f}px;}}"
                       f"to{{opacity:1;transform:scale(1);transform-origin:{cx_f}px {cy_f}px;}}}}")
-            segs_f += (f'<path d="{path_f}" fill="{c_f}" opacity="0" '
-                       f'style="animation:fSeg{i} .55s ease {i*.15:.2f}s forwards;cursor:pointer;transition:filter .2s;" '
-                       f'onmouseover="this.style.filter=\'brightness(1.3) drop-shadow(0 0 6px {c_f})\'" '
-                       f'onmouseout="this.style.filter=\'brightness(1)\'">'
-                       f'<title>{name}: {fmt_inr(val)} ({pct_f:.1f}%)</title></path>')
+            segs_f += f'<path d="{path_f}" fill="{c_f}"><title>{name}: {fmt_inr(val)} ({pct_f:.1f}%)</title></path>'
             leg_f  += (f'<div style="display:flex;justify-content:space-between;align-items:center;'
                        f'padding:7px 0;border-bottom:1px solid rgba(0,0,0,0.06);">'
                        f'<div style="display:flex;align-items:center;gap:8px;">'
