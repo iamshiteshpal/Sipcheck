@@ -42,13 +42,20 @@ def to_dict(obj):
 def clean_name(name):
     if not name:
         return "Unknown Scheme"
+    import re as _re
     for sfx in [
         "- Direct Plan - Growth Option", "- Direct Plan - Growth",
+        "- Regular Plan - Growth Option", "- Regular Plan - Growth",
         "- Direct Growth Plan", "- Direct Plan Growth",
-        "Direct Plan Growth", "Direct Growth", "Direct Plan",
-        "Regular Plan", "Growth",
+        "- Regular Growth Plan",
+        "Direct Plan Growth Option", "Direct Plan Growth",
+        "Direct Growth Option", "Direct Growth", "Direct Plan",
+        "Regular Plan Growth", "Regular Growth", "Regular Plan",
+        "Growth Option", "Growth",
     ]:
         name = name.replace(sfx, "")
+    # Strip trailing punctuation (dashes, spaces, hyphens left after suffix removal)
+    name = _re.sub(r"[\s\-–—]+$", "", name)
     return name.strip()
 
 
@@ -470,7 +477,10 @@ def inject_global_styles():
         div[data-testid="stAppViewBlockContainer"] {{ padding-top: 2.5rem !important; }}
         #MainMenu, header[data-testid="stHeader"], [data-testid="stToolbar"],
         [data-testid="stDecoration"], [data-testid="stStatusWidget"], footer,
-        [data-testid="stTooltipHoverTarget"], .stDeployButton {{ display:none!important; }}
+        [data-testid="stTooltipHoverTarget"], .stDeployButton,
+        [data-testid="manage-app-button"], button[title="Manage app"],
+        ._profileContainer_gzau3_53, ._container_gzau3_1,
+        [class*="ViewerBadge"], [data-testid="stActionButton"] {{ display:none!important; }}
         </style>
         """,
         unsafe_allow_html=True,
@@ -4068,23 +4078,25 @@ def render_transactions(data):
         st.warning("No transaction data found.")
         return
 
-    # Clean scheme names for display, map back to original
-    scheme_display_map = {clean_name(k): k for k in tx_map.keys()}
-    scheme_display_list = sorted(scheme_display_map.keys())
+    # Build display list — key=original name, display=clean name
+    # Use original names as selectbox values so lookup never fails
+    original_keys = sorted(tx_map.keys(), key=lambda k: clean_name(k))
+    display_labels = [clean_name(k) for k in original_keys]
 
-    # Use selectbox — wrapped in a container to prevent black overlay
     st.markdown(
         '<div style="margin-bottom:4px;font-size:12px;color:#64748b;">Select Scheme</div>',
         unsafe_allow_html=True,
     )
-    selected_display = st.selectbox(
+    selected_idx = st.selectbox(
         "scheme_selector",
-        scheme_display_list,
+        range(len(original_keys)),
+        format_func=lambda i: display_labels[i],
         label_visibility="collapsed",
         key="tx_scheme_select",
     )
     st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
-    selected_scheme = scheme_display_map.get(selected_display, list(tx_map.keys())[0])
+    selected_scheme  = original_keys[selected_idx]
+    selected_display = display_labels[selected_idx]
 
     # Look up totals — try both clean name and original name
     totals = agg_map.get(selected_scheme, None)
@@ -4113,29 +4125,41 @@ def render_transactions(data):
     if not txs:
         st.info("No transactions found for this scheme.")
     else:
+        def _flt(v):
+            try: return float(str(v)) if v is not None else 0.0
+            except: return 0.0
+
         rows = []
-        for transaction in sorted(txs,
-            key=lambda x: to_date(x.get("date")), reverse=True):
+        skipped = 0
+        for tx in sorted(txs, key=lambda x: to_date(x.get("date")), reverse=True):
             try:
-                amt = float(transaction["amount"]) if transaction.get("amount") else 0
-                nav = float(transaction["nav"])     if transaction.get("nav")    else 0
-                unt = float(transaction["units"])   if transaction.get("units")  else 0
-                raw_type = str(transaction.get("type", "—"))
+                # Handle both dict and attribute access
+                if hasattr(tx, "__dict__") and not isinstance(tx, dict):
+                    tx = to_dict(tx)
+                amt  = _flt(tx.get("amount"))
+                nav  = _flt(tx.get("nav"))
+                unt  = _flt(tx.get("units"))
+                raw_type  = str(tx.get("type", "—"))
                 clean_type = raw_type.split(".")[-1] if "." in raw_type else raw_type
                 rows.append({
-                    "Date":        to_date(transaction.get("date")).strftime("%d %b %Y"),
-                    "Description": transaction.get("description", "—"),
+                    "Date":        to_date(tx.get("date")).strftime("%d %b %Y"),
+                    "Description": str(tx.get("description") or "—"),
                     "Amount":      fmt_inr(amt) if amt else "—",
                     "NAV":         f"₹{nav:,.4f}" if nav else "—",
                     "Units":       f"{unt:+,.3f}" if unt else "—",
                     "Type":        clean_type,
                 })
             except Exception:
-                continue
+                skipped += 1
 
-        import pandas as _pd
-        df_tx = _pd.DataFrame(rows)
-        st.dataframe(df_tx, use_container_width=True, hide_index=True)
+        if rows:
+            import pandas as _pd
+            df_tx = _pd.DataFrame(rows)
+            st.dataframe(df_tx, use_container_width=True, hide_index=True)
+            if skipped:
+                st.caption(f"ℹ️ {skipped} transaction(s) could not be parsed.")
+        else:
+            st.warning(f"Could not parse any of the {len(txs)} transactions for this scheme.")
 
     st.markdown('<div class="section-sep" style="margin-top:28px;">All Holdings — XIRR Table</div>', unsafe_allow_html=True)
     performance = [
