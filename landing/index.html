@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>cas.360 view — Portfolio Intelligence</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: { sans: ['Plus Jakarta Sans', 'Space Grotesk', 'sans-serif'] },
+          colors: {
+            cyber: { cyan: '#00F0FF', purple: '#B026FF' }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    @keyframes gradientShift {
+      0%   { background-position: 0%   50%; }
+      50%  { background-position: 100% 50%; }
+      100% { background-position: 0%   50%; }
+    }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0);    }
+    }
+    @keyframes pulseGlow {
+      0%, 100% { box-shadow: 0 0 12px rgba(0,240,255,0.3); }
+      50%       { box-shadow: 0 0 28px rgba(0,240,255,0.7); }
+    }
+    @keyframes float {
+      0%, 100% { transform: translateY(0px); }
+      50%       { transform: translateY(-8px); }
+    }
+
+    .animate-fadeup { animation: fadeUp 0.7s ease both; }
+    .animate-fadeup-1 { animation: fadeUp 0.7s ease 0.1s both; }
+    .animate-fadeup-2 { animation: fadeUp 0.7s ease 0.2s both; }
+    .animate-fadeup-3 { animation: fadeUp 0.7s ease 0.3s both; }
+    .animate-fadeup-4 { animation: fadeUp 0.7s ease 0.4s both; }
+    .float-anim  { animation: float 4s ease-in-out infinite; }
+    .float-anim2 { animation: float 5s ease-in-out 0.8s infinite; }
+
+    .glow-text {
+      background: linear-gradient(135deg, #00F0FF 0%, #B026FF 60%, #00F0FF 100%);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      animation: gradientShift 4s ease infinite;
+      filter: drop-shadow(0 0 24px rgba(0,240,255,0.35));
+    }
+
+    .glow-border {
+      border: 2px dashed transparent;
+      background-image: linear-gradient(#0d1117, #0d1117),
+                        linear-gradient(135deg, #00F0FF, #B026FF);
+      background-origin: border-box;
+      background-clip: padding-box, border-box;
+    }
+
+    .glass {
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+
+    .card-hover {
+      transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease;
+    }
+    .card-hover:hover { transform: translateY(-4px); }
+
+    .grid-overlay {
+      background-image:
+        linear-gradient(rgba(0,240,255,0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,240,255,0.05) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    .btn-glow {
+      background: linear-gradient(135deg, #00b8c4, #8b2fc9);
+      box-shadow: 0 0 20px rgba(0,240,255,0.35);
+      transition: box-shadow 0.2s ease, transform 0.15s ease;
+    }
+    .btn-glow:hover {
+      box-shadow: 0 0 36px rgba(0,240,255,0.55);
+      transform: scale(1.02);
+    }
+  </style>
+</head>
+<body style="background:#0B0E14; color:white; overflow-x:hidden;">
+
+  <!-- Grid + radial glow backdrop -->
+  <div class="fixed inset-0 grid-overlay pointer-events-none opacity-40"></div>
+  <div class="fixed inset-0 pointer-events-none"
+       style="background: radial-gradient(ellipse 80% 50% at 50% -5%, rgba(0,240,255,0.08) 0%, transparent 60%),
+                          radial-gradient(ellipse 60% 40% at 85% 50%, rgba(176,38,255,0.07) 0%, transparent 60%);">
+  </div>
+
+  <!-- ════════════ HERO ════════════ -->
+  <section style="position:relative; padding: 72px 16px 96px;">
+    <div style="max-width:1100px; margin:0 auto;">
+
+      <!-- Logo + badge -->
+      <div class="animate-fadeup" style="text-align:center; margin-bottom:40px;">
+        <h2 style="font-size:2.5rem; font-weight:900; letter-spacing:-1px; margin:0 0 16px;
+                   color:#00F0FF; text-shadow: 0 0 30px rgba(0,240,255,0.6), 0 0 60px rgba(0,240,255,0.3);">
+          cas.360 view
+        </h2>
+        <div style="display:inline-flex; align-items:center; gap:8px;
+                    background:rgba(0,240,255,0.08); border:1px solid rgba(0,240,255,0.35);
+                    border-radius:40px; padding:5px 16px;">
+          <span style="width:7px;height:7px;border-radius:50%;background:#00F0FF;
+                       box-shadow:0 0 8px #00F0FF; display:inline-block;"></span>
+          <span style="font-size:10px; font-weight:700; color:#00F0FF; letter-spacing:2px; text-transform:uppercase;">
+            Mutual Fund Intelligence Platform
+          </span>
+        </div>
+      </div>
+
+      <!-- H1 -->
+      <div class="animate-fadeup-1" style="text-align:center; margin-bottom:20px;">
+        <h1 class="glow-text" style="font-size:clamp(2.8rem,7vw,5.5rem); font-weight:900;
+               line-height:1.05; letter-spacing:-3px; margin:0;">
+          Your Portfolio,<br>Fully Decoded.
+        </h1>
+      </div>
+
+      <!-- Subheadline -->
+      <p class="animate-fadeup-2" style="text-align:center; color:#94a3b8; font-size:1.1rem;
+         max-width:580px; margin:0 auto 32px; line-height:1.75;">
+        Upload your CAS PDF and instantly unlock a complete 360° view of all your mutual
+        fund investments — live NAV, XIRR, SIP health, and more.
+      </p>
+
+      <!-- Trust pills -->
+      <div class="animate-fadeup-3" style="display:flex; flex-wrap:wrap; justify-content:center; gap:10px; margin-bottom:72px;">
+        <span style="background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.3);
+                     color:#7ee8f5;font-size:12px;font-weight:600;padding:6px 16px;border-radius:40px;">
+          🔒 Zero data storage</span>
+        <span style="background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.3);
+                     color:#7ee8f5;font-size:12px;font-weight:600;padding:6px 16px;border-radius:40px;">
+          ⚡ Instant analysis</span>
+        <span style="background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.3);
+                     color:#7ee8f5;font-size:12px;font-weight:600;padding:6px 16px;border-radius:40px;">
+          🏦 CAMS + KFintech</span>
+        <span style="background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.3);
+                     color:#7ee8f5;font-size:12px;font-weight:600;padding:6px 16px;border-radius:40px;">
+          📊 Live NAV &amp; XIRR</span>
+      </div>
+
+      <!-- 3-panel row -->
+      <div class="animate-fadeup-4" style="display:flex; align-items:center; justify-content:center;
+                  gap:24px; flex-wrap:wrap;">
+
+        <!-- Left HUDs -->
+        <div style="display:flex; flex-direction:column; gap:16px;">
+
+          <!-- HUD 1: Lock / Zero storage -->
+          <div class="glass card-hover float-anim"
+               style="border:1px solid rgba(0,240,255,0.2); border-radius:20px;
+                      padding:20px; width:200px;
+                      box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:12px;">
+              <div style="width:52px;height:52px;border-radius:14px;
+                          background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.3);
+                          display:flex;align-items:center;justify-content:center;
+                          box-shadow:0 0 20px rgba(0,240,255,0.2);">
+                <svg width="24" height="24" fill="none" stroke="#00F0FF" stroke-width="2" viewBox="0 0 24 24">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                </svg>
+              </div>
+              <div style="text-align:center;">
+                <p style="font-size:13px;font-weight:700;color:white;margin:0 0 4px;">Zero Storage</p>
+                <p style="font-size:10px;color:#64748b;margin:0;">On-device parsing only</p>
+              </div>
+              <svg width="160" height="36" viewBox="0 0 160 36" style="opacity:0.4;">
+                <path d="M8 18 H45 V8 H90 V28 H130 H152" stroke="#00F0FF" stroke-width="1.2"
+                      fill="none" stroke-dasharray="4 3"/>
+                <circle cx="45" cy="8" r="2.5" fill="#00F0FF"/>
+                <circle cx="90" cy="28" r="2.5" fill="#00F0FF"/>
+                <circle cx="130" cy="28" r="2.5" fill="rgba(0,240,255,0.4)"/>
+              </svg>
+            </div>
+          </div>
+
+          <!-- HUD 2: SIP Pulse -->
+          <div class="glass card-hover float-anim2"
+               style="border:1px solid rgba(176,38,255,0.2); border-radius:20px;
+                      padding:20px; width:200px;
+                      box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+            <p style="font-size:9px;font-weight:700;color:#c084fc;text-transform:uppercase;
+                      letter-spacing:2px;margin:0 0 12px;">SIP Health</p>
+            <svg width="160" height="50" viewBox="0 0 160 50">
+              <polyline points="0,25 18,25 28,5 44,45 58,10 74,34 94,14 110,28 128,18 160,18"
+                fill="none" stroke="#B026FF" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="0,25 18,25 28,5 44,45 58,10 74,34 94,14 110,28 128,18 160,18"
+                fill="none" stroke="rgba(176,38,255,0.15)" stroke-width="10"
+                stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
+              <span style="width:6px;height:6px;border-radius:50%;background:#c084fc;
+                           animation:pulseGlow 2s ease infinite;display:inline-block;"></span>
+              <p style="font-size:10px;color:#c084fc;margin:0;">9 active · 0 bounced</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- CENTER: Upload Portal -->
+        <div style="position:relative;">
+          <div style="position:absolute;inset:-20px;border-radius:32px;
+                      background:radial-gradient(ellipse at center, rgba(0,240,255,0.1) 0%, rgba(176,38,255,0.06) 50%, transparent 70%);
+                      filter:blur(20px);"></div>
+          <div class="glow-border glass"
+               style="position:relative;border-radius:24px;padding:36px 32px;
+                      width:300px;text-align:center;
+                      box-shadow:0 20px 60px rgba(0,0,0,0.5), inset 0 0 40px rgba(0,240,255,0.03);">
+            <div style="width:56px;height:56px;margin:0 auto 18px;border-radius:16px;
+                        background:linear-gradient(135deg,rgba(0,240,255,0.15),rgba(176,38,255,0.15));
+                        border:1px solid rgba(0,240,255,0.3);
+                        display:flex;align-items:center;justify-content:center;
+                        box-shadow:0 0 24px rgba(0,240,255,0.2);">
+              <svg width="24" height="24" fill="none" stroke="#00F0FF" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+            </div>
+            <p style="font-size:20px;font-weight:800;color:white;margin:0 0 6px;">
+              Upload your CAS PDF</p>
+            <p style="font-size:13px;color:#64748b;margin:0 0 28px;line-height:1.6;">
+              Drag and drop or click to browse<br>PDF files only</p>
+            <button class="btn-glow"
+              style="width:100%;padding:14px;border:none;border-radius:14px;cursor:pointer;
+                     font-size:14px;font-weight:700;color:white;
+                     display:flex;align-items:center;justify-content:center;gap:8px;">
+              <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                <polyline points="17 8 12 3 7 8"/>
+                <line x1="12" y1="3" x2="12" y2="15"/>
+              </svg>
+              200MB per file · PDF
+            </button>
+          </div>
+        </div>
+
+        <!-- Right HUDs -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+
+          <!-- HUD 3: CAMS + KFintech -->
+          <div class="glass card-hover float-anim"
+               style="border:1px solid rgba(0,240,255,0.2);border-radius:20px;
+                      padding:20px;width:200px;
+                      box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+            <p style="font-size:9px;font-weight:700;color:#7ee8f5;text-transform:uppercase;
+                      letter-spacing:2px;margin:0 0 12px;">Sources</p>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:34px;height:34px;border-radius:10px;
+                            background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.25);
+                            display:flex;align-items:center;justify-content:center;">
+                  <svg width="16" height="16" fill="none" stroke="#00F0FF" stroke-width="2" viewBox="0 0 24 24">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                  </svg>
+                </div>
+                <span style="font-size:13px;font-weight:600;color:white;">CAMS</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:34px;height:34px;border-radius:10px;
+                            background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.25);
+                            display:flex;align-items:center;justify-content:center;">
+                  <svg width="16" height="16" fill="none" stroke="#00F0FF" stroke-width="2" viewBox="0 0 24 24">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/>
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/>
+                  </svg>
+                </div>
+                <span style="font-size:13px;font-weight:600;color:white;">KFintech</span>
+              </div>
+            </div>
+            <svg width="140" height="28" viewBox="0 0 140 28" style="margin-top:12px;opacity:0.5;">
+              <path d="M10 8 Q70 0 130 8" stroke="#00F0FF" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+              <path d="M10 20 Q70 28 130 20" stroke="#00F0FF" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+              <circle cx="10" cy="14" r="3" fill="#00F0FF"/>
+              <circle cx="130" cy="14" r="3" fill="#00F0FF"/>
+            </svg>
+          </div>
+
+          <!-- HUD 4: XIRR bar chart -->
+          <div class="glass card-hover float-anim2"
+               style="border:1px solid rgba(16,185,129,0.2);border-radius:20px;
+                      padding:20px;width:200px;
+                      box-shadow:0 8px 32px rgba(0,0,0,0.3);">
+            <p style="font-size:9px;font-weight:700;color:#34d399;text-transform:uppercase;
+                      letter-spacing:2px;margin:0 0 12px;">Portfolio XIRR</p>
+            <div style="display:flex;align-items:flex-end;gap:4px;height:56px;">
+              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:4px 4px 0 0;height:40%"></div>
+              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:4px 4px 0 0;height:55%"></div>
+              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:4px 4px 0 0;height:35%"></div>
+              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:4px 4px 0 0;height:70%"></div>
+              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:4px 4px 0 0;height:50%"></div>
+              <div style="flex:1;background:linear-gradient(to top,#059669,#34d399);
+                          border-radius:4px 4px 0 0;height:90%;
+                          box-shadow:0 0 14px rgba(16,185,129,0.6);"></div>
+              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:4px 4px 0 0;height:65%"></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:10px;">
+              <span style="font-size:15px;font-weight:800;color:#34d399;">▲ XIRR 8.3%</span>
+              <span style="width:6px;height:6px;border-radius:50%;background:#34d399;
+                           animation:pulseGlow 2s ease infinite;display:inline-block;"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- divider -->
+  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(0,240,255,0.3),transparent);margin:0 32px;"></div>
+
+  <!-- ════════════ FEATURES ════════════ -->
+  <section style="padding:96px 16px; max-width:1100px; margin:0 auto;">
+
+    <!-- Section header -->
+    <div style="text-align:center;margin-bottom:56px;">
+      <div style="display:inline-flex;align-items:center;gap:6px;
+                  background:rgba(176,38,255,0.08);border:1px solid rgba(176,38,255,0.3);
+                  border-radius:40px;padding:5px 16px;margin-bottom:16px;">
+        <span style="font-size:10px;font-weight:700;color:#c084fc;letter-spacing:2px;text-transform:uppercase;">
+          WHY CAS 360</span>
+      </div>
+      <h2 style="font-size:clamp(2rem,5vw,3.2rem);font-weight:900;color:white;
+                 letter-spacing:-2px;margin:0 0 12px;line-height:1.1;">
+        Everything your portfolio needs,<br>in one place.
+      </h2>
+      <p style="color:#64748b;font-size:1.1rem;margin:0;">
+        Institutional-grade portfolio intelligence for every Indian investor.
+      </p>
+    </div>
+
+    <!-- Bento grid -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+
+      <!-- Card 1: Live NAV & XIRR -->
+      <div class="glass card-hover"
+           style="border:1px solid rgba(0,240,255,0.12);border-radius:20px;padding:24px;
+                  box-shadow:0 4px 24px rgba(0,0,0,0.3);
+                  transition:border-color 0.3s,box-shadow 0.3s;"
+           onmouseover="this.style.borderColor='rgba(0,240,255,0.4)';this.style.boxShadow='0 4px 40px rgba(0,240,255,0.1),0 4px 24px rgba(0,0,0,0.3)'"
+           onmouseout="this.style.borderColor='rgba(0,240,255,0.12)';this.style.boxShadow='0 4px 24px rgba(0,0,0,0.3)'">
+        <div style="width:44px;height:44px;border-radius:12px;
+                    background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.2);
+                    display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+          <svg width="22" height="22" fill="none" stroke="#00F0FF" stroke-width="2" viewBox="0 0 24 24">
+            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6"  y1="20" x2="6"  y2="14"/>
+          </svg>
+        </div>
+        <h3 style="font-size:15px;font-weight:700;color:white;margin:0 0 8px;">Live NAV &amp; XIRR</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.65;margin:0;">
+          Real-time NAV from MFAPI. Per-scheme XIRR calculated automatically across your entire portfolio history.
+        </p>
+      </div>
+
+      <!-- Card 2: 360° View -->
+      <div class="glass card-hover"
+           style="border:1px solid rgba(176,38,255,0.12);border-radius:20px;padding:24px;
+                  box-shadow:0 4px 24px rgba(0,0,0,0.3);
+                  transition:border-color 0.3s,box-shadow 0.3s;"
+           onmouseover="this.style.borderColor='rgba(176,38,255,0.45)';this.style.boxShadow='0 4px 40px rgba(176,38,255,0.12),0 4px 24px rgba(0,0,0,0.3)'"
+           onmouseout="this.style.borderColor='rgba(176,38,255,0.12)';this.style.boxShadow='0 4px 24px rgba(0,0,0,0.3)'">
+        <div style="width:44px;height:44px;border-radius:12px;
+                    background:rgba(176,38,255,0.08);border:1px solid rgba(176,38,255,0.2);
+                    display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+          <svg width="22" height="22" fill="none" stroke="#B026FF" stroke-width="2" viewBox="0 0 24 24">
+            <polyline points="23 4 23 10 17 10"/>
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+          </svg>
+        </div>
+        <h3 style="font-size:15px;font-weight:700;color:white;margin:0 0 8px;">360° Portfolio View</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.65;margin:0;">
+          Every folio, scheme, and transaction from both CAMS and KFintech — unified in a single clean dashboard.
+        </p>
+      </div>
+
+      <!-- Card 3: P&L Analytics -->
+      <div class="glass card-hover"
+           style="border:1px solid rgba(0,240,255,0.12);border-radius:20px;padding:24px;
+                  box-shadow:0 4px 24px rgba(0,0,0,0.3);
+                  transition:border-color 0.3s,box-shadow 0.3s;"
+           onmouseover="this.style.borderColor='rgba(0,240,255,0.4)'"
+           onmouseout="this.style.borderColor='rgba(0,240,255,0.12)'">
+        <div style="width:44px;height:44px;border-radius:12px;
+                    background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.2);
+                    display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+          <svg width="22" height="22" fill="none" stroke="#00F0FF" stroke-width="2" viewBox="0 0 24 24">
+            <line x1="12" y1="1" x2="12" y2="23"/>
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <h3 style="font-size:15px;font-weight:700;color:white;margin:0 0 8px;">P&amp;L Analytics</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.65;margin:0;">
+          Realised &amp; unrealised gains broken down by scheme, category, and time period — with a visual summary.
+        </p>
+      </div>
+
+      <!-- Card 4: SIP Health Monitor (WIDE – spans 2 cols) -->
+      <div class="card-hover"
+           style="grid-column:span 2;border-radius:20px;padding:28px;
+                  background:linear-gradient(135deg,rgba(79,46,229,0.4) 0%,rgba(139,92,246,0.25) 50%,rgba(37,99,235,0.3) 100%);
+                  border:1px solid rgba(139,92,246,0.35);
+                  box-shadow:0 4px 40px rgba(79,46,229,0.2);
+                  transition:border-color 0.3s,box-shadow 0.3s;"
+           onmouseover="this.style.borderColor='rgba(139,92,246,0.65)';this.style.boxShadow='0 4px 60px rgba(79,46,229,0.35)'"
+           onmouseout="this.style.borderColor='rgba(139,92,246,0.35)';this.style.boxShadow='0 4px 40px rgba(79,46,229,0.2)'">
+        <div style="width:44px;height:44px;border-radius:12px;
+                    background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
+                    display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+          <svg width="22" height="22" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <h3 style="font-size:20px;font-weight:800;color:white;margin:0 0 10px;">SIP Health Monitor</h3>
+        <p style="font-size:14px;color:rgba(255,255,255,0.7);line-height:1.65;margin:0 0 18px;max-width:520px;">
+          Track every active SIP — next due dates, mandate status, bounce alerts, and historical SIP investment timeline.
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <span style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);
+                       color:white;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;">
+            Active SIPs</span>
+          <span style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);
+                       color:white;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;">
+            Bounce Alerts</span>
+          <span style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);
+                       color:white;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px;">
+            Next Due Date</span>
+        </div>
+      </div>
+
+      <!-- Card 5: Family View (dark navy) -->
+      <div class="card-hover"
+           style="border-radius:20px;padding:24px;
+                  background:rgba(15,23,42,0.85);
+                  border:1px solid rgba(59,130,246,0.2);
+                  box-shadow:0 4px 24px rgba(0,0,0,0.4);
+                  transition:border-color 0.3s,box-shadow 0.3s;"
+           onmouseover="this.style.borderColor='rgba(59,130,246,0.5)'"
+           onmouseout="this.style.borderColor='rgba(59,130,246,0.2)'">
+        <div style="width:44px;height:44px;border-radius:12px;
+                    background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.25);
+                    display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+          <svg width="22" height="22" fill="none" stroke="#93c5fd" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        <h3 style="font-size:15px;font-weight:700;color:white;margin:0 0 8px;">Family View</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.65;margin:0;">
+          Analyse multiple CAS files together. Compare portfolios across family members with a consolidated wealth summary.
+        </p>
+      </div>
+
+      <!-- Card 6: Asset Allocation -->
+      <div class="glass card-hover"
+           style="border:1px solid rgba(0,240,255,0.12);border-radius:20px;padding:24px;
+                  box-shadow:0 4px 24px rgba(0,0,0,0.3);
+                  transition:border-color 0.3s;"
+           onmouseover="this.style.borderColor='rgba(0,240,255,0.4)'"
+           onmouseout="this.style.borderColor='rgba(0,240,255,0.12)'">
+        <div style="width:44px;height:44px;border-radius:12px;
+                    background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.2);
+                    display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+          <svg width="22" height="22" fill="none" stroke="#00F0FF" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M21.21 15.89A10 10 0 1 1 8 2.83"/>
+            <path d="M22 12A10 10 0 0 0 12 2v10z"/>
+          </svg>
+        </div>
+        <h3 style="font-size:15px;font-weight:700;color:white;margin:0 0 8px;">Asset Allocation</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.65;margin:0;">
+          Equity vs Debt breakdown with interactive charts. Understand your actual risk exposure at a glance.
+        </p>
+      </div>
+
+      <!-- Card 7: Privacy (green glow) -->
+      <div class="glass card-hover"
+           style="border:1px solid rgba(16,185,129,0.15);border-radius:20px;padding:24px;
+                  box-shadow:0 4px 24px rgba(0,0,0,0.3);
+                  transition:border-color 0.3s,box-shadow 0.3s;"
+           onmouseover="this.style.borderColor='rgba(16,185,129,0.5)';this.style.boxShadow='0 4px 40px rgba(16,185,129,0.1),0 4px 24px rgba(0,0,0,0.3)'"
+           onmouseout="this.style.borderColor='rgba(16,185,129,0.15)';this.style.boxShadow='0 4px 24px rgba(0,0,0,0.3)'">
+        <div style="width:44px;height:44px;border-radius:12px;
+                    background:rgba(16,185,129,0.08);border:1px solid rgba(16,185,129,0.25);
+                    display:flex;align-items:center;justify-content:center;margin-bottom:16px;">
+          <svg width="22" height="22" fill="none" stroke="#34d399" stroke-width="2" viewBox="0 0 24 24">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <h3 style="font-size:15px;font-weight:700;color:white;margin:0 0 8px;">100% Private by Design</h3>
+        <p style="font-size:13px;color:#64748b;line-height:1.65;margin:0 0 14px;">
+          Your CAS PDF is parsed entirely on your device using casparser. No data is uploaded, logged, or stored anywhere.
+        </p>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);
+                       color:#34d399;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;">
+            ✓ No server storage</span>
+          <span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);
+                       color:#34d399;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;">
+            ✓ Local processing</span>
+        </div>
+      </div>
+
+    </div><!-- /grid -->
+  </section>
+
+  <!-- Footer -->
+  <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(176,38,255,0.3),transparent);margin:0 32px 32px;"></div>
+  <p style="text-align:center;color:#334155;font-size:12px;padding-bottom:48px;">
+    © 2026 cas.360 view &nbsp;·&nbsp; All data processed locally &nbsp;·&nbsp; Zero server storage
+  </p>
+
+</body>
+</html>
