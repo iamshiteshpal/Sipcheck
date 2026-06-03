@@ -140,53 +140,13 @@ def _table_style():
 </style>
 """
 
-_TH_STYLE = (
-    "background:#f1f5f9;color:#8b5cf6;font-size:10px;font-weight:700;"
-    "text-transform:uppercase;letter-spacing:1px;padding:10px 14px;"
-    "text-align:left;border-bottom:2px solid rgba(0,0,0,0.07);white-space:nowrap;"
-)
-_TD_BASE  = "font-size:12px;padding:10px 14px;border-bottom:1px solid rgba(0,0,0,0.05);"
-_TD_EVEN  = _TD_BASE + "background:#ffffff;color:#0f172a;"
-_TD_ODD   = _TD_BASE + "background:#f8fafc;color:#0f172a;"
-_TD_GAIN  = _TD_BASE + "background:#ffffff;color:#059669;font-weight:600;"
-_TD_LOSS  = _TD_BASE + "background:#ffffff;color:#dc2626;font-weight:600;"
-_TD_MUTED = _TD_BASE + "background:#ffffff;color:#94a3b8;"
-_TD_MONO  = "font-family:'IBM Plex Mono',monospace;"
-_WRAP_STYLE = (
-    "overflow-x:auto;border-radius:12px;border:1px solid rgba(0,0,0,0.08);"
-    "box-shadow:0 1px 4px rgba(0,0,0,0.05);margin-bottom:8px;"
-)
-
 def render_table(rows, key=""):
     if not rows:
         st.info("No data to display.")
         return
-    cols = list(rows[0].keys())
-    header = "".join(f'<th style="{_TH_STYLE}">{c}</th>' for c in cols)
-    body = ""
-    for i, row in enumerate(rows):
-        base = _TD_EVEN if i % 2 == 0 else _TD_ODD
-        cells = ""
-        for c in cols:
-            val = str(row.get(c, "—"))
-            if val.startswith("▲"):
-                style = _TD_GAIN
-            elif val.startswith("▼"):
-                style = _TD_LOSS
-            elif val == "—":
-                style = _TD_MUTED
-            else:
-                style = base
-            cells += f'<td style="{style}">{val}</td>'
-        body += f'<tr>{cells}</tr>'
-    html = (
-        f'<div style="{_WRAP_STYLE}">'
-        f'<table style="width:100%;border-collapse:collapse;">'
-        f'<thead><tr>{header}</tr></thead>'
-        f'<tbody>{body}</tbody>'
-        f'</table></div>'
-    )
-    st.markdown(html, unsafe_allow_html=True)
+    import pandas as _pd
+    df = _pd.DataFrame(rows)
+    st.dataframe(df, use_container_width=True, hide_index=True)
 
 
 def gain_color(v):
@@ -4173,35 +4133,9 @@ def render_transactions(data):
             except Exception:
                 continue
 
-        cols = ["Date", "Description", "Amount", "NAV", "Units", "Type"]
-        mono = {"Amount", "NAV", "Units"}
-        header = "".join(f'<th style="{_TH_STYLE}">{c}</th>' for c in cols)
-        body = ""
-        for i, r in enumerate(rows):
-            base = _TD_EVEN if i % 2 == 0 else _TD_ODD
-            cells = ""
-            for c in cols:
-                v = str(r.get(c, "—"))
-                mono_part = _TD_MONO if c in mono else ""
-                if v.startswith("▲"):
-                    style = _TD_GAIN + mono_part
-                elif v.startswith("▼"):
-                    style = _TD_LOSS + mono_part
-                elif "STAMP" in v:
-                    style = _TD_MUTED + mono_part
-                else:
-                    style = base + mono_part
-                cells += f'<td style="{style}">{v}</td>'
-            body += f'<tr>{cells}</tr>'
-
-        html = (
-            f'<div style="{_WRAP_STYLE}">'
-            f'<table style="width:100%;border-collapse:collapse;">'
-            f'<thead><tr>{header}</tr></thead>'
-            f'<tbody>{body}</tbody>'
-            f'</table></div>'
-        )
-        st.markdown(html, unsafe_allow_html=True)
+        import pandas as _pd
+        df_tx = _pd.DataFrame(rows)
+        st.dataframe(df_tx, use_container_width=True, hide_index=True)
 
     st.markdown('<div class="section-sep" style="margin-top:28px;">All Holdings — XIRR Table</div>', unsafe_allow_html=True)
     performance = [
