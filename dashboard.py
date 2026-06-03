@@ -2457,6 +2457,106 @@ def render_dashboard(data):
                     coloraxis_showscale=False, **PLOT_BASE)
                 st.plotly_chart(fig_c, use_container_width=True, config={"displayModeBar": False})
 
+        # ── AMC ALLOCATION ────────────────────────────────────────────────────
+        _dash_section("🏦 AMC-wise Allocation")
+        amc_totals = {}
+        for h in data["holdings"]:
+            name_parts = h["scheme"].split()
+            # Extract AMC name: first word(s) before common keywords
+            amc = name_parts[0] if name_parts else "Other"
+            for i, part in enumerate(name_parts[1:], 1):
+                if part.lower() in ("fund", "mutual", "asset", "mf", "etf", "folio"):
+                    break
+                amc = " ".join(name_parts[:i+1])
+                if len(amc) > 18:
+                    amc = name_parts[0]
+                    break
+            val = h.get("value", 0.0)
+            amc_totals[amc] = amc_totals.get(amc, 0.0) + val
+
+        amc_sorted = sorted(amc_totals.items(), key=lambda x: -x[1])[:10]
+        total_amc = sum(v for _, v in amc_sorted) or 1
+        amc_colors = ["#3b82f6","#8b5cf6","#10b981","#f59e0b","#ef4444",
+                      "#06b6d4","#f97316","#ec4899","#6366f1","#84cc16"]
+
+        amca, amcb = st.columns(2, gap="medium")
+        with amca:
+            st.markdown("""
+            <div style="background:#ffffff;border:1px solid rgba(0,0,0,0.07);border-radius:16px;
+                        padding:20px 22px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+              <div style="font-size:11px;font-weight:700;color:#3b82f6;text-transform:uppercase;
+                          letter-spacing:2px;margin-bottom:16px;">Portfolio by Fund House</div>""",
+            unsafe_allow_html=True)
+            for i, (amc, val) in enumerate(amc_sorted):
+                pct = val / total_amc * 100
+                c = amc_colors[i % len(amc_colors)]
+                st.markdown(f"""
+                <div style="margin-bottom:12px;">
+                  <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                    <span style="font-size:12px;color:#0f172a;font-weight:500;">{amc}</span>
+                    <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;
+                                 font-weight:700;color:{c};">{fmt_inr(val)}</span>
+                  </div>
+                  <div style="background:#f1f5f9;border-radius:6px;height:8px;overflow:hidden;">
+                    <div style="width:{pct:.1f}%;height:100%;
+                                background:linear-gradient(90deg,{c}99,{c});
+                                border-radius:6px;"></div>
+                  </div>
+                  <div style="font-size:9px;color:#94a3b8;margin-top:3px;text-align:right;">
+                    {pct:.1f}%</div>
+                </div>""", unsafe_allow_html=True)
+            st.markdown("</div>", unsafe_allow_html=True)
+
+        with amcb:
+            # SVG donut
+            import math as _math
+            cx_a, cy_a, ro_a, ri_a = 100, 100, 80, 52
+            segs_a = ""; ang_a = 0.0
+            for i, (amc, val) in enumerate(amc_sorted):
+                pct = val / total_amc * 100
+                c = amc_colors[i % len(amc_colors)]
+                sw = (pct / 100) * 360 - 2.5
+                if sw <= 0: ang_a += (pct / 100) * 360; continue
+                sr = _math.radians(ang_a - 90); er = _math.radians(ang_a + sw - 90)
+                x1o = cx_a + ro_a * _math.cos(sr); y1o = cy_a + ro_a * _math.sin(sr)
+                x2o = cx_a + ro_a * _math.cos(er); y2o = cy_a + ro_a * _math.sin(er)
+                x1i = cx_a + ri_a * _math.cos(er); y1i = cy_a + ri_a * _math.sin(er)
+                x2i = cx_a + ri_a * _math.cos(sr); y2i = cy_a + ri_a * _math.sin(sr)
+                lf = 1 if sw > 180 else 0
+                path = (f"M {x1o:.1f} {y1o:.1f} A {ro_a} {ro_a} 0 {lf} 1 {x2o:.1f} {y2o:.1f} "
+                        f"L {x1i:.1f} {y1i:.1f} A {ri_a} {ri_a} 0 {lf} 0 {x2i:.1f} {y2i:.1f} Z")
+                segs_a += f'<path d="{path}" fill="{c}"><title>{amc}: {pct:.1f}%</title></path>'
+                ang_a += (pct / 100) * 360
+
+            top5_leg = "".join(
+                f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">'
+                f'<span style="width:10px;height:10px;border-radius:50%;background:{amc_colors[i % len(amc_colors)]};'
+                f'flex-shrink:0;display:inline-block;"></span>'
+                f'<span style="font-size:11px;color:#0f172a;">{amc[:20]}{"…" if len(amc)>20 else ""}</span>'
+                f'<span style="font-family:\'IBM Plex Mono\',monospace;font-size:10px;font-weight:700;'
+                f'color:#64748b;margin-left:auto;">{val/total_amc*100:.1f}%</span>'
+                f'</div>'
+                for i, (amc, val) in enumerate(amc_sorted[:5])
+            )
+            st.markdown(f"""
+            <div style="background:#ffffff;border:1px solid rgba(0,0,0,0.07);border-radius:16px;
+                        padding:20px 22px;box-shadow:0 1px 4px rgba(0,0,0,0.06);text-align:center;">
+              <div style="font-size:11px;font-weight:700;color:#8b5cf6;text-transform:uppercase;
+                          letter-spacing:2px;margin-bottom:16px;text-align:left;">Top AMCs by Wealth</div>
+              <svg width="200" height="200" viewBox="0 0 200 200"
+                   style="display:block;margin:0 auto 16px;">
+                {segs_a}
+                <circle cx="{cx_a}" cy="{cy_a}" r="{ri_a-3}" fill="#fff"/>
+                <text x="{cx_a}" y="{cy_a-4}" text-anchor="middle"
+                      style="font-family:'IBM Plex Mono',monospace;font-size:14px;font-weight:700;fill:#0f172a;">
+                  {len(amc_sorted)}</text>
+                <text x="{cx_a}" y="{cy_a+13}" text-anchor="middle"
+                      style="font-size:10px;fill:#94a3b8;">AMCs</text>
+              </svg>
+              <div style="text-align:left;">{top5_leg}</div>
+            </div>""", unsafe_allow_html=True)
+        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+
         # ── SPECIAL ACTIVITY (3-column grid) ─────────────────────────────────
         _dash_section("⚡ Special Activity")
         activity = [t for t in data.get("special_transactions", []) if t["Type"] in SPECIAL_TX_TYPES]
@@ -2848,19 +2948,20 @@ def render_dashboard(data):
                             recency = s["last_date"]
                         with cols_dead[ci]:
                             st.markdown(
-                                f'<div style="background:linear-gradient(135deg,#0c0f1a,#1a0a0a);'
-                                f'border:1px solid rgba(252,129,129,0.22);border-radius:14px;'
-                                f'padding:16px 18px;margin-bottom:8px;">'
+                                f'<div style="background:#fff5f5;border:1px solid rgba(220,38,38,0.18);'
+                                f'border-left:4px solid #dc2626;border-radius:14px;'
+                                f'padding:16px 18px;margin-bottom:8px;'
+                                f'box-shadow:0 1px 4px rgba(0,0,0,0.05);">'
                                 f'<div style="display:flex;justify-content:space-between;'
                                 f'align-items:flex-start;margin-bottom:10px;">'
-                                f'<div style="font-size:11px;color:#0f172a;font-weight:600;'
+                                f'<div style="font-size:12px;color:#0f172a;font-weight:600;'
                                 f'line-height:1.4;">{sn}</div>'
-                                f'<span style="background:rgba(252,129,129,0.15);'
-                                f'border:1px solid rgba(252,129,129,0.3);'
+                                f'<span style="background:rgba(220,38,38,0.08);'
+                                f'border:1px solid rgba(220,38,38,0.2);'
                                 f'color:#dc2626;font-size:9px;font-weight:700;'
-                                f'padding:2px 7px;border-radius:20px;'
+                                f'padding:2px 8px;border-radius:20px;'
                                 f'white-space:nowrap;margin-left:8px;">STOPPED</span></div>'
-                                f'<div style="font-family:IBM Plex Mono,monospace;font-size:18px;'
+                                f'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:18px;'
                                 f'font-weight:700;color:#dc2626;margin-bottom:8px;">'
                                 f'{fmt_inr(s["amount"])}</div>'
                                 f'<div style="font-size:10px;color:#64748b;">'
@@ -2883,15 +2984,16 @@ def render_dashboard(data):
                     for s in sorted(old_dead,
                         key=lambda x: x.get("last_date",""), reverse=True):
                         st.markdown(
-                            f'<div style="background:#0a0d14;border:1px solid rgba(0,0,0,0.07);'
-                            f'border-radius:8px;padding:10px 14px;margin-bottom:4px;'
-                            f'display:flex;justify-content:space-between;align-items:center;">'
+                            f'<div style="background:#ffffff;border:1px solid rgba(0,0,0,0.07);'
+                            f'border-radius:10px;padding:10px 14px;margin-bottom:4px;'
+                            f'display:flex;justify-content:space-between;align-items:center;'
+                            f'box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
                             f'<div>'
-                            f'<div style="font-size:11px;color:#64748b;">'
+                            f'<div style="font-size:11px;color:#0f172a;font-weight:500;">'
                             f'{clean_name(s["scheme"])}</div>'
                             f'<div style="font-size:10px;color:#94a3b8;margin-top:2px;">'
                             f'Last: {s["last_date"]}</div></div>'
-                            f'<div style="font-family:IBM Plex Mono,monospace;font-size:11px;'
+                            f'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:11px;'
                             f'color:#94a3b8;">{fmt_inr(s["amount"])}</div>'
                             f'</div>',
                             unsafe_allow_html=True,
@@ -2958,27 +3060,28 @@ def render_dashboard(data):
             )
             for s in missed_sips:
                 sn = clean_name(s["scheme"])
+                mc1, mc2, mc3 = st.columns([2, 2, 2])
                 st.markdown(
-                    f'<div style="background:linear-gradient(135deg,#1a0a0a,#0c0f1a);'
-                    f'border:1px solid rgba(252,129,129,0.3);border-radius:14px;'
-                    f'padding:16px 18px;margin-bottom:8px;">'
-                    f'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">'
-                    f'<div style="font-size:12px;color:#0f172a;font-weight:600;line-height:1.4;">{sn}</div>'
-                    f'<span style="background:rgba(252,129,129,0.15);border:1px solid rgba(252,129,129,0.4);'
-                    f'color:#dc2626;font-size:9px;font-weight:800;padding:3px 8px;'
+                    f'<div style="background:#fff5f5;border:1px solid rgba(220,38,38,0.18);'
+                    f'border-left:4px solid #dc2626;border-radius:14px;'
+                    f'padding:16px 18px;margin-bottom:10px;box-shadow:0 1px 4px rgba(0,0,0,0.05);">'
+                    f'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">'
+                    f'<div style="font-size:13px;color:#0f172a;font-weight:600;">{sn}</div>'
+                    f'<span style="background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.2);'
+                    f'color:#dc2626;font-size:9px;font-weight:800;padding:3px 10px;'
                     f'border-radius:20px;letter-spacing:1px;white-space:nowrap;">'
                     f'❌ MISSED {last_month_lbl.upper()}</span></div>'
-                    f'<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">'
-                    f'<div><div style="font-size:9px;color:#64748b;text-transform:uppercase;'
-                    f'letter-spacing:1px;margin-bottom:3px;">SIP Amount</div>'
-                    f'<div style="font-family:IBM Plex Mono,monospace;font-size:13px;'
+                    f'<div style="display:flex;gap:32px;">'
+                    f'<div><div style="font-size:9px;color:#94a3b8;text-transform:uppercase;'
+                    f'letter-spacing:1px;margin-bottom:4px;">SIP Amount</div>'
+                    f'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:14px;'
                     f'font-weight:700;color:#dc2626;">{fmt_inr(s["amount"])}</div></div>'
-                    f'<div><div style="font-size:9px;color:#64748b;text-transform:uppercase;'
-                    f'letter-spacing:1px;margin-bottom:3px;">Last Deducted</div>'
-                    f'<div style="font-size:12px;color:#0f172a;font-weight:600;">{s["last_date"]}</div></div>'
-                    f'<div><div style="font-size:9px;color:#64748b;text-transform:uppercase;'
-                    f'letter-spacing:1px;margin-bottom:3px;">Due Day</div>'
-                    f'<div style="font-size:12px;color:#f6ad55;font-weight:600;">{s["day_label"]} every month</div></div>'
+                    f'<div><div style="font-size:9px;color:#94a3b8;text-transform:uppercase;'
+                    f'letter-spacing:1px;margin-bottom:4px;">Last Deducted</div>'
+                    f'<div style="font-size:13px;color:#0f172a;font-weight:600;">{s["last_date"]}</div></div>'
+                    f'<div><div style="font-size:9px;color:#94a3b8;text-transform:uppercase;'
+                    f'letter-spacing:1px;margin-bottom:4px;">Due Day</div>'
+                    f'<div style="font-size:13px;color:#d97706;font-weight:600;">{s["day_label"]} every month</div></div>'
                     f'</div></div>',
                     unsafe_allow_html=True,
                 )
@@ -3119,44 +3222,30 @@ def render_dashboard(data):
         ls_schemes_with_red = len(red_by_scheme)
 
         # ── Hero KPI cards ────────────────────────────────────────────────
-        lhero = (
-            "<style>@keyframes lhIn{from{opacity:0;transform:translateY(12px);}to{opacity:1;transform:translateY(0);}}"
-            "@keyframes lPulse{0%,100%{box-shadow:0 0 0 transparent;}60%{box-shadow:0 0 18px rgba(159,122,234,.12);}}"
-            ".lhc{background:linear-gradient(135deg,#0c0f1a,#111627);border-radius:16px;padding:20px 22px;"
-            "animation:lhIn .55s ease forwards,lPulse 4s ease infinite;transition:transform .2s,border-color .25s;}"
-            ".lhc:hover{transform:translateY(-4px);}"
-            ".lhl{font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:1.6px;font-weight:700;"
-            "margin-bottom:10px;display:flex;align-items:center;gap:6px;}"
-            ".lhv{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:22px;letter-spacing:-.5px;}"
-            ".lhs{font-size:10px;color:#94a3b8;margin-top:6px;}</style>"
-            "<div style='display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px;'>"
-
-            f"<div class='lhc' style='border:1px solid rgba(159,122,234,0.25);animation-delay:.0s;'>"
-            f"<div class='lhl'><span style='width:6px;height:6px;border-radius:50%;background:#9f7aea;"
-            f"box-shadow:0 0 6px #9f7aea;display:inline-block;'></span>Lumpsum Invested</div>"
-            f"<div class='lhv' style='color:#8b5cf6;'>{fmt_inr(total_ls)}</div>"
-            f"<div class='lhs'>{len(ls_by_scheme)} schemes · {len(ls_txs)} purchases</div></div>"
-
-            f"<div class='lhc' style='border:1px solid rgba(252,129,129,0.25);animation-delay:.1s;'>"
-            f"<div class='lhl'><span style='width:6px;height:6px;border-radius:50%;background:#fc8181;"
-            f"box-shadow:0 0 6px #fc8181;display:inline-block;'></span>Attributed Redemptions</div>"
-            f"<div class='lhv' style='color:#dc2626;'>{fmt_inr(total_ls_red)}</div>"
-            f"<div class='lhs'>Lumpsum-portion only · {ls_schemes_with_red} schemes</div></div>"
-
-            f"<div class='lhc' style='border:1px solid {net_border};animation-delay:.2s;'>"
-            f"<div class='lhl'><span style='width:6px;height:6px;border-radius:50%;background:{net_color};"
-            f"box-shadow:0 0 6px {net_color};display:inline-block;'></span>Net Lumpsum Position</div>"
-            f"<div class='lhv' style='color:{net_color};'>{'▲' if net>=0 else '▼'} {fmt_inr(abs(net))}</div>"
-            f"<div class='lhs'>{'Still deployed' if net>=0 else 'Over-redeemed'}</div></div>"
-
-            f"<div class='lhc' style='border:1px solid rgba(246,173,85,0.25);animation-delay:.3s;'>"
-            f"<div class='lhl'><span style='width:6px;height:6px;border-radius:50%;background:#f6ad55;"
-            f"box-shadow:0 0 6px #f6ad55;display:inline-block;'></span>Lumpsum Redemption Rate</div>"
-            f"<div class='lhv' style='color:#f6ad55;'>{redemption_rate:.1f}%</div>"
-            f"<div class='lhs'>Of lumpsum capital only</div></div>"
-            "</div>"
-        )
-        st.markdown(lhero, unsafe_allow_html=True)
+        lc1, lc2, lc3, lc4 = st.columns(4, gap="small")
+        def _ls_kpi(col, label, value, sub, color, bdr):
+            col.markdown(f"""
+            <div style="background:#ffffff;border:1px solid {bdr};border-radius:14px;
+                        padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);height:100%;">
+              <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;
+                          font-weight:700;margin-bottom:10px;">{label}</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;
+                          color:{color};letter-spacing:-.5px;">{value}</div>
+              <div style="font-size:10px;color:#94a3b8;margin-top:6px;">{sub}</div>
+            </div>""", unsafe_allow_html=True)
+        _ls_kpi(lc1, "Lumpsum Invested", fmt_inr(total_ls),
+                f"{len(ls_by_scheme)} schemes · {len(ls_txs)} purchases",
+                "#8b5cf6", "rgba(139,92,246,0.18)")
+        _ls_kpi(lc2, "Attributed Redemptions", fmt_inr(total_ls_red),
+                f"Lumpsum-portion only · {ls_schemes_with_red} schemes",
+                "#dc2626", "rgba(220,38,38,0.18)")
+        _ls_kpi(lc3, "Net Lumpsum Position",
+                f"{'▲' if net>=0 else '▼'} {fmt_inr(abs(net))}",
+                "Still deployed" if net >= 0 else "Over-redeemed",
+                net_color, f"rgba({'5,150,105' if net>=0 else '220,38,38'},0.18)")
+        _ls_kpi(lc4, "Lumpsum Redemption Rate", f"{redemption_rate:.1f}%",
+                "Of lumpsum capital only", "#d97706", "rgba(217,119,6,0.18)")
+        st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
 
         # ── Attribution info banner ────────────────────────────────────────
         mixed_schemes = [s for s in ls_by_scheme if sip_by_scheme_l.get(s, 0) > 0]
@@ -3180,22 +3269,26 @@ def render_dashboard(data):
         remain_pct   = max(100 - gauge_pct, 0)
         gauge_color  = "#48bb78" if gauge_pct < 30 else "#f6ad55" if gauge_pct < 70 else "#fc8181"
         gauge_label  = "Low — Good" if gauge_pct < 30 else "Moderate" if gauge_pct < 70 else "High — Review"
-        gauge_html   = (
-            "<div style='background:linear-gradient(135deg,#0c0f1a,#111627);"
-            "border:1px solid rgba(0,0,0,0.07);border-radius:16px;padding:18px 22px;margin-bottom:18px;'>"
-            "<div style='display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;'>"
-            "<div style='font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;'>"
-            "Lumpsum Capital Retention</div>"
-            f"<span style='font-family:IBM Plex Mono,monospace;font-size:12px;font-weight:700;color:{gauge_color};'>"
-            f"{gauge_label}</span></div>"
-            "<div style='background:#f8fafc;border-radius:8px;height:14px;overflow:hidden;'>"
-            f"<div style='height:100%;width:{remain_pct:.1f}%;background:linear-gradient(90deg,#9f7aea,#63b3ed);"
-            "border-radius:8px;'></div></div>"
-            "<div style='display:flex;justify-content:space-between;margin-top:6px;'>"
-            f"<div style='font-size:10px;color:#8b5cf6;font-family:IBM Plex Mono,monospace;'>● Still Invested {remain_pct:.1f}%</div>"
-            f"<div style='font-size:10px;color:#dc2626;font-family:IBM Plex Mono,monospace;'>Redeemed {gauge_pct:.1f}% ●</div>"
-            "</div></div>"
-        )
+        gauge_html = f"""
+        <div style="background:#ffffff;border:1px solid rgba(0,0,0,0.07);border-radius:16px;
+                    padding:18px 22px;margin-bottom:18px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:1.5px;">
+              Lumpsum Capital Retention</div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:{gauge_color};">
+              {gauge_label}</span>
+          </div>
+          <div style="background:#f1f5f9;border-radius:8px;height:14px;overflow:hidden;">
+            <div style="height:100%;width:{remain_pct:.1f}%;background:linear-gradient(90deg,#8b5cf6,#3b82f6);
+                        border-radius:8px;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:6px;">
+            <div style="font-size:10px;color:#8b5cf6;font-family:'IBM Plex Mono',monospace;">
+              ● Still Invested {remain_pct:.1f}%</div>
+            <div style="font-size:10px;color:#dc2626;font-family:'IBM Plex Mono',monospace;">
+              Redeemed {gauge_pct:.1f}% ●</div>
+          </div>
+        </div>"""
         st.markdown(gauge_html, unsafe_allow_html=True)
 
         # ── Two animated donuts side by side ──────────────────────────────
