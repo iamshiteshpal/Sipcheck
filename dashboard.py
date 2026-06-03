@@ -1428,224 +1428,442 @@ def show_upload():
             pass
         st.rerun()
 
-    # ── Page-level CSS ────────────────────────────────────────────────────
+    # ── Dark cyber-tech CSS ───────────────────────────────────────────────
     st.markdown("""
     <style>
-    /* Hide sidebar on landing page only */
+    /* ── Hide sidebar, go full-canvas dark ── */
     [data-testid="stSidebar"]{display:none!important;}
     section[data-testid="stAppViewContainer"]>.main{margin-left:0!important;}
+    html,body,.stApp{
+      background:#0B0E14!important;
+      color:#e2e8f0!important;
+    }
+    .block-container{background:transparent!important;padding-top:0!important;}
+    [data-testid="stAppViewBlockContainer"]{background:transparent!important;padding-top:0!important;}
 
-    @keyframes fadeUp{from{opacity:0;transform:translateY(18px);}to{opacity:1;transform:translateY(0);}}
     @keyframes gradShift{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+    @keyframes floatA{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
+    @keyframes floatB{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
 
-    /* File uploader — override Streamlit defaults */
-    [data-testid="stFileUploader"] section {
-      background:#f8faff!important;
-      border:2px dashed #a5b4fc!important;
-      border-radius:16px!important;
-      padding:28px 20px!important;
-      transition:border-color .2s,background .2s!important;
+    /* ── Widget dark overrides ── */
+    [data-testid="stFileUploader"] section{
+      background:rgba(0,240,255,0.04)!important;
+      border:2px dashed rgba(0,240,255,0.35)!important;
+      border-radius:14px!important;
     }
-    [data-testid="stFileUploader"] section:hover {
-      border-color:#4f46e5!important;
-      background:#eef2ff!important;
+    [data-testid="stFileUploader"] section:hover{
+      background:rgba(0,240,255,0.07)!important;
+      border-color:rgba(0,240,255,0.65)!important;
     }
-    [data-testid="stFileUploader"] section svg { color:#4f46e5!important; }
-    [data-testid="stFileUploader"] section span { color:#4f46e5!important; font-weight:600!important; }
-    [data-testid="stFileUploader"] section small { color:#94a3b8!important; }
-
-    /* Password input */
-    [data-testid="stTextInput"] input {
-      border:1.5px solid #e2e8f0!important;
+    [data-testid="stFileUploader"] section svg{color:#00F0FF!important;}
+    [data-testid="stFileUploader"] section span{color:#00F0FF!important;font-weight:600!important;}
+    [data-testid="stFileUploader"] section small{color:#64748b!important;}
+    [data-testid="stFileUploader"] button{
+      background:rgba(0,240,255,0.1)!important;
+      border:1px solid rgba(0,240,255,0.3)!important;
+      color:#00F0FF!important;
+      border-radius:10px!important;
+    }
+    [data-testid="stTextInput"] input{
+      background:rgba(255,255,255,0.04)!important;
+      border:1px solid rgba(0,240,255,0.25)!important;
+      color:#e2e8f0!important;
       border-radius:12px!important;
-      padding:14px 16px!important;
-      font-size:14px!important;
-      background:#ffffff!important;
-      color:#0f172a!important;
-      transition:border-color .2s,box-shadow .2s!important;
     }
-    [data-testid="stTextInput"] input:focus {
-      border-color:#4f46e5!important;
-      box-shadow:0 0 0 3px rgba(79,70,229,0.12)!important;
+    [data-testid="stTextInput"] input:focus{
+      border-color:#00F0FF!important;
+      box-shadow:0 0 0 3px rgba(0,240,255,0.12)!important;
     }
-
-    /* Primary button override */
-    [data-testid="stBaseButton-primary"] {
-      background:linear-gradient(135deg,#4f46e5,#7c3aed)!important;
-      border:none!important;
-      border-radius:12px!important;
-      padding:14px 28px!important;
-      font-size:15px!important;
-      font-weight:700!important;
-      letter-spacing:.3px!important;
-      box-shadow:0 4px 14px rgba(79,70,229,0.35)!important;
-      transition:transform .15s,box-shadow .15s!important;
+    [data-testid="stTextInput"] input::placeholder{color:#475569!important;}
+    [data-testid="stBaseButton-primary"]{
+      background:linear-gradient(135deg,#00b8c4,#7c2ff7)!important;
+      border:none!important;border-radius:12px!important;
+      color:white!important;font-weight:700!important;font-size:15px!important;
+      box-shadow:0 0 24px rgba(0,240,255,0.35)!important;
+      transition:box-shadow .2s,transform .15s!important;
     }
-    [data-testid="stBaseButton-primary"]:hover {
-      transform:translateY(-2px)!important;
-      box-shadow:0 8px 20px rgba(79,70,229,0.45)!important;
+    [data-testid="stBaseButton-primary"]:hover{
+      box-shadow:0 0 40px rgba(0,240,255,0.55)!important;
+      transform:scale(1.02)!important;
     }
+    [data-testid="stBaseButton-secondary"]{
+      background:rgba(255,255,255,0.05)!important;
+      border:1px solid rgba(255,255,255,0.12)!important;
+      color:#94a3b8!important;border-radius:10px!important;
+    }
+    /* spinner / info / success on dark */
+    .stAlert{background:rgba(0,240,255,0.05)!important;border:1px solid rgba(0,240,255,0.2)!important;color:#e2e8f0!important;}
     </style>
     """, unsafe_allow_html=True)
 
-    # ── HERO ──────────────────────────────────────────────────────────────
+    # ── TECH GRID + RADIAL GLOW BACKDROP ─────────────────────────────────
     st.markdown("""
-    <div style="text-align:center;padding:56px 20px 40px;animation:fadeUp .7s ease forwards;">
+    <div style="position:fixed;inset:0;pointer-events:none;z-index:0;
+                background-image:linear-gradient(rgba(0,240,255,0.04) 1px,transparent 1px),
+                linear-gradient(90deg,rgba(0,240,255,0.04) 1px,transparent 1px);
+                background-size:60px 60px;"></div>
+    <div style="position:fixed;inset:0;pointer-events:none;z-index:0;
+                background:radial-gradient(ellipse 80% 50% at 50% -5%,rgba(0,240,255,0.08) 0%,transparent 60%),
+                radial-gradient(ellipse 55% 40% at 85% 50%,rgba(176,38,255,0.07) 0%,transparent 60%);"></div>
+    """, unsafe_allow_html=True)
+
+    # ── HERO HEADER: logo + badge ─────────────────────────────────────────
+    st.markdown("""
+    <div style="text-align:center;padding:64px 20px 12px;position:relative;z-index:1;
+                animation:fadeUp .6s ease both;">
+      <h2 style="font-size:2.4rem;font-weight:900;margin:0 0 16px;letter-spacing:-1px;
+                 color:#00F0FF;text-shadow:0 0 28px rgba(0,240,255,0.6),0 0 60px rgba(0,240,255,0.3);">
+        cas.360 view
+      </h2>
       <div style="display:inline-flex;align-items:center;gap:8px;
-                  background:#eef2ff;border:1px solid #c7d2fe;
-                  border-radius:40px;padding:6px 18px;margin-bottom:24px;">
-        <div style="width:8px;height:8px;border-radius:50%;
-                    background:linear-gradient(135deg,#4f46e5,#7c3aed);"></div>
-        <span style="font-size:11px;font-weight:700;color:#4f46e5;letter-spacing:1.5px;
-                     text-transform:uppercase;">Mutual Fund Intelligence Platform</span>
+                  background:rgba(0,240,255,0.07);border:1px solid rgba(0,240,255,0.35);
+                  border-radius:40px;padding:6px 18px;margin-bottom:32px;">
+        <span style="width:7px;height:7px;border-radius:50%;background:#00F0FF;
+                     box-shadow:0 0 8px #00F0FF;display:inline-block;animation:pulse 2s ease infinite;"></span>
+        <span style="font-size:10px;font-weight:700;color:#00F0FF;
+                     letter-spacing:2px;text-transform:uppercase;">
+          Mutual Fund Intelligence Platform</span>
       </div>
-      <h1 style="font-family:'Syne',sans-serif;font-size:52px;font-weight:800;
-                 line-height:1.1;letter-spacing:-2px;color:#0f172a;margin:0 0 16px;">
-        Your Portfolio,<br>
-        <span style="background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 50%,#06b6d4 100%);
-                     background-size:200% auto;animation:gradShift 4s ease infinite;
-                     -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-                     background-clip:text;">Fully Decoded.</span>
+      <h1 style="font-size:clamp(2.8rem,6vw,5rem);font-weight:900;letter-spacing:-3px;
+                 line-height:1.05;margin:0 0 20px;
+                 background:linear-gradient(135deg,#00F0FF 0%,#B026FF 55%,#00F0FF 100%);
+                 background-size:200% auto;animation:gradShift 4s ease infinite;
+                 -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                 background-clip:text;filter:drop-shadow(0 0 28px rgba(0,240,255,0.3));">
+        Your Portfolio,<br>Fully Decoded.
       </h1>
-      <p style="font-size:17px;color:#64748b;max-width:520px;margin:0 auto 32px;
-                line-height:1.7;font-weight:400;">
+      <p style="font-size:1.1rem;color:#94a3b8;max-width:560px;margin:0 auto 32px;
+                line-height:1.75;">
         Upload your CAS PDF and instantly unlock a complete 360° view of all your
         mutual fund investments — live NAV, XIRR, SIP health, and more.
       </p>
-      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-        <span style="background:#fff;border:1px solid #e2e8f0;color:#475569;font-size:12px;
-                     padding:6px 16px;border-radius:40px;font-weight:600;
-                     box-shadow:0 1px 4px rgba(0,0,0,0.06);">🔒 Zero data storage</span>
-        <span style="background:#fff;border:1px solid #e2e8f0;color:#475569;font-size:12px;
-                     padding:6px 16px;border-radius:40px;font-weight:600;
-                     box-shadow:0 1px 4px rgba(0,0,0,0.06);">⚡ Instant analysis</span>
-        <span style="background:#fff;border:1px solid #e2e8f0;color:#475569;font-size:12px;
-                     padding:6px 16px;border-radius:40px;font-weight:600;
-                     box-shadow:0 1px 4px rgba(0,0,0,0.06);">🏦 CAMS + KFintech</span>
-        <span style="background:#fff;border:1px solid #e2e8f0;color:#475569;font-size:12px;
-                     padding:6px 16px;border-radius:40px;font-weight:600;
-                     box-shadow:0 1px 4px rgba(0,0,0,0.06);">📊 Live NAV & XIRR</span>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:56px;">
+        <span style="background:rgba(0,240,255,0.07);border:1px solid rgba(0,240,255,0.3);
+                     color:#7ee8f5;font-size:12px;font-weight:600;padding:6px 16px;border-radius:40px;">
+          🔒 Zero data storage</span>
+        <span style="background:rgba(0,240,255,0.07);border:1px solid rgba(0,240,255,0.3);
+                     color:#7ee8f5;font-size:12px;font-weight:600;padding:6px 16px;border-radius:40px;">
+          ⚡ Instant analysis</span>
+        <span style="background:rgba(0,240,255,0.07);border:1px solid rgba(0,240,255,0.3);
+                     color:#7ee8f5;font-size:12px;font-weight:600;padding:6px 16px;border-radius:40px;">
+          🏦 CAMS + KFintech</span>
+        <span style="background:rgba(0,240,255,0.07);border:1px solid rgba(0,240,255,0.3);
+                     color:#7ee8f5;font-size:12px;font-weight:600;padding:6px 16px;border-radius:40px;">
+          📊 Live NAV &amp; XIRR</span>
       </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # ── UPLOAD CARD (centered) ────────────────────────────────────────────
-    _, col, _ = st.columns([1, 2, 1])
-    with col:
+    # ── 3-PANEL ROW: left HUDs · upload portal · right HUDs ─────────────
+    lc, cc, rc = st.columns([3, 4, 3], gap="medium")
+
+    with lc:
         st.markdown("""
-        <div style="background:#ffffff;border:1px solid #e2e8f0;border-radius:24px;
-                    padding:36px 36px 28px;box-shadow:0 8px 32px rgba(0,0,0,0.08),
-                    0 2px 8px rgba(0,0,0,0.04);margin-bottom:12px;">
-          <div style="text-align:center;margin-bottom:24px;">
-            <div style="font-family:'Syne',sans-serif;font-size:20px;font-weight:800;
-                        color:#0f172a;margin-bottom:6px;">Upload your CAS PDF</div>
-            <div style="font-size:13px;color:#94a3b8;">
-              Drag and drop or click to browse — PDF files only</div>
+        <div style="display:flex;flex-direction:column;gap:14px;padding-top:20px;">
+
+          <!-- HUD 1: Lock -->
+          <div style="background:rgba(255,255,255,0.03);backdrop-filter:blur(16px);
+                      border:1px solid rgba(0,240,255,0.2);border-radius:18px;padding:18px;
+                      animation:floatA 4s ease-in-out infinite;">
+            <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
+              <div style="width:48px;height:48px;border-radius:12px;
+                          background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.3);
+                          display:flex;align-items:center;justify-content:center;
+                          box-shadow:0 0 18px rgba(0,240,255,0.2);font-size:22px;">🔒</div>
+              <div style="text-align:center;">
+                <p style="font-size:12px;font-weight:700;color:white;margin:0 0 3px;">Zero Storage</p>
+                <p style="font-size:10px;color:#64748b;margin:0;">On-device parsing only</p>
+              </div>
+              <svg width="140" height="32" viewBox="0 0 140 32" style="opacity:0.45;">
+                <path d="M8 16 H38 V8 H80 V24 H112 H132" stroke="#00F0FF" stroke-width="1.2"
+                      fill="none" stroke-dasharray="4 3"/>
+                <circle cx="38" cy="8" r="2.5" fill="#00F0FF"/>
+                <circle cx="80" cy="24" r="2.5" fill="#00F0FF"/>
+              </svg>
+            </div>
           </div>
+
+          <!-- HUD 2: SIP Pulse -->
+          <div style="background:rgba(255,255,255,0.03);backdrop-filter:blur(16px);
+                      border:1px solid rgba(176,38,255,0.2);border-radius:18px;padding:18px;
+                      animation:floatB 5s ease-in-out .8s infinite;">
+            <p style="font-size:9px;font-weight:700;color:#c084fc;text-transform:uppercase;
+                      letter-spacing:2px;margin:0 0 10px;">SIP Health</p>
+            <svg width="160" height="44" viewBox="0 0 160 44">
+              <polyline points="0,22 16,22 26,4 42,40 56,8 72,32 92,12 108,26 126,16 160,16"
+                fill="none" stroke="#B026FF" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"/>
+              <polyline points="0,22 16,22 26,4 42,40 56,8 72,32 92,12 108,26 126,16 160,16"
+                fill="none" stroke="rgba(176,38,255,0.15)" stroke-width="8"
+                stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
+              <span style="width:6px;height:6px;border-radius:50%;background:#c084fc;
+                           animation:pulse 2s ease infinite;display:inline-block;"></span>
+              <p style="font-size:10px;color:#c084fc;margin:0;">9 active · 0 bounced</p>
+            </div>
+          </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with cc:
+        # glowing upload portal
+        st.markdown("""
+        <div style="position:relative;padding:4px;">
+          <div style="position:absolute;inset:-16px;border-radius:28px;
+                      background:radial-gradient(ellipse at center,rgba(0,240,255,0.1) 0%,rgba(176,38,255,0.06) 50%,transparent 70%);
+                      filter:blur(18px);pointer-events:none;"></div>
+          <div style="position:relative;border-radius:22px;padding:32px 28px 24px;
+                      background:rgba(255,255,255,0.03);backdrop-filter:blur(20px);
+                      border:2px solid transparent;
+                      background-image:linear-gradient(rgba(11,14,20,0.95),rgba(11,14,20,0.95)),
+                                       linear-gradient(135deg,#00F0FF,#B026FF);
+                      background-origin:border-box;background-clip:padding-box,border-box;
+                      box-shadow:0 20px 60px rgba(0,0,0,0.5),inset 0 0 40px rgba(0,240,255,0.03);
+                      text-align:center;">
+            <div style="width:52px;height:52px;margin:0 auto 16px;border-radius:14px;
+                        background:linear-gradient(135deg,rgba(0,240,255,0.15),rgba(176,38,255,0.15));
+                        border:1px solid rgba(0,240,255,0.3);font-size:24px;line-height:52px;
+                        box-shadow:0 0 20px rgba(0,240,255,0.2);">☁️</div>
+            <p style="font-size:19px;font-weight:800;color:white;margin:0 0 6px;">
+              Upload your CAS PDF</p>
+            <p style="font-size:12px;color:#64748b;margin:0 0 20px;line-height:1.6;">
+              Drag and drop or click to browse<br>PDF files only</p>
+          </div>
+        </div>
         """, unsafe_allow_html=True)
 
         uploaded = st.file_uploader(
             "CAS PDF", type=["pdf"],
             label_visibility="collapsed",
-            help="Upload the CAS PDF you received from CAMS or KFintech"
+            help="Your CAS PDF from CAMS or KFintech"
         )
 
         st.markdown("""
-          <div style="display:flex;align-items:center;gap:12px;margin:20px 0 8px;">
-            <div style="flex:1;height:1px;background:#f1f5f9;"></div>
-            <span style="font-size:11px;color:#cbd5e1;font-weight:600;">ENTER PASSWORD</span>
-            <div style="flex:1;height:1px;background:#f1f5f9;"></div>
-          </div>
-          <div style="font-size:12px;color:#94a3b8;margin-bottom:8px;text-align:center;">
-            Your <strong style="color:#475569;">PAN number</strong> or
-            <strong style="color:#475569;">Date of Birth</strong> (DDMMYYYY)
-          </div>
+        <div style="margin:14px 0 6px;text-align:center;">
+          <p style="font-size:11px;font-weight:600;color:#334155;margin:0 0 4px;
+                    text-transform:uppercase;letter-spacing:1.5px;">Password</p>
+          <p style="font-size:11px;color:#475569;margin:0;">PAN (ABCDE1234F) or DOB (DDMMYYYY)</p>
+        </div>
         """, unsafe_allow_html=True)
 
         password = st.text_input(
-            "CAS Password",
-            type="password",
-            placeholder="e.g. ABCDE1234F or 01011990",
-            key="pdf_password",
-            label_visibility="collapsed",
+            "CAS Password", type="password",
+            placeholder="ABCDE1234F or 01011990",
+            key="pdf_password", label_visibility="collapsed",
         )
-
         st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
 
         if uploaded and password:
-            if st.button("Analyze Portfolio →", use_container_width=True, type="primary"):
-                with st.spinner("Parsing your CAS PDF…"):
+            if st.button("Analyze My Portfolio →", use_container_width=True, type="primary"):
+                with st.spinner("Parsing…"):
                     data, error = parse_pdf(uploaded.read(), password)
                 if error == "wrong_password":
-                    st.error("Incorrect password. Try your PAN number (e.g. ABCDE1234F) or Date of Birth (DDMMYYYY).")
+                    st.error("Wrong password. Try PAN (ABCDE1234F) or DOB (DDMMYYYY).")
                 elif error:
                     st.error(f"Parse error: {error}")
                 else:
                     portfolio     = process(data)
                     investor_name = portfolio["investor_name"].title()
                     st.session_state.profiles[investor_name] = portfolio
-                    st.session_state.active  = investor_name
-                    st.session_state.pin_ok  = True
-                    st.success(f"✅ Portfolio loaded — {investor_name}")
+                    st.session_state.active = investor_name
+                    st.session_state.pin_ok = True
+                    st.success(f"✅ Loaded — {investor_name}")
                     st.rerun()
         elif uploaded:
-            st.markdown('<div style="text-align:center;font-size:13px;color:#94a3b8;padding:4px 0;">Enter your password above to continue</div>', unsafe_allow_html=True)
+            st.markdown('<p style="text-align:center;font-size:12px;color:#475569;">Enter password above</p>', unsafe_allow_html=True)
         else:
-            st.markdown('<div style="text-align:center;font-size:13px;color:#94a3b8;padding:4px 0;">Upload your PDF to get started</div>', unsafe_allow_html=True)
+            st.markdown('<p style="text-align:center;font-size:12px;color:#475569;">Upload your PDF above</p>', unsafe_allow_html=True)
 
         st.markdown("""
-          <div style="text-align:center;margin-top:20px;padding-top:20px;
-                      border-top:1px solid #f8fafc;">
-            <span style="font-size:11px;color:#cbd5e1;">
-              🔒 Processed entirely on your device · Nothing sent to any server
-            </span>
+        <div style="text-align:center;margin-top:12px;">
+          <span style="font-size:10px;color:#334155;">🔒 Processed on your device · Nothing stored</span>
+        </div>
+        """, unsafe_allow_html=True)
+
+    with rc:
+        st.markdown("""
+        <div style="display:flex;flex-direction:column;gap:14px;padding-top:20px;">
+
+          <!-- HUD 3: CAMS + KFintech -->
+          <div style="background:rgba(255,255,255,0.03);backdrop-filter:blur(16px);
+                      border:1px solid rgba(0,240,255,0.2);border-radius:18px;padding:18px;
+                      animation:floatA 4.5s ease-in-out .4s infinite;">
+            <p style="font-size:9px;font-weight:700;color:#7ee8f5;text-transform:uppercase;
+                      letter-spacing:2px;margin:0 0 12px;">Data Sources</p>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:30px;height:30px;border-radius:8px;
+                            background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.25);
+                            font-size:14px;line-height:30px;text-align:center;">🏦</div>
+                <span style="font-size:12px;font-weight:600;color:white;">CAMS</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;">
+                <div style="width:30px;height:30px;border-radius:8px;
+                            background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.25);
+                            font-size:14px;line-height:30px;text-align:center;">🏦</div>
+                <span style="font-size:12px;font-weight:600;color:white;">KFintech</span>
+              </div>
+            </div>
+            <svg width="130" height="24" viewBox="0 0 130 24" style="margin-top:10px;opacity:0.5;">
+              <path d="M8 6 Q65 0 122 6" stroke="#00F0FF" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+              <path d="M8 18 Q65 24 122 18" stroke="#00F0FF" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+              <circle cx="8" cy="12" r="3" fill="#00F0FF"/>
+              <circle cx="122" cy="12" r="3" fill="#00F0FF"/>
+            </svg>
+          </div>
+
+          <!-- HUD 4: XIRR chart -->
+          <div style="background:rgba(255,255,255,0.03);backdrop-filter:blur(16px);
+                      border:1px solid rgba(16,185,129,0.2);border-radius:18px;padding:18px;
+                      animation:floatB 5.5s ease-in-out 1.2s infinite;">
+            <p style="font-size:9px;font-weight:700;color:#34d399;text-transform:uppercase;
+                      letter-spacing:2px;margin:0 0 10px;">Portfolio XIRR</p>
+            <div style="display:flex;align-items:flex-end;gap:3px;height:50px;">
+              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:3px 3px 0 0;height:40%;"></div>
+              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:3px 3px 0 0;height:55%;"></div>
+              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:3px 3px 0 0;height:35%;"></div>
+              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:3px 3px 0 0;height:70%;"></div>
+              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:3px 3px 0 0;height:48%;"></div>
+              <div style="flex:1;background:linear-gradient(to top,#059669,#34d399);border-radius:3px 3px 0 0;
+                          height:92%;box-shadow:0 0 12px rgba(16,185,129,0.6);"></div>
+              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:3px 3px 0 0;height:62%;"></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
+              <span style="font-size:14px;font-weight:800;color:#34d399;">▲ XIRR 8.3%</span>
+              <span style="width:6px;height:6px;border-radius:50%;background:#34d399;
+                           animation:pulse 2s ease infinite;display:inline-block;"></span>
+            </div>
           </div>
         </div>
         """, unsafe_allow_html=True)
 
-    # ── FEATURES BENTO GRID ───────────────────────────────────────────────
+    # ── DIVIDER ───────────────────────────────────────────────────────────
     st.markdown("""
-    <div style="text-align:center;padding:48px 0 28px;">
-      <div style="display:inline-block;background:#f1f5f9;border-radius:40px;
-                  padding:5px 16px;font-size:11px;font-weight:700;color:#64748b;
-                  letter-spacing:1.5px;text-transform:uppercase;margin-bottom:14px;">
-        Why CAS 360
+    <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(0,240,255,0.3),transparent);
+                margin:64px 0 0;"></div>
+    """, unsafe_allow_html=True)
+
+    # ── FEATURES GRID ─────────────────────────────────────────────────────
+    st.markdown("""
+    <div style="text-align:center;padding:56px 0 40px;">
+      <div style="display:inline-flex;align-items:center;gap:8px;
+                  background:rgba(176,38,255,0.07);border:1px solid rgba(176,38,255,0.3);
+                  border-radius:40px;padding:5px 16px;margin-bottom:16px;">
+        <span style="font-size:10px;font-weight:700;color:#c084fc;
+                     letter-spacing:2px;text-transform:uppercase;">WHY CAS 360</span>
       </div>
-      <h2 style="font-size:32px;font-weight:800;color:#0f172a;
-                 letter-spacing:-1px;margin:0 0 10px;">
-        Everything your portfolio needs, in one place.
+      <h2 style="font-size:clamp(1.8rem,4vw,3rem);font-weight:900;color:white;
+                 letter-spacing:-2px;margin:0 0 10px;line-height:1.1;">
+        Everything your portfolio needs,<br>in one place.
       </h2>
-      <p style="font-size:15px;color:#64748b;margin:0;">
+      <p style="font-size:1rem;color:#64748b;margin:0;">
         Institutional-grade portfolio intelligence for every Indian investor.
       </p>
     </div>
     """, unsafe_allow_html=True)
 
-    c1, c2, c3 = st.columns(3, gap="medium")
-    with c1:
-        st.markdown("""<div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);height:100%;"><div style="width:44px;height:44px;background:#eef2ff;border-radius:14px;font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">📊</div><div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">Live NAV &amp; XIRR</div><div style="font-size:13px;color:#64748b;line-height:1.65;">Real-time NAV from MFAPI. Per-scheme XIRR calculated automatically across your entire portfolio history.</div></div>""", unsafe_allow_html=True)
-    with c2:
-        st.markdown("""<div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);height:100%;"><div style="width:44px;height:44px;background:#f5f3ff;border-radius:14px;font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">🗂</div><div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">360° Portfolio View</div><div style="font-size:13px;color:#64748b;line-height:1.65;">Every folio, scheme, and transaction from both CAMS and KFintech — unified in a single clean dashboard.</div></div>""", unsafe_allow_html=True)
-    with c3:
-        st.markdown("""<div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);height:100%;"><div style="width:44px;height:44px;background:#f0fdf4;border-radius:14px;font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">💰</div><div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">P&amp;L Analytics</div><div style="font-size:13px;color:#64748b;line-height:1.65;">Realised &amp; unrealised gains broken down by scheme, category, and time period — with a visual summary.</div></div>""", unsafe_allow_html=True)
+    # Row 1: 3 cards
+    f1, f2, f3 = st.columns(3, gap="medium")
+    def _dark_card(col, icon, title, body, accent="cyan"):
+        bc = "rgba(0,240,255,0.12)" if accent=="cyan" else "rgba(176,38,255,0.12)"
+        ic = "rgba(0,240,255,0.08)" if accent=="cyan" else "rgba(176,38,255,0.08)"
+        tc = "#00F0FF" if accent=="cyan" else "#c084fc"
+        col.markdown(f"""
+        <div style="background:rgba(255,255,255,0.03);backdrop-filter:blur(12px);
+                    border:1px solid {bc};border-radius:20px;padding:24px;height:100%;">
+          <div style="width:44px;height:44px;border-radius:12px;background:{ic};
+                      border:1px solid {bc};font-size:20px;line-height:44px;
+                      text-align:center;margin-bottom:14px;">{icon}</div>
+          <p style="font-size:15px;font-weight:700;color:white;margin:0 0 8px;">{title}</p>
+          <p style="font-size:13px;color:#64748b;line-height:1.65;margin:0;">{body}</p>
+        </div>""", unsafe_allow_html=True)
 
-    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+    _dark_card(f1, "📊", "Live NAV &amp; XIRR",
+               "Real-time NAV from MFAPI. Per-scheme XIRR calculated automatically across your entire portfolio history.")
+    _dark_card(f2, "🔄", "360° Portfolio View",
+               "Every folio, scheme, and transaction from both CAMS and KFintech — unified in a single clean dashboard.", "purple")
+    _dark_card(f3, "💰", "P&amp;L Analytics",
+               "Realised &amp; unrealised gains broken down by scheme, category, and time period — with a visual summary.")
 
-    c1, c2 = st.columns([1.6, 1], gap="medium")
-    with c1:
-        st.markdown("""<div style="background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);border-radius:20px;padding:32px 28px;box-shadow:0 8px 24px rgba(79,70,229,0.25);"><div style="width:44px;height:44px;background:rgba(255,255,255,0.15);border-radius:14px;font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">🔄</div><div style="font-size:18px;font-weight:700;color:#ffffff;margin-bottom:8px;">SIP Health Monitor</div><div style="font-size:13px;color:rgba(255,255,255,0.80);line-height:1.65;margin-bottom:18px;">Track every active SIP — next due dates, mandate status, bounce alerts, and historical SIP investment timeline.</div><span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:#fff;font-size:10px;font-weight:600;padding:4px 12px;border-radius:20px;margin-right:8px;">Active SIPs</span><span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:#fff;font-size:10px;font-weight:600;padding:4px 12px;border-radius:20px;margin-right:8px;">Bounce Alerts</span><span style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);color:#fff;font-size:10px;font-weight:600;padding:4px 12px;border-radius:20px;">Next Due Date</span></div>""", unsafe_allow_html=True)
-    with c2:
-        st.markdown("""<div style="background:#0f172a;border-radius:20px;padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.1);height:100%;"><div style="width:44px;height:44px;background:rgba(255,255,255,0.07);border-radius:14px;font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">👨‍👩‍👧</div><div style="font-size:16px;font-weight:700;color:#f8fafc;margin-bottom:8px;">Family View</div><div style="font-size:13px;color:#94a3b8;line-height:1.65;">Analyse multiple CAS files together. Compare portfolios across family members with a consolidated wealth summary.</div></div>""", unsafe_allow_html=True)
+    st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
 
-    st.markdown("<div style='height:16px'></div>", unsafe_allow_html=True)
+    # Row 2: wide SIP + Family
+    fs1, fs2 = st.columns([1.6, 1], gap="medium")
+    with fs1:
+        st.markdown("""
+        <div style="background:linear-gradient(135deg,rgba(79,46,229,0.5) 0%,rgba(139,92,246,0.3) 50%,rgba(37,99,235,0.4) 100%);
+                    backdrop-filter:blur(12px);border:1px solid rgba(139,92,246,0.4);
+                    border-radius:20px;padding:26px 24px;">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.1);
+                      border:1px solid rgba(255,255,255,0.2);font-size:20px;line-height:44px;
+                      text-align:center;margin-bottom:14px;">🔄</div>
+          <p style="font-size:18px;font-weight:800;color:white;margin:0 0 8px;">SIP Health Monitor</p>
+          <p style="font-size:13px;color:rgba(255,255,255,0.7);line-height:1.65;margin:0 0 16px;">
+            Track every active SIP — next due dates, mandate status, bounce alerts, and historical SIP investment timeline.</p>
+          <span style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);
+                       color:white;font-size:10px;font-weight:600;padding:3px 12px;border-radius:20px;margin-right:6px;">Active SIPs</span>
+          <span style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);
+                       color:white;font-size:10px;font-weight:600;padding:3px 12px;border-radius:20px;margin-right:6px;">Bounce Alerts</span>
+          <span style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);
+                       color:white;font-size:10px;font-weight:600;padding:3px 12px;border-radius:20px;">Next Due Date</span>
+        </div>""", unsafe_allow_html=True)
+    with fs2:
+        st.markdown("""
+        <div style="background:rgba(15,23,42,0.85);backdrop-filter:blur(12px);
+                    border:1px solid rgba(59,130,246,0.2);border-radius:20px;padding:24px;height:100%;">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(59,130,246,0.1);
+                      border:1px solid rgba(59,130,246,0.25);font-size:20px;line-height:44px;
+                      text-align:center;margin-bottom:14px;">👨‍👩‍👧</div>
+          <p style="font-size:15px;font-weight:700;color:white;margin:0 0 8px;">Family View</p>
+          <p style="font-size:13px;color:#64748b;line-height:1.65;margin:0;">
+            Analyse multiple CAS files together. Compare portfolios across family members
+            with a consolidated wealth summary.</p>
+        </div>""", unsafe_allow_html=True)
 
-    c1, c2 = st.columns([1, 1.6], gap="medium")
-    with c1:
-        st.markdown("""<div style="background:#ffffff;border:1px solid #f1f5f9;border-radius:20px;padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.05);height:100%;"><div style="width:44px;height:44px;background:#fffbeb;border-radius:14px;font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">🥧</div><div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">Asset Allocation</div><div style="font-size:13px;color:#64748b;line-height:1.65;">Equity vs Debt breakdown with interactive charts. Understand your actual risk exposure at a glance.</div></div>""", unsafe_allow_html=True)
-    with c2:
-        st.markdown("""<div style="background:#f8fafc;border:1px solid #f1f5f9;border-radius:20px;padding:28px 24px;box-shadow:0 2px 12px rgba(0,0,0,0.04);height:100%;"><div style="width:44px;height:44px;background:#fff;border:1px solid #e2e8f0;border-radius:14px;font-size:22px;line-height:44px;text-align:center;margin-bottom:16px;">🔒</div><div style="font-size:16px;font-weight:700;color:#0f172a;margin-bottom:8px;">100% Private by Design</div><div style="font-size:13px;color:#64748b;line-height:1.65;margin-bottom:16px;">Your CAS PDF is parsed entirely on your device using <strong style="color:#0f172a;">casparser</strong>. No data is uploaded, logged, or stored anywhere.</div><span style="background:#f0fdf4;border:1px solid #bbf7d0;color:#16a34a;font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;margin-right:8px;">✓ No server storage</span><span style="background:#eff6ff;border:1px solid #bfdbfe;color:#2563eb;font-size:10px;font-weight:700;padding:4px 12px;border-radius:20px;">✓ Local processing</span></div>""", unsafe_allow_html=True)
+    st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
 
-    st.markdown("<div style='height:48px'></div>", unsafe_allow_html=True)
+    # Row 3: Asset Allocation + Privacy
+    fp1, fp2 = st.columns([1, 1.6], gap="medium")
+    with fp1:
+        st.markdown("""
+        <div style="background:rgba(255,255,255,0.03);backdrop-filter:blur(12px);
+                    border:1px solid rgba(0,240,255,0.12);border-radius:20px;padding:24px;height:100%;">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(0,240,255,0.07);
+                      border:1px solid rgba(0,240,255,0.2);font-size:20px;line-height:44px;
+                      text-align:center;margin-bottom:14px;">🥧</div>
+          <p style="font-size:15px;font-weight:700;color:white;margin:0 0 8px;">Asset Allocation</p>
+          <p style="font-size:13px;color:#64748b;line-height:1.65;margin:0;">
+            Equity vs Debt breakdown with interactive charts. Understand your actual risk exposure at a glance.</p>
+        </div>""", unsafe_allow_html=True)
+    with fp2:
+        st.markdown("""
+        <div style="background:rgba(255,255,255,0.03);backdrop-filter:blur(12px);
+                    border:1px solid rgba(16,185,129,0.15);border-radius:20px;padding:24px;height:100%;">
+          <div style="width:44px;height:44px;border-radius:12px;background:rgba(16,185,129,0.08);
+                      border:1px solid rgba(16,185,129,0.25);font-size:20px;line-height:44px;
+                      text-align:center;margin-bottom:14px;">🛡️</div>
+          <p style="font-size:15px;font-weight:700;color:white;margin:0 0 8px;">100% Private by Design</p>
+          <p style="font-size:13px;color:#64748b;line-height:1.65;margin:0 0 14px;">
+            Your CAS PDF is parsed entirely on your device using casparser.
+            No data is uploaded, logged, or stored anywhere.</p>
+          <span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);
+                       color:#34d399;font-size:10px;font-weight:700;padding:3px 12px;border-radius:20px;margin-right:6px;">
+            ✓ No server storage</span>
+          <span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);
+                       color:#34d399;font-size:10px;font-weight:700;padding:3px 12px;border-radius:20px;">
+            ✓ Local processing</span>
+        </div>""", unsafe_allow_html=True)
+
+    st.markdown("""
+    <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(176,38,255,0.3),transparent);
+                margin:56px 0 24px;"></div>
+    <p style="text-align:center;color:#1e293b;font-size:11px;padding-bottom:48px;">
+      © 2026 cas.360 view &nbsp;·&nbsp; All data processed locally &nbsp;·&nbsp; Zero server storage
+    </p>
+    """, unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────
