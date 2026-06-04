@@ -196,291 +196,308 @@ def apply_page_config():
 
 
 def inject_global_styles():
-    bg        = "#f8fafc"
-    bg2       = "#ffffff"
-    bg3       = "#f1f5f9"
-    border    = "rgba(0,0,0,0.07)"
-    text      = "#0f172a"
-    muted     = "#64748b"
-    faint     = "#94a3b8"
-    input_bg  = "#f8fafc"
-    th_bg     = "#f1f5f9"
-    td_bg     = "#ffffff"
-    td_bg2    = "#f8fafc"
-
     st.markdown(
-        f"""
+        """
         <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@700;800&display=swap');
-        :root {{
-          --bg:        {bg};
-          --bg2:       {bg2};
-          --bg3:       {bg3};
-          --border:    {border};
-          --border-hi: rgba(59,130,246,0.35);
-          --accent:    #3b82f6;
-          --accent2:   #8b5cf6;
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@700;800;900&display=swap');
+
+        :root {
+          --bg:        #f0f4fa;
+          --bg2:       #ffffff;
+          --bg3:       #e8edf5;
+          --border:    rgba(37,99,235,0.10);
+          --border-hi: rgba(37,99,235,0.30);
+          --accent:    #2563eb;
+          --accent2:   #7c3aed;
+          --accent3:   #0891b2;
           --gain:      #059669;
           --loss:      #dc2626;
           --warn:      #d97706;
-          --text:      {text};
-          --muted:     {muted};
-          --faint:     {faint};
-          --shadow:    0 1px 4px rgba(0,0,0,0.06),0 1px 2px rgba(0,0,0,0.04);
-          --shadow-md: 0 4px 16px rgba(0,0,0,0.08),0 2px 6px rgba(0,0,0,0.05);
-          --shadow-lg: 0 8px 32px rgba(0,0,0,0.10),0 2px 8px rgba(0,0,0,0.06);
-        }}
-        *, *::before, *::after {{ box-sizing: border-box; }}
-        html, body, .stApp {{
-          background: {bg} !important;
-          color: {text} !important;
+          --text:      #0f172a;
+          --muted:     #475569;
+          --faint:     #94a3b8;
+          --shadow:    0 1px 3px rgba(37,99,235,0.06),0 1px 2px rgba(0,0,0,0.04);
+          --shadow-md: 0 4px 20px rgba(37,99,235,0.10),0 2px 6px rgba(0,0,0,0.05);
+          --shadow-lg: 0 8px 32px rgba(37,99,235,0.12),0 2px 8px rgba(0,0,0,0.06);
+          --card-radius: 16px;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        html, body, .stApp {
+          background: var(--bg) !important;
+          color: var(--text) !important;
           font-family: 'Inter', sans-serif !important;
-        }}
-        /* ── Sidebar ─────────────────────────────────────────────────────── */
-        [data-testid="stSidebar"] {{
+          background-image:
+            radial-gradient(circle, rgba(37,99,235,0.045) 1px, transparent 1px) !important;
+          background-size: 28px 28px !important;
+        }
+
+        /* ── Main content area ──────────────────────────────────────────── */
+        .block-container {
+          background: transparent !important;
+          padding-top: 1.5rem !important;
+        }
+        div[data-testid="stAppViewBlockContainer"] {
+          padding-top: 1.5rem !important;
+        }
+
+        /* ── Sidebar ────────────────────────────────────────────────────── */
+        [data-testid="stSidebar"] {
           background: #ffffff !important;
-          border-right: 1px solid rgba(0,0,0,0.07) !important;
-          box-shadow: 2px 0 16px rgba(0,0,0,0.06) !important;
-        }}
-        [data-testid="stSidebar"] * {{
+          border-right: 1px solid rgba(37,99,235,0.10) !important;
+          box-shadow: 2px 0 24px rgba(37,99,235,0.07) !important;
+        }
+        [data-testid="stSidebar"] * {
           font-family: 'Inter', sans-serif !important;
-          color: {text} !important;
-        }}
-        /* ── Metric cards ─────────────────────────────────────────────────── */
-        div[data-testid="stMetric"] {{
+          color: var(--text) !important;
+        }
+        [data-testid="stSidebar"] [role="radiogroup"] { gap: 2px !important; }
+        [data-testid="stSidebar"] [data-testid="stRadio"] label {
+          display: flex !important; align-items: center !important;
+          padding: 9px 14px !important; border-radius: 10px !important;
+          font-size: 13px !important; font-weight: 500 !important;
+          color: var(--muted) !important; cursor: pointer !important;
+          transition: background .15s, color .15s !important; margin: 0 !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
+          background: rgba(37,99,235,0.06) !important;
+          color: var(--accent) !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stRadio"] [data-baseweb="radio"] > div:first-child {
+          display: none !important;
+        }
+        [data-testid="stSidebar"] [data-testid="stRadio"] > label:first-child { display: none !important; }
+
+        /* ── Metric cards ───────────────────────────────────────────────── */
+        div[data-testid="stMetric"] {
           background: #ffffff !important;
-          border: 1px solid rgba(0,0,0,0.07) !important;
-          border-radius: 14px !important;
+          border: 1px solid rgba(37,99,235,0.10) !important;
+          border-top: 3px solid var(--accent) !important;
+          border-radius: var(--card-radius) !important;
           padding: 18px 20px !important;
           box-shadow: var(--shadow) !important;
           transition: box-shadow .2s, transform .2s;
-        }}
-        div[data-testid="stMetric"]:hover {{
+        }
+        div[data-testid="stMetric"]:hover {
           box-shadow: var(--shadow-md) !important;
-          border-color: rgba(59,130,246,0.25) !important;
+          border-color: rgba(37,99,235,0.25) !important;
           transform: translateY(-2px);
-        }}
-        div[data-testid="stMetricValue"] > div {{
+        }
+        div[data-testid="stMetricValue"] > div {
           font-family: 'IBM Plex Mono', monospace !important;
-          font-size: 18px !important;
-          font-weight: 700 !important;
-          color: {text} !important;
-        }}
-        div[data-testid="stMetricLabel"] > div {{
-          font-size: 10px !important;
-          color: {muted} !important;
-          text-transform: uppercase;
-          letter-spacing: 1.4px;
-          font-weight: 600 !important;
-        }}
-        div[data-testid="stMetricDelta"] > div {{ font-size: 11px !important; }}
-        /* ── Data frames ─────────────────────────────────────────────────── */
-        [data-testid="stDataFrame"] {{
-          border-radius: 12px !important;
-          overflow: hidden;
-          border: 1px solid {border} !important;
+          font-size: 18px !important; font-weight: 700 !important;
+          color: var(--text) !important;
+        }
+        div[data-testid="stMetricLabel"] > div {
+          font-size: 10px !important; color: var(--muted) !important;
+          text-transform: uppercase; letter-spacing: 1.4px; font-weight: 600 !important;
+        }
+        div[data-testid="stMetricDelta"] > div { font-size: 11px !important; }
+
+        /* ── Data frames ────────────────────────────────────────────────── */
+        [data-testid="stDataFrame"] {
+          border-radius: 14px !important; overflow: hidden;
+          border: 1px solid var(--border) !important;
           box-shadow: var(--shadow) !important;
-        }}
-        [data-testid="stDataFrame"] * {{ color: {text} !important; }}
-        [data-testid="stDataFrame"] th {{
-          background: {th_bg} !important;
-          color: #8b5cf6 !important;
-          font-size: 10px !important;
-          font-weight: 700 !important;
-          text-transform: uppercase !important;
-          letter-spacing: 1px !important;
-        }}
-        [data-testid="stDataFrame"] td {{
-          background: {td_bg} !important;
-          color: {text} !important;
-          font-size: 12px !important;
-        }}
-        [data-testid="stDataFrame"] tr:nth-child(even) td {{
-          background: {td_bg2} !important;
-        }}
-        /* ── Inputs ──────────────────────────────────────────────────────── */
+        }
+        [data-testid="stDataFrame"] * { color: var(--text) !important; }
+        [data-testid="stDataFrame"] th {
+          background: #eef2ff !important; color: #4f46e5 !important;
+          font-size: 10px !important; font-weight: 700 !important;
+          text-transform: uppercase !important; letter-spacing: 1px !important;
+        }
+        [data-testid="stDataFrame"] td {
+          background: #ffffff !important; color: var(--text) !important; font-size: 12px !important;
+        }
+        [data-testid="stDataFrame"] tr:nth-child(even) td { background: #f8faff !important; }
+
+        /* ── Inputs ─────────────────────────────────────────────────────── */
         [data-testid="stSelectbox"] > div > div,
-        [data-testid="stTextInput"] input {{
-          background: {input_bg} !important;
-          border: 1px solid {border} !important;
-          border-radius: 10px !important;
-          color: {text} !important;
-        }}
-        [data-testid="stTextInput"] input {{ font-family: 'IBM Plex Mono', monospace !important; }}
-        [data-testid="stTextInput"] input:focus {{
-          border-color: rgba(59,130,246,0.5) !important;
-          box-shadow: 0 0 0 3px rgba(59,130,246,0.12) !important;
-        }}
-        /* ── Segmented control ───────────────────────────────────────────── */
-        [data-testid="stSegmentedControl"] > div {{
-          background: {bg3} !important;
-          border: 1px solid {border} !important;
-          border-radius: 10px !important;
-        }}
-        [data-testid="stSegmentedControl"] button[aria-checked="true"] {{
-          background: linear-gradient(135deg,#2563eb,#7c3aed) !important;
-          color: #fff !important;
-          border-radius: 8px !important;
-          box-shadow: 0 2px 8px rgba(37,99,235,0.25) !important;
-        }}
-        /* ── Buttons ─────────────────────────────────────────────────────── */
-        button[kind="primary"] {{
-          background: linear-gradient(135deg,#2563eb,#7c3aed) !important;
-          color: #fff !important;
-          border: none !important;
-          box-shadow: 0 2px 10px rgba(37,99,235,0.3) !important;
-          border-radius: 10px !important;
-          font-weight: 600 !important;
-        }}
-        button[kind="primary"]:hover {{
-          box-shadow: 0 4px 18px rgba(37,99,235,0.4) !important;
-          transform: translateY(-1px) !important;
-        }}
-        button[kind="secondary"] {{
+        [data-testid="stTextInput"] input {
           background: #ffffff !important;
-          border: 1px solid rgba(0,0,0,0.09) !important;
-          color: {muted} !important;
-          border-radius: 10px !important;
-        }}
-        button[kind="secondary"]:hover {{
+          border: 1px solid rgba(37,99,235,0.18) !important;
+          border-radius: 10px !important; color: var(--text) !important;
+        }
+        [data-testid="stTextInput"] input { font-family: 'IBM Plex Mono', monospace !important; }
+        [data-testid="stTextInput"] input:focus {
+          border-color: var(--accent) !important;
+          box-shadow: 0 0 0 3px rgba(37,99,235,0.12) !important;
+        }
+        .stApp input, .stApp select, .stApp textarea {
+          color: var(--text) !important; background: #ffffff !important;
+        }
+
+        /* ── Segmented control ──────────────────────────────────────────── */
+        [data-testid="stSegmentedControl"] > div {
+          background: #e8edf5 !important;
+          border: 1px solid rgba(37,99,235,0.12) !important;
+          border-radius: 12px !important;
+        }
+        [data-testid="stSegmentedControl"] button[aria-checked="true"] {
+          background: linear-gradient(135deg,#2563eb,#7c3aed) !important;
+          color: #fff !important; border-radius: 9px !important;
+          box-shadow: 0 2px 10px rgba(37,99,235,0.28) !important;
+          font-weight: 600 !important;
+        }
+        [data-testid="stSegmentedControl"] button[aria-checked="false"] {
+          color: var(--muted) !important; font-weight: 500 !important;
+        }
+
+        /* ── Buttons ────────────────────────────────────────────────────── */
+        button[kind="primary"] {
+          background: linear-gradient(135deg,#2563eb,#7c3aed) !important;
+          color: #fff !important; border: none !important;
+          box-shadow: 0 2px 12px rgba(37,99,235,0.30) !important;
+          border-radius: 10px !important; font-weight: 600 !important;
+        }
+        button[kind="primary"]:hover {
+          box-shadow: 0 4px 22px rgba(37,99,235,0.42) !important;
+          transform: translateY(-1px) !important;
+        }
+        button[kind="secondary"] {
+          background: #ffffff !important;
+          border: 1px solid rgba(37,99,235,0.15) !important;
+          color: var(--muted) !important; border-radius: 10px !important;
+        }
+        button[kind="secondary"]:hover {
           background: #eff6ff !important;
-          border-color: #bfdbfe !important;
-          color: #2563eb !important;
-        }}
-        /* ── File uploader ───────────────────────────────────────────────── */
-        [data-testid="stFileUploader"] {{
-          background: rgba(59,130,246,0.03) !important;
-          border: 2px dashed rgba(59,130,246,0.25) !important;
+          border-color: #bfdbfe !important; color: #2563eb !important;
+        }
+
+        /* ── File uploader ──────────────────────────────────────────────── */
+        [data-testid="stFileUploader"] {
+          background: rgba(37,99,235,0.03) !important;
+          border: 2px dashed rgba(37,99,235,0.22) !important;
           border-radius: 14px !important;
-        }}
-        /* ── Scrollbar ───────────────────────────────────────────────────── */
-        hr {{ border-color: {border} !important; }}
-        ::-webkit-scrollbar {{ width: 4px; height: 4px; }}
-        ::-webkit-scrollbar-track {{ background: {bg}; }}
-        ::-webkit-scrollbar-thumb {{ background: #cbd5e1; border-radius: 4px; }}
-        /* ── Custom component classes ────────────────────────────────────── */
-        .card {{
+        }
+
+        /* ── Scrollbar ──────────────────────────────────────────────────── */
+        hr { border-color: var(--border) !important; }
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: #bfdbfe; border-radius: 4px; }
+
+        /* ── Cards ──────────────────────────────────────────────────────── */
+        .card {
           background: #ffffff;
-          border: 1px solid rgba(0,0,0,0.07);
-          border-radius: 16px;
+          border: 1px solid rgba(37,99,235,0.10);
+          border-radius: var(--card-radius);
           padding: 22px 24px;
           margin-bottom: 16px;
           position: relative;
           box-shadow: var(--shadow);
-        }}
-        .card-title {{
+          overflow: hidden;
+        }
+        .card::before {
+          content: '';
+          position: absolute; top: 0; left: 0; right: 0; height: 3px;
+          background: linear-gradient(90deg, #2563eb, #7c3aed);
+        }
+        .card-title {
           font-family: 'Syne', sans-serif;
-          font-size: 11px; font-weight: 700;
-          color: #3b82f6;
+          font-size: 11px; font-weight: 800;
+          background: linear-gradient(90deg,#2563eb,#7c3aed);
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+          background-clip: text;
           text-transform: uppercase; letter-spacing: 2px;
           margin-bottom: 14px;
-        }}
-        .pill-gain {{
+        }
+        .pill-gain {
           display: inline-flex; align-items: center; gap: 4px;
-          background: rgba(5,150,105,0.08); border: 1px solid rgba(5,150,105,0.2);
+          background: rgba(5,150,105,0.07); border: 1px solid rgba(5,150,105,0.20);
           color: #059669; font-family: 'IBM Plex Mono',monospace;
           font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px;
-        }}
-        .pill-loss {{
+        }
+        .pill-loss {
           display: inline-flex; align-items: center; gap: 4px;
-          background: rgba(220,38,38,0.08); border: 1px solid rgba(220,38,38,0.2);
+          background: rgba(220,38,38,0.07); border: 1px solid rgba(220,38,38,0.20);
           color: #dc2626; font-family: 'IBM Plex Mono',monospace;
           font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px;
-        }}
-        .notice {{
-          background: rgba(59,130,246,0.05); border: 1px solid rgba(59,130,246,0.15);
-          border-left: 3px solid #3b82f6; border-radius: 0 10px 10px 0;
-          padding: 12px 16px; font-size: 13px; color: {muted};
+        }
+        .notice {
+          background: rgba(37,99,235,0.04); border: 1px solid rgba(37,99,235,0.14);
+          border-left: 3px solid #2563eb; border-radius: 0 10px 10px 0;
+          padding: 12px 16px; font-size: 13px; color: var(--muted);
           margin-bottom: 22px; display: flex; align-items: flex-start; gap: 10px;
-        }}
-        .section-sep {{
-          font-size: 10px; font-weight: 700; color: {faint};
+        }
+        .section-sep {
+          font-size: 10px; font-weight: 700; color: var(--faint);
           text-transform: uppercase; letter-spacing: 2px;
           margin: 24px 0 12px; display: flex; align-items: center; gap: 10px;
-        }}
-        .section-sep::after {{ content:''; flex:1; height:1px; background: {border}; }}
-        .page-title {{
-          font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800;
-          color: #0f172a; letter-spacing: -0.5px; margin-bottom: 4px;
-        }}
-        .page-sub {{ font-size: 13px; color: {muted}; margin-bottom: 22px; }}
-        .sip-card {{
-          background: #f8fafc; border: 1px solid {border};
+        }
+        .section-sep::after { content:''; flex:1; height:1px; background: var(--border); }
+
+        /* ── Page header ────────────────────────────────────────────────── */
+        .page-title {
+          font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 900;
+          background: linear-gradient(135deg, #0f172a 30%, #2563eb 100%);
+          -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+          background-clip: text;
+          letter-spacing: -0.8px; margin-bottom: 4px;
+        }
+        .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 22px; }
+
+        /* ── SIP / alloc / alert cards ──────────────────────────────────── */
+        .sip-card {
+          background: #f8faff; border: 1px solid rgba(37,99,235,0.10);
           border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
           display: flex; justify-content: space-between; align-items: center;
-        }}
-        .alloc-row {{
+        }
+        .alloc-row {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 9px 0; border-bottom: 1px solid {border};
-        }}
-        .alert-card {{
+          padding: 9px 0; border-bottom: 1px solid var(--border);
+        }
+        .alert-card {
           border-left: 3px solid; border-radius: 0 10px 10px 0;
           padding: 12px 16px; margin-bottom: 10px; background: #ffffff;
           box-shadow: var(--shadow);
-        }}
-        /* ── Sidebar nav ─────────────────────────────────────────────────── */
-        [data-testid="stSidebar"] [role="radiogroup"] {{ gap: 2px !important; }}
-        [data-testid="stSidebar"] [data-testid="stRadio"] label {{
-          display: flex !important; align-items: center !important;
-          padding: 9px 14px !important; border-radius: 10px !important;
+        }
+
+        /* ── Selectbox / dropdown ───────────────────────────────────────── */
+        [data-baseweb="select"] * { color: var(--text) !important; }
+        [data-baseweb="select"] > div { background: #ffffff !important; border-color: rgba(37,99,235,0.18) !important; }
+        [data-baseweb="popover"] { background: #ffffff !important; border: 1px solid var(--border) !important; box-shadow: 0 4px 20px rgba(37,99,235,0.10) !important; border-radius: 12px !important; }
+        [data-baseweb="popover"] * { color: var(--text) !important; }
+        [data-baseweb="popover"] [role="listbox"] { background: #ffffff !important; }
+        [data-baseweb="menu"] { background: #ffffff !important; border-radius: 10px !important; }
+        [data-baseweb="menu"] ul { background: #ffffff !important; padding: 4px !important; }
+        [data-baseweb="menu"] li {
+          background: #ffffff !important; color: var(--text) !important;
           font-size: 13px !important; font-weight: 500 !important;
-          color: {muted} !important; cursor: pointer !important;
-          transition: background .15s, color .15s !important; margin: 0 !important;
-        }}
-        [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {{
-          background: rgba(59,130,246,0.06) !important;
-          color: {text} !important;
-        }}
-        [data-testid="stSidebar"] [data-testid="stRadio"] [data-baseweb="radio"] > div:first-child {{
-          display: none !important;
-        }}
-        [data-testid="stSidebar"] [data-testid="stRadio"] > label:first-child {{ display: none !important; }}
-        /* ── Selectbox / dropdown ────────────────────────────────────────── */
-        [data-baseweb="select"] * {{ color: {text} !important; }}
-        [data-baseweb="select"] > div {{ background: {input_bg} !important; border-color: {border} !important; }}
-        [data-baseweb="popover"] {{ background: #ffffff !important; border: 1px solid {border} !important; box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important; border-radius: 12px !important; }}
-        [data-baseweb="popover"] * {{ color: {text} !important; }}
-        [data-baseweb="popover"] [role="listbox"] {{ background: #ffffff !important; }}
-        [data-baseweb="menu"] {{ background: #ffffff !important; border-radius: 10px !important; }}
-        [data-baseweb="menu"] ul {{ background: #ffffff !important; padding: 4px !important; }}
-        [data-baseweb="menu"] li {{
-          background: #ffffff !important;
-          color: {text} !important;
-          font-size: 13px !important;
-          font-weight: 500 !important;
-          border-radius: 8px !important;
-          padding: 8px 12px !important;
-        }}
+          border-radius: 8px !important; padding: 8px 12px !important;
+        }
         [data-baseweb="menu"] li:hover,
-        [data-baseweb="menu"] li[aria-selected="true"] {{
-          background: {bg3} !important;
-          color: {text} !important;
-        }}
-        [data-baseweb="menu"] li * {{ color: {text} !important; background: transparent !important; }}
-        [data-baseweb="option"] {{ color: {text} !important; background: #ffffff !important; }}
-        /* ── Widget labels ───────────────────────────────────────────────── */
-        [data-testid="stSelectbox"] label {{ color: {muted} !important; font-size: 12px !important; }}
-        [data-testid="stSelectbox"] span {{ color: {text} !important; }}
-        /* ── Markdown table overrides ────────────────────────────────────── */
-        [data-testid="stMarkdownContainer"] {{ color: {text} !important; }}
-        [data-testid="stMarkdownContainer"] table td {{ color: {text} !important; font-size:12px !important; }}
-        [data-testid="stMarkdownContainer"] table th {{ color: #8b5cf6 !important; font-size:10px !important; font-weight:700 !important; text-transform:uppercase !important; }}
-        [data-testid="stMarkdownContainer"] .cas-gain {{ color: #059669 !important; }}
-        [data-testid="stMarkdownContainer"] .cas-loss {{ color: #dc2626 !important; }}
-        [data-testid="stMarkdownContainer"] .cas-muted {{ color: {muted} !important; }}
-        /* ── Inputs background ───────────────────────────────────────────── */
-        .stApp input, .stApp select, .stApp textarea {{
-          color: {text} !important; background: {input_bg} !important;
-        }}
-        /* ── Hide Streamlit chrome ───────────────────────────────────────── */
-        [data-testid="stResizeHandle"], .resize-handle {{ display: none !important; height: 0 !important; }}
-        div[data-testid="stAppViewBlockContainer"] {{ padding-top: 2.5rem !important; }}
+        [data-baseweb="menu"] li[aria-selected="true"] {
+          background: #eff6ff !important; color: #2563eb !important;
+        }
+        [data-baseweb="menu"] li * { color: inherit !important; background: transparent !important; }
+        [data-baseweb="option"] { color: var(--text) !important; background: #ffffff !important; }
+
+        /* ── Widget labels ──────────────────────────────────────────────── */
+        [data-testid="stSelectbox"] label { color: var(--muted) !important; font-size: 12px !important; }
+        [data-testid="stSelectbox"] span { color: var(--text) !important; }
+        [data-testid="stMarkdownContainer"] { color: var(--text) !important; }
+        [data-testid="stMarkdownContainer"] table td { color: var(--text) !important; font-size:12px !important; }
+        [data-testid="stMarkdownContainer"] table th { color: #4f46e5 !important; font-size:10px !important; font-weight:700 !important; text-transform:uppercase !important; }
+        [data-testid="stMarkdownContainer"] .cas-gain { color: #059669 !important; }
+        [data-testid="stMarkdownContainer"] .cas-loss { color: #dc2626 !important; }
+        [data-testid="stMarkdownContainer"] .cas-muted { color: var(--muted) !important; }
+
+        /* ── stAlert ────────────────────────────────────────────────────── */
+        .stAlert {
+          border-radius: 12px !important;
+          border-left-width: 3px !important;
+        }
+
+        /* ── Hide Streamlit chrome ──────────────────────────────────────── */
+        [data-testid="stResizeHandle"], .resize-handle { display: none !important; height: 0 !important; }
         #MainMenu, header[data-testid="stHeader"], [data-testid="stToolbar"],
         [data-testid="stDecoration"], [data-testid="stStatusWidget"], footer,
         [data-testid="stTooltipHoverTarget"], .stDeployButton,
         [data-testid="manage-app-button"], button[title="Manage app"],
         ._profileContainer_gzau3_53, ._container_gzau3_1,
-        [class*="ViewerBadge"], [data-testid="stActionButton"] {{ display:none!important; }}
+        [class*="ViewerBadge"], [data-testid="stActionButton"] { display:none!important; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -2294,16 +2311,29 @@ def render_dashboard(data):
         statement_date = "—"
 
     # ── Header ────────────────────────────────────────────────────────────────
+    st.markdown(f"""
+    <div style="background:linear-gradient(135deg,#eef2ff 0%,#f0f9ff 50%,#f5f3ff 100%);
+                border:1px solid rgba(37,99,235,0.12);border-radius:20px;
+                padding:24px 28px 20px;margin-bottom:20px;
+                box-shadow:0 2px 16px rgba(37,99,235,0.08);position:relative;overflow:hidden;">
+      <div style="position:absolute;top:-30px;right:-30px;width:160px;height:160px;
+                  background:radial-gradient(circle,rgba(124,58,237,0.08) 0%,transparent 70%);
+                  pointer-events:none;"></div>
+      <div style="position:absolute;bottom:-20px;left:100px;width:120px;height:120px;
+                  background:radial-gradient(circle,rgba(37,99,235,0.06) 0%,transparent 70%);
+                  pointer-events:none;"></div>
+      <div style="font-size:10px;font-weight:700;color:#6366f1;text-transform:uppercase;
+                  letter-spacing:2px;margin-bottom:6px;">Portfolio Intelligence</div>
+      <div class="page-title">Welcome back, {first_name} 👋</div>
+      <div style="font-size:12px;color:#64748b;margin-top:5px;display:flex;align-items:center;gap:8px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:#2563eb;display:inline-block;"></span>
+        CAS Statement · {statement_date} &nbsp;·&nbsp; Base figures from your uploaded PDF
+      </div>
+    </div>""", unsafe_allow_html=True)
+
     hc1, hc2 = st.columns([3, 1])
     with hc1:
-        st.markdown(
-            f"""
-            <div style="margin-bottom:6px;">
-              <div class="page-title">Welcome back, {first_name} 👋</div>
-              <div class="page-sub">CAS Statement · {statement_date} &nbsp;·&nbsp; Base figures from your uploaded PDF</div>
-            </div>""",
-            unsafe_allow_html=True,
-        )
+        pass
     with hc2:
         if st.button("🔄 Refresh Latest NAV", use_container_width=True):
             with st.spinner("Fetching latest NAVs from AMFI..."):
@@ -2381,16 +2411,20 @@ def render_dashboard(data):
 
         def _kpi_md(col, label, value, sub, color, bg_tint, bdr_tint):
             col.markdown(f"""
-            <div style="background:#fff;border:1px solid {bdr_tint};border-radius:14px;
-                        padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,0.06);
-                        height:100%;transition:transform .2s,box-shadow .2s;">
+            <div style="background:#ffffff;border:1px solid {bdr_tint};
+                        border-top:3px solid {color};
+                        border-radius:16px;padding:18px 20px;
+                        box-shadow:0 2px 12px rgba(37,99,235,0.07);
+                        height:100%;transition:transform .18s,box-shadow .18s;
+                        position:relative;overflow:hidden;">
+              <div style="position:absolute;top:0;right:0;width:80px;height:80px;
+                          background:radial-gradient(circle at top right,{bg_tint} 0%,transparent 70%);
+                          pointer-events:none;"></div>
               <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;
-                          letter-spacing:1.4px;font-weight:600;margin-bottom:8px;">{label}</div>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:700;
-                          color:{color};letter-spacing:-0.5px;line-height:1.2;
-                          background:{bg_tint};border-radius:8px;padding:4px 8px;
-                          display:inline-block;">{value}</div>
-              <div style="font-size:10px;color:#94a3b8;margin-top:6px;">{sub}</div>
+                          letter-spacing:1.8px;font-weight:700;margin-bottom:10px;">{label}</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:800;
+                          color:{color};letter-spacing:-0.5px;line-height:1.15;margin-bottom:6px;">{value}</div>
+              <div style="font-size:10px;color:#94a3b8;font-weight:500;">{sub}</div>
             </div>""", unsafe_allow_html=True)
 
         k1, k2, k3, k4, k5 = st.columns(5, gap="small")
