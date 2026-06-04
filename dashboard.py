@@ -142,7 +142,6 @@ def inject_global_styles():
           background: var(--bg2) !important;
         }
         [data-testid="stDataFrame"] > div { background: var(--bg2) !important; }
-        .dvn-scroller, .dvn-stack { background: var(--bg2) !important; }
 
         /* ── Selectbox / Text Input ── */
         [data-testid="stSelectbox"] > div > div {
@@ -701,7 +700,15 @@ def process(raw):
             value = float(valuation.get("value", 0.0))
             units = float(scheme.get("close", 0.0))
             scheme_type = str(scheme.get("type", "EQUITY")).upper()
-            category = "Equity Funds" if scheme_type == "EQUITY" else "Debt Funds"
+            sname_lower = scheme_name.lower()
+            if any(k in sname_lower for k in ("gold", "silver", "metal", "commodity")):
+                category = "Gold & Commodities"
+            elif any(k in sname_lower for k in ("international", "global", "overseas", "us ", "nasdaq", "s&p", "hang seng", "japan", "europe")):
+                category = "International"
+            elif scheme_type in ("EQUITY", "ELSS"):
+                category = "Equity Funds"
+            else:
+                category = "Debt Funds"
 
             transactions = scheme.get("transactions", [])
             result["tx_map"][scheme_name] = transactions
@@ -1335,12 +1342,20 @@ def render_my_portfolio(data):
     st.markdown('<div class="page-title">Portfolio Ledger</div>', unsafe_allow_html=True)
     st.markdown('<div class="page-sub">Open holdings and fully redeemed positions</div>', unsafe_allow_html=True)
 
-    for label, category, color in [
-        ("Equity Funds", "Equity Funds", C_ACCENT),
-        ("Debt Funds", "Debt Funds", "#f6ad55"),
-        ("Gold Funds", "Gold Funds", C_GAIN),
-        ("International", "International", C_ACCENT2),
-    ]:
+    cat_colors = {
+        "Equity Funds":      C_ACCENT,
+        "Debt Funds":        "#f6ad55",
+        "Gold & Commodities":"#ecc94b",
+        "International":     C_ACCENT2,
+    }
+    seen_cats = []
+    for h in data["holdings"]:
+        c = h.get("category", "Equity Funds")
+        if c not in seen_cats:
+            seen_cats.append(c)
+    for category in seen_cats:
+        label = category
+        color = cat_colors.get(category, C_ACCENT2)
         group = [item for item in data["holdings"] if item["category"] == category]
         if not group:
             continue
@@ -1460,6 +1475,8 @@ def render_sip_center(data):
         default=f"🟢 Live ({len(live_sips)})",
         label_visibility="collapsed",
     )
+    if tab is None:
+        tab = f"🟢 Live ({len(live_sips)})"
     target_list = live_sips if "Live" in tab else dead_sips
     total_outflow = sum(item["amount"] for item in target_list)
     status_label = "LIVE" if "Live" in tab else "INACTIVE"
