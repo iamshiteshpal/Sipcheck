@@ -2692,28 +2692,28 @@ def render_dashboard(data):
         hc1, hc2, hc3, hc4 = st.columns(4, gap="small")
         def _sip_kpi(col, label, value, sub, color, bdr):
             col.markdown(f"""
-            <div style="background:#ffffff;border:1px solid {bdr};border-radius:14px;
-                        padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);height:100%;">
-              <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;
+            <div style="background:#0d0d24;border:1px solid {bdr};border-radius:14px;
+                        padding:18px 20px;box-shadow:0 4px 20px rgba(0,0,0,0.4);height:100%;">
+              <div style="font-size:9px;color:#6d6d9a;text-transform:uppercase;letter-spacing:1.5px;
                           font-weight:700;margin-bottom:10px;">{label}</div>
               <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;
                           color:{color};letter-spacing:-.5px;line-height:1;">{value}</div>
-              <div style="font-size:10px;color:#94a3b8;margin-top:6px;">{sub}</div>
+              <div style="font-size:10px;color:#6d6d9a;margin-top:6px;">{sub}</div>
             </div>""", unsafe_allow_html=True)
 
         _sip_kpi(hc1, "Total SIP Invested", fmt_inr(total_sip_invested),
                  f"{len(sip_by_scheme)} schemes · {len(sip_txs)} transactions",
-                 "#2563eb", "rgba(37,99,235,0.18)")
+                 "#22d3ee", "rgba(34,211,238,0.25)")
         _sip_kpi(hc2, "Monthly SIP", fmt_inr(sip_monthly),
                  f"{len(live_sips)} active · {len(dead_sips)} stopped",
-                 "#059669", "rgba(5,150,105,0.18)")
+                 "#10b981", "rgba(16,185,129,0.25)")
         _sip_kpi(hc3, "Bounce Rate", f"{bounce_rate:.1f}%",
                  f"{len(sip_rev)} bounces out of {len(sip_txs)} total SIPs",
                  br_color, f"rgba({'220,38,38' if bounce_rate>5 else '5,150,105'},0.18)")
         with hc4:
             st.markdown(f"""
-            <div style="background:#ffffff;border:1px solid {h_color}44;border-radius:14px;
-                        padding:18px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);height:100%;">
+            <div style="background:#0d0d24;border:1px solid {h_color}44;border-radius:14px;
+                        padding:18px 20px;box-shadow:0 4px 20px rgba(0,0,0,0.4);height:100%;">
               <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:1.5px;
                           font-weight:700;margin-bottom:10px;">SIP Health</div>
               <div style="display:flex;align-items:center;gap:10px;">
@@ -4081,7 +4081,7 @@ def render_sip_center(data):
             <div style="font-size:10px;color:var(--muted);text-transform:uppercase;
                         letter-spacing:1.5px;margin-bottom:4px;">Total Monthly Outflow</div>
             <div style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:700;
-                        color:#0f172a;letter-spacing:-1px;">{fmt_inr(total_outflow)}</div>
+                        color:#e2e8f0;letter-spacing:-1px;">{fmt_inr(total_outflow)}</div>
           </div>
           <div>
             <div style="font-size:12px;font-weight:700;color:'{'#48bb78' if is_live else '#fc8181'}';">
