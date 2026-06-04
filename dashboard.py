@@ -1428,10 +1428,10 @@ def show_upload():
             pass
         st.rerun()
 
-    # ── Dark cyber-tech CSS ───────────────────────────────────────────────
+    # ── 3D Dark Cyber-Tech Landing ───────────────────────────────────────
     st.markdown("""
     <style>
-    /* ── Hide sidebar, go full-canvas dark ── */
+    /* ── Global dark canvas ── */
     [data-testid="stSidebar"]{display:none!important;}
     section[data-testid="stAppViewContainer"]>.main{margin-left:0!important;}
     html,body,.stApp{
@@ -1443,9 +1443,13 @@ def show_upload():
 
     @keyframes gradShift{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
     @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
-    @keyframes floatA{0%,100%{transform:translateY(0);}50%{transform:translateY(-8px);}}
-    @keyframes floatB{0%,100%{transform:translateY(0);}50%{transform:translateY(-6px);}}
+    @keyframes floatA{0%,100%{transform:perspective(800px) rotateY(10deg) translateY(0);}50%{transform:perspective(800px) rotateY(10deg) translateY(-8px);}}
+    @keyframes floatB{0%,100%{transform:perspective(800px) rotateY(10deg) translateY(0);}50%{transform:perspective(800px) rotateY(10deg) translateY(-6px);}}
+    @keyframes floatC{0%,100%{transform:perspective(800px) rotateY(-10deg) translateY(0);}50%{transform:perspective(800px) rotateY(-10deg) translateY(-8px);}}
+    @keyframes floatD{0%,100%{transform:perspective(800px) rotateY(-10deg) translateY(0);}50%{transform:perspective(800px) rotateY(-10deg) translateY(-6px);}}
     @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
+    @keyframes scanline{0%{top:-100%;}100%{top:200%;}}
+    @keyframes neonPulse{0%,100%{box-shadow:0 0 8px rgba(0,240,255,0.4);}50%{box-shadow:0 0 22px rgba(0,240,255,0.8),0 0 44px rgba(0,240,255,0.3);}}
 
     /* ── Widget dark overrides ── */
     [data-testid="stFileUploader"] section{
@@ -1498,22 +1502,35 @@ def show_upload():
     </style>
     """, unsafe_allow_html=True)
 
-    # ── TECH GRID + RADIAL GLOW BACKDROP ─────────────────────────────────
+    # ── FULL 3D BACKDROP ─────────────────────────────────────────────────
     st.markdown("""
+    <!-- tech grid -->
     <div style="position:fixed;inset:0;pointer-events:none;z-index:0;
-                background-image:linear-gradient(rgba(0,240,255,0.04) 1px,transparent 1px),
-                linear-gradient(90deg,rgba(0,240,255,0.04) 1px,transparent 1px);
-                background-size:60px 60px;"></div>
-    <div style="position:fixed;inset:0;pointer-events:none;z-index:0;
-                background:radial-gradient(ellipse 80% 50% at 50% -5%,rgba(0,240,255,0.08) 0%,transparent 60%),
-                radial-gradient(ellipse 55% 40% at 85% 50%,rgba(176,38,255,0.07) 0%,transparent 60%);"></div>
+                background-image:linear-gradient(rgba(0,240,255,0.03) 1px,transparent 1px),
+                linear-gradient(90deg,rgba(0,240,255,0.03) 1px,transparent 1px);
+                background-size:55px 55px;"></div>
+    <!-- globe top-right -->
+    <div style="position:fixed;top:-120px;right:-120px;width:520px;height:520px;
+                border-radius:50%;pointer-events:none;z-index:0;
+                background:radial-gradient(circle at 40% 40%,
+                  rgba(0,180,200,0.12) 0%,rgba(0,80,120,0.08) 40%,transparent 70%);
+                border:1px solid rgba(0,240,255,0.06);
+                box-shadow:0 0 80px rgba(0,240,255,0.06) inset;"></div>
+    <!-- cyan glow top-center -->
+    <div style="position:fixed;top:-80px;left:50%;transform:translateX(-50%);
+                width:600px;height:300px;pointer-events:none;z-index:0;
+                background:radial-gradient(ellipse at center,rgba(0,240,255,0.08) 0%,transparent 70%);"></div>
+    <!-- purple glow right -->
+    <div style="position:fixed;top:20%;right:0;width:300px;height:400px;
+                pointer-events:none;z-index:0;
+                background:radial-gradient(ellipse at right,rgba(176,38,255,0.09) 0%,transparent 65%);"></div>
     """, unsafe_allow_html=True)
 
-    # ── HERO HEADER: logo + badge ─────────────────────────────────────────
+    # ── HERO (logo + headline + trust pills) ─────────────────────────────
     st.markdown("""
-    <div style="text-align:center;padding:64px 20px 12px;position:relative;z-index:1;
+    <div style="text-align:center;padding:60px 20px 10px;position:relative;z-index:1;
                 animation:fadeUp .6s ease both;">
-      <h2 style="font-size:2.4rem;font-weight:900;margin:0 0 16px;letter-spacing:-1px;
+      <h2 style="font-size:2.2rem;font-weight:900;margin:0 0 14px;letter-spacing:-1px;
                  color:#00F0FF;text-shadow:0 0 28px rgba(0,240,255,0.6),0 0 60px rgba(0,240,255,0.3);">
         cas.360 view
       </h2>
