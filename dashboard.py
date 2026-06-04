@@ -1452,35 +1452,67 @@ def show_upload():
     @keyframes neonPulse{0%,100%{box-shadow:0 0 8px rgba(0,240,255,0.4);}50%{box-shadow:0 0 22px rgba(0,240,255,0.8),0 0 44px rgba(0,240,255,0.3);}}
 
     /* ── Widget dark overrides ── */
+    [data-testid="stFileUploader"]{background:transparent!important;}
     [data-testid="stFileUploader"] section{
-      background:rgba(0,240,255,0.04)!important;
+      background:#0d1117!important;
       border:2px dashed rgba(0,240,255,0.35)!important;
       border-radius:14px!important;
     }
     [data-testid="stFileUploader"] section:hover{
-      background:rgba(0,240,255,0.07)!important;
+      background:rgba(0,240,255,0.04)!important;
       border-color:rgba(0,240,255,0.65)!important;
     }
     [data-testid="stFileUploader"] section svg{color:#00F0FF!important;}
     [data-testid="stFileUploader"] section span{color:#00F0FF!important;font-weight:600!important;}
     [data-testid="stFileUploader"] section small{color:#64748b!important;}
     [data-testid="stFileUploader"] button{
-      background:rgba(0,240,255,0.1)!important;
+      background:rgba(0,240,255,0.08)!important;
       border:1px solid rgba(0,240,255,0.3)!important;
       color:#00F0FF!important;
       border-radius:10px!important;
     }
-    [data-testid="stTextInput"] input{
-      background:rgba(255,255,255,0.04)!important;
-      border:1px solid rgba(0,240,255,0.25)!important;
+    /* uploaded file badge */
+    [data-testid="stFileUploader"] [data-testid="stFileUploaderDeleteBtn"] ~ div,
+    [data-testid="uploadedFileData"],
+    [data-testid="stUploadedFileData"],
+    [data-testid="stFileUploader"] li,
+    [data-testid="stFileUploader"] ul{
+      background:#0d1117!important;
+      color:#e2e8f0!important;
+      border-color:rgba(0,240,255,0.25)!important;
+    }
+    [data-testid="stFileUploader"] li span,
+    [data-testid="stFileUploader"] li p,
+    [data-testid="stFileUploader"] [class*="uploadedFileName"]{
+      color:#e2e8f0!important;
+    }
+    [data-testid="stFileUploader"] [class*="uploadedFileSize"]{
+      color:#64748b!important;
+    }
+    [data-testid="stFileUploaderDeleteBtn"] button,
+    [data-testid="stFileUploaderDeleteBtn"] svg{
+      color:#e2e8f0!important;
+    }
+    [data-testid="stTextInput"] input,
+    [data-testid="stTextInput"] > div > div > input{
+      background:#0d1117!important;
+      background-color:#0d1117!important;
+      border:1px solid rgba(0,240,255,0.3)!important;
       color:#e2e8f0!important;
       border-radius:12px!important;
+      caret-color:#00F0FF!important;
     }
-    [data-testid="stTextInput"] input:focus{
+    [data-testid="stTextInput"] input:focus,
+    [data-testid="stTextInput"] > div > div > input:focus{
       border-color:#00F0FF!important;
       box-shadow:0 0 0 3px rgba(0,240,255,0.12)!important;
+      background:#0d1117!important;
     }
     [data-testid="stTextInput"] input::placeholder{color:#475569!important;}
+    [data-testid="stTextInput"] > div{
+      background:#0d1117!important;
+      border-radius:12px!important;
+    }
     [data-testid="stBaseButton-primary"]{
       background:linear-gradient(135deg,#00b8c4,#7c2ff7)!important;
       border:none!important;border-radius:12px!important;
