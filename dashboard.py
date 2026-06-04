@@ -2232,15 +2232,15 @@ def render_dashboard(data):
             </div>""", unsafe_allow_html=True)
 
         k1, k2, k3, k4, k5 = st.columns(5, gap="small")
-        _kpi_md(k1, "Total Wealth",    fmt_inr(display_wealth),
-                "Portfolio value",       "#c084fc", "rgba(192,132,252,0.10)",  "rgba(192,132,252,0.25)")
-        _kpi_md(k2, "Total Invested",  fmt_inr(data["total_invested"]),
+        _kpi_md(k1, "Total Wealth",    fmt_inr_short(display_wealth),
+                "Portfolio value",       "#22d3ee", "rgba(34,211,238,0.10)",  "rgba(34,211,238,0.25)")
+        _kpi_md(k2, "Total Invested",  fmt_inr_short(data["total_invested"]),
                 "Cost basis (CAS)",      "#e879f9", "rgba(232,121,249,0.10)", "rgba(232,121,249,0.25)")
         _kpi_md(k3, "Unrealized P&L",  f"{pnl_arrow} {fmt_inr(display_pnl)}",
                 f"{pnl_arrow} {abs(pnl_pct):.2f}% all-time", pnl_color, pnl_bg, pnl_bdr)
         _kpi_md(k4, "Monthly SIP",     fmt_inr(sip_monthly),
                 f"{live_count} active · {dead_count} stopped",
-                "#34d399", "rgba(52,211,153,0.10)", "rgba(52,211,153,0.25)")
+                "#10b981", "rgba(16,185,129,0.10)", "rgba(16,185,129,0.25)")
         with k5:
             st.markdown(f"""
             <div style="background:#0d0d24;border:1px solid {score_color}44;
