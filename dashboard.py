@@ -1,4 +1,4 @@
-﻿import streamlit as st
+import streamlit as st
 import streamlit.components.v1 as components
 import pandas as pd
 import plotly.express as px
@@ -262,7 +262,7 @@ def inject_global_styles():
         .block-container { background: transparent !important; padding-top: 1.5rem !important; }
         div[data-testid="stAppViewBlockContainer"] { padding-top: 1.5rem !important; }
 
-        /* ── Sidebar ────────────────────────────────────────────────────── */
+        /* ── Sidebar ── */
         [data-testid="stSidebar"] {
           background: var(--bg2) !important;
           border-right: 1px solid rgba(139,92,246,0.18) !important;
@@ -284,7 +284,7 @@ def inject_global_styles():
         [data-testid="stSidebar"] [data-testid="stRadio"] [data-baseweb="radio"] > div:first-child { display: none !important; }
         [data-testid="stSidebar"] [data-testid="stRadio"] > label:first-child { display: none !important; }
 
-        /* ── Metric cards ───────────────────────────────────────────────── */
+        /* ── Metric cards ── */
         div[data-testid="stMetric"] {
           background: var(--bg2) !important;
           border: 1px solid var(--border) !important;
@@ -310,7 +310,7 @@ def inject_global_styles():
         }
         div[data-testid="stMetricDelta"] > div { font-size: 11px !important; }
 
-        /* ── Data frames ────────────────────────────────────────────────── */
+        /* ── Data frames ── */
         [data-testid="stDataFrame"] {
           border-radius: 14px !important; overflow: hidden;
           border: 1px solid var(--border) !important;
@@ -328,7 +328,7 @@ def inject_global_styles():
         }
         [data-testid="stDataFrame"] tr:nth-child(even) td { background: var(--bg3) !important; }
 
-        /* ── Inputs ─────────────────────────────────────────────────────── */
+        /* ── Inputs ── */
         [data-testid="stSelectbox"] > div > div,
         [data-testid="stTextInput"] input {
           background: var(--bg3) !important;
@@ -345,15 +345,13 @@ def inject_global_styles():
           color: var(--text) !important; background: var(--bg3) !important;
         }
 
-        /* ── Segmented control ──────────────────────────────────────────── */
+        /* ── Segmented control ── */
         [data-testid="stSegmentedControl"] > div {
           background: var(--bg3) !important;
           border: 1px solid var(--border) !important;
           border-radius: 12px !important;
         }
-        [data-testid="stSegmentedControl"] button {
-          color: var(--muted) !important;
-        }
+        [data-testid="stSegmentedControl"] button { color: var(--muted) !important; }
         [data-testid="stSegmentedControl"] button[aria-checked="true"] {
           background: linear-gradient(135deg,#7c3aed,#a855f7) !important;
           color: #fff !important; border-radius: 9px !important;
@@ -361,7 +359,7 @@ def inject_global_styles():
           font-weight: 600 !important;
         }
 
-        /* ── Buttons ────────────────────────────────────────────────────── */
+        /* ── Buttons ── */
         button[kind="primary"] {
           background: linear-gradient(135deg,#7c3aed,#a855f7) !important;
           color: #fff !important; border: none !important;
@@ -382,21 +380,25 @@ def inject_global_styles():
           border-color: var(--border-hi) !important; color: var(--purple-hi) !important;
         }
 
-        /* ── File uploader ──────────────────────────────────────────────── */
+        /* ── File uploader ── */
         [data-testid="stFileUploader"] {
           background: rgba(139,92,246,0.04) !important;
           border: 2px dashed rgba(139,92,246,0.25) !important;
           border-radius: 14px !important;
         }
+        [data-testid="stFileUploader"] * { color: var(--text) !important; }
+        [data-testid="stFileUploader"] section {
+          background: rgba(139,92,246,0.04) !important;
+        }
 
-        /* ── Scrollbar ──────────────────────────────────────────────────── */
+        /* ── Scrollbar ── */
         hr { border-color: var(--border) !important; }
         ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.35); border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: rgba(168,85,247,0.55); }
 
-        /* ── Cards ──────────────────────────────────────────────────────── */
+        /* ── Cards ── */
         .card {
           background: var(--bg2);
           border: 1px solid var(--border);
@@ -442,7 +444,7 @@ def inject_global_styles():
         }
         .section-sep::after { content:''; flex:1; height:1px; background: var(--border); }
 
-        /* ── Page header ────────────────────────────────────────────────── */
+        /* ── Page header ── */
         .page-title {
           font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 900;
           background: linear-gradient(135deg, #f0f0ff 30%, #a855f7 100%);
@@ -451,7 +453,7 @@ def inject_global_styles():
         }
         .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 22px; }
 
-        /* ── SIP / alloc / alert cards ──────────────────────────────────── */
+        /* ── SIP / alloc / alert cards ── */
         .sip-card {
           background: var(--bg3); border: 1px solid var(--border);
           border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
@@ -467,10 +469,13 @@ def inject_global_styles():
           background: var(--bg2); box-shadow: var(--shadow);
         }
 
-        /* ── Selectbox / dropdown ───────────────────────────────────────── */
+        /* ── Selectbox / dropdown ── */
         [data-baseweb="select"] * { color: var(--text) !important; }
         [data-baseweb="select"] > div { background: var(--bg3) !important; border-color: var(--border) !important; }
-        [data-baseweb="popover"] { background: var(--bg2) !important; border: 1px solid var(--border) !important; box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important; border-radius: 12px !important; }
+        [data-baseweb="popover"] {
+          background: var(--bg2) !important; border: 1px solid var(--border) !important;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important; border-radius: 12px !important;
+        }
         [data-baseweb="popover"] * { color: var(--text) !important; }
         [data-baseweb="popover"] [role="listbox"] { background: var(--bg2) !important; }
         [data-baseweb="menu"] { background: var(--bg2) !important; border-radius: 10px !important; }
@@ -487,30 +492,104 @@ def inject_global_styles():
         [data-baseweb="menu"] li * { color: inherit !important; background: transparent !important; }
         [data-baseweb="option"] { color: var(--text) !important; background: var(--bg2) !important; }
 
-        /* ── Widget labels ──────────────────────────────────────────────── */
+        /* ── Widget labels ── */
         [data-testid="stSelectbox"] label { color: var(--muted) !important; font-size: 12px !important; }
         [data-testid="stSelectbox"] span { color: var(--text) !important; }
+
+        /* ── Markdown tables & content ── */
         [data-testid="stMarkdownContainer"] { color: var(--text) !important; }
         [data-testid="stMarkdownContainer"] table { border-collapse: collapse; width: 100%; }
         [data-testid="stMarkdownContainer"] table td {
           color: var(--text) !important; font-size:12px !important;
           border-bottom: 1px solid var(--border) !important;
           padding: 8px 12px !important;
+          background: var(--bg2) !important;
         }
         [data-testid="stMarkdownContainer"] table th {
           color: var(--purple-hi) !important; font-size:10px !important;
           font-weight:700 !important; text-transform:uppercase !important;
-          background: rgba(139,92,246,0.10) !important;
+          background: rgba(139,92,246,0.12) !important;
           padding: 10px 12px !important;
         }
+        [data-testid="stMarkdownContainer"] table tr:nth-child(even) td {
+          background: var(--bg3) !important;
+        }
         [data-testid="stMarkdownContainer"] table tr:hover td {
-          background: rgba(139,92,246,0.05) !important;
+          background: rgba(139,92,246,0.07) !important;
         }
         [data-testid="stMarkdownContainer"] .cas-gain { color: #34d399 !important; }
         [data-testid="stMarkdownContainer"] .cas-loss { color: #f87171 !important; }
         [data-testid="stMarkdownContainer"] .cas-muted { color: var(--muted) !important; }
 
-        /* ── Alerts ─────────────────────────────────────────────────────── */
+        /* ── FORCE DARK on ALL inline white/light backgrounds ── */
+        [style*="background:#ffffff"],
+        [style*="background: #ffffff"],
+        [style*="background:#fff;"],
+        [style*="background: #fff;"],
+        [style*="background:#fff "],
+        [style*="background: #fff "] {
+          background: var(--bg2) !important;
+          color: var(--text) !important;
+        }
+        [style*="background:#f8fafc"],
+        [style*="background: #f8fafc"] {
+          background: var(--bg3) !important;
+          color: var(--text) !important;
+        }
+        [style*="background:#f1f5f9"],
+        [style*="background: #f1f5f9"] {
+          background: var(--bg3) !important;
+          color: var(--text) !important;
+        }
+        [style*="background:#f0fdf4"],
+        [style*="background: #f0fdf4"] {
+          background: rgba(16,185,129,0.08) !important;
+        }
+        [style*="background:#fff9f9"],
+        [style*="background: #fff9f9"],
+        [style*="background:#fff5f5"],
+        [style*="background: #fff5f5"] {
+          background: rgba(220,38,38,0.08) !important;
+        }
+        /* Dark text on now-dark cards — force light */
+        [style*="color:#0f172a"] { color: var(--text) !important; }
+        [style*="color: #0f172a"] { color: var(--text) !important; }
+        [style*="color:#1e293b"] { color: var(--text) !important; }
+        [style*="color: #1e293b"] { color: var(--text) !important; }
+        [style*="color:#334155"] { color: var(--muted) !important; }
+        [style*="color: #334155"] { color: var(--muted) !important; }
+        [style*="color:#475569"] { color: var(--muted) !important; }
+        [style*="color: #475569"] { color: var(--muted) !important; }
+        [style*="color:#2d3748"] { color: var(--muted) !important; }
+        [style*="color: #2d3748"] { color: var(--muted) !important; }
+        [style*="color:#64748b"] { color: var(--muted) !important; }
+        [style*="color: #64748b"] { color: var(--muted) !important; }
+        /* SVG text / shape fix */
+        [style*="fill:#0f172a"] { fill: var(--text) !important; }
+        circle[fill="#fff"], circle[fill='#fff'] { fill: var(--bg2) !important; }
+        circle[stroke="#f1f5f9"] { stroke: rgba(139,92,246,0.15) !important; }
+        /* Light borders on dark cards */
+        [style*="border-bottom:1px solid rgba(0,0,0,0.06)"],
+        [style*="border-bottom: 1px solid rgba(0,0,0,0.06)"] {
+          border-bottom-color: rgba(139,92,246,0.12) !important;
+        }
+        [style*="border:1px solid rgba(0,0,0,0.07)"],
+        [style*="border: 1px solid rgba(0,0,0,0.07)"] {
+          border-color: rgba(139,92,246,0.18) !important;
+          background: var(--bg2) !important;
+          color: var(--text) !important;
+        }
+        [style*="border:1px solid rgba(0,0,0,0.06)"],
+        [style*="border: 1px solid rgba(0,0,0,0.06)"] {
+          border-color: rgba(139,92,246,0.15) !important;
+        }
+        /* CSS-class based white cards (STP/Switch, SWP/Redemption KPIs) */
+        .swk { background: #0d0d24 !important; color: #e2e8f0 !important; }
+        .rk  { background: #0d0d24 !important; color: #e2e8f0 !important; }
+        .swl,.rl { color: #94a3b8 !important; }
+        .sws,.rs { color: #94a3b8 !important; }
+
+        /* ── Alerts ── */
         .stAlert { border-radius: 12px !important; border-left-width: 3px !important; }
         div[data-testid="stAlert"] {
           background: rgba(139,92,246,0.08) !important;
@@ -519,7 +598,7 @@ def inject_global_styles():
         }
         div[data-testid="stAlert"] * { color: var(--text) !important; }
 
-        /* ── Expander ───────────────────────────────────────────────────── */
+        /* ── Expander ── */
         [data-testid="stExpander"] {
           background: var(--bg2) !important;
           border: 1px solid var(--border) !important;
@@ -527,19 +606,17 @@ def inject_global_styles():
         }
         [data-testid="stExpander"] summary { color: var(--text) !important; }
 
-        /* ── Tabs ───────────────────────────────────────────────────────── */
+        /* ── Tabs ── */
         [data-testid="stTabs"] [data-baseweb="tab-list"] {
           background: var(--bg3) !important; border-radius: 10px !important;
         }
-        [data-testid="stTabs"] [data-baseweb="tab"] {
-          color: var(--muted) !important;
-        }
+        [data-testid="stTabs"] [data-baseweb="tab"] { color: var(--muted) !important; }
         [data-testid="stTabs"] [aria-selected="true"] {
           color: var(--purple-hi) !important;
           border-bottom: 2px solid var(--purple) !important;
         }
 
-        /* ── Hide Streamlit chrome ──────────────────────────────────────── */
+        /* ── Hide Streamlit chrome ── */
         [data-testid="stResizeHandle"], .resize-handle { display: none !important; height: 0 !important; }
         #MainMenu, header[data-testid="stHeader"], [data-testid="stToolbar"],
         [data-testid="stDecoration"], [data-testid="stStatusWidget"], footer,
@@ -548,71 +625,28 @@ def inject_global_styles():
         ._profileContainer_gzau3_53, ._container_gzau3_1,
         [class*="ViewerBadge"], [data-testid="stActionButton"] { display:none!important; }
 
-        /* ── Force dark on CSS-class-based cards ────────────────────────── */
-        .swk { background: #0d0d24 !important; color: #e2e8f0 !important; }
-        .rk  { background: #0d0d24 !important; color: #e2e8f0 !important; }
-        .swl,.rl { color: #94a3b8 !important; }
-        .sws,.rs { color: #94a3b8 !important; }
-
-        /* ── Force dark on inline-styled white/light backgrounds ────────── */
-        [data-testid="stMarkdown"] [style*="background:#ffffff"],
-        [data-testid="stMarkdownContainer"] [style*="background:#ffffff"] {
-          background: #0d0d24 !important;
+        /* ── cas-tbl dark theme (also set in _table_style for non-CSS environments) ── */
+        .cas-wrap { overflow-x:auto; border-radius:12px; border:1px solid rgba(139,92,246,0.18);
+          box-shadow:0 2px 12px rgba(139,92,246,0.10),0 1px 4px rgba(0,0,0,0.4); }
+        .cas-tbl { width:100%; border-collapse:collapse; }
+        .cas-tbl th {
+          background:rgba(139,92,246,0.15)!important; color:#a855f7!important;
+          font-size:10px!important; font-weight:700!important;
+          text-transform:uppercase!important; letter-spacing:1px!important;
+          padding:11px 14px!important; text-align:left!important;
+          white-space:nowrap!important; border-bottom:1px solid rgba(139,92,246,0.20)!important;
         }
-        [data-testid="stMarkdown"] [style*="background:#fff;"],
-        [data-testid="stMarkdownContainer"] [style*="background:#fff;"] {
-          background: #0d0d24 !important;
+        .cas-tbl td {
+          color:#e2e8f0!important; font-size:12px!important;
+          padding:11px 14px!important; border-bottom:1px solid rgba(139,92,246,0.08)!important;
         }
-        [data-testid="stMarkdown"] [style*="background:#f8fafc"],
-        [data-testid="stMarkdownContainer"] [style*="background:#f8fafc"] {
-          background: #12123a !important;
-        }
-        [data-testid="stMarkdown"] [style*="background:#f1f5f9"],
-        [data-testid="stMarkdownContainer"] [style*="background:#f1f5f9"] {
-          background: #12123a !important;
-        }
-        [data-testid="stMarkdown"] [style*="background:#fff9f9"],
-        [data-testid="stMarkdownContainer"] [style*="background:#fff9f9"] {
-          background: rgba(220,38,38,0.10) !important;
-        }
-        [data-testid="stMarkdown"] [style*="background:#fff5f5"],
-        [data-testid="stMarkdownContainer"] [style*="background:#fff5f5"] {
-          background: rgba(220,38,38,0.08) !important;
-        }
-        [data-testid="stMarkdown"] [style*="background:#f0fdf4"],
-        [data-testid="stMarkdownContainer"] [style*="background:#f0fdf4"] {
-          background: rgba(16,185,129,0.08) !important;
-        }
-        /* ── Force light text on dark inline cards ───────────────────────── */
-        [data-testid="stMarkdown"] [style*="color:#0f172a"],
-        [data-testid="stMarkdownContainer"] [style*="color:#0f172a"] {
-          color: #e2e8f0 !important;
-        }
-        /* ── Fix SVG text fill on dark backgrounds ───────────────────────── */
-        [data-testid="stMarkdown"] [style*="fill:#0f172a"],
-        [data-testid="stMarkdownContainer"] [style*="fill:#0f172a"] {
-          fill: #e2e8f0 !important;
-        }
-        /* ── Fix SVG donut center circles ────────────────────────────────── */
-        [data-testid="stMarkdown"] circle[fill="#fff"],
-        [data-testid="stMarkdown"] circle[fill="'#fff'"],
-        [data-testid="stMarkdownContainer"] circle[fill="#fff"] {
-          fill: #0d0d24 !important;
-        }
-        /* ── Fix SIP health ring track ───────────────────────────────────── */
-        [data-testid="stMarkdown"] circle[stroke="#f1f5f9"],
-        [data-testid="stMarkdownContainer"] circle[stroke="#f1f5f9"] {
-          stroke: rgba(139,92,246,0.15) !important;
-        }
-        /* ── Fix legend/border dividers ──────────────────────────────────── */
-        [data-testid="stMarkdown"] [style*="border-bottom:1px solid rgba(0,0,0,0.06)"],
-        [data-testid="stMarkdownContainer"] [style*="border-bottom:1px solid rgba(0,0,0,0.06)"] {
-          border-bottom-color: rgba(139,92,246,0.12) !important;
-        }
-        [data-testid="stMarkdown"] [style*="border:1px solid rgba(0,0,0,0.07)"],
-        [data-testid="stMarkdownContainer"] [style*="border:1px solid rgba(0,0,0,0.07)"] {
-          border-color: rgba(139,92,246,0.18) !important;
-        }
+        .cas-tbl tr.even td { background:#0d0d24!important; }
+        .cas-tbl tr.odd  td { background:#12123a!important; }
+        .cas-tbl tr:hover td { background:rgba(139,92,246,0.08)!important; }
+        .cas-gain { color:#34d399!important; }
+        .cas-loss { color:#f87171!important; }
+        .cas-muted { color:#94a3b8!important; }
+        .cas-mono { font-family:'IBM Plex Mono',monospace!important; }
         </style>
         """,
         unsafe_allow_html=True,
@@ -1560,293 +1594,96 @@ def show_upload():
             pass
         st.rerun()
 
-    # ── 3D Dark Cyber-Tech Landing ───────────────────────────────────────
+    # ── Hide sidebar on upload page ──────────────────────────────────────────
     st.markdown("""
     <style>
-    /* ── Global dark canvas ── */
     [data-testid="stSidebar"]{display:none!important;}
     section[data-testid="stAppViewContainer"]>.main{margin-left:0!important;}
-    html,body,.stApp{
-      background:#0B0E14!important;
-      color:#e2e8f0!important;
-    }
-    .block-container{background:transparent!important;padding-top:0!important;}
-    [data-testid="stAppViewBlockContainer"]{background:transparent!important;padding-top:0!important;}
-
-    @keyframes gradShift{0%{background-position:0% 50%;}50%{background-position:100% 50%;}100%{background-position:0% 50%;}}
-    @keyframes fadeUp{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
-    @keyframes floatA{0%,100%{transform:perspective(800px) rotateY(10deg) translateY(0);}50%{transform:perspective(800px) rotateY(10deg) translateY(-8px);}}
-    @keyframes floatB{0%,100%{transform:perspective(800px) rotateY(10deg) translateY(0);}50%{transform:perspective(800px) rotateY(10deg) translateY(-6px);}}
-    @keyframes floatC{0%,100%{transform:perspective(800px) rotateY(-10deg) translateY(0);}50%{transform:perspective(800px) rotateY(-10deg) translateY(-8px);}}
-    @keyframes floatD{0%,100%{transform:perspective(800px) rotateY(-10deg) translateY(0);}50%{transform:perspective(800px) rotateY(-10deg) translateY(-6px);}}
-    @keyframes pulse{0%,100%{opacity:1;}50%{opacity:0.5;}}
-    @keyframes scanline{0%{top:-100%;}100%{top:200%;}}
-    @keyframes neonPulse{0%,100%{box-shadow:0 0 8px rgba(0,240,255,0.4);}50%{box-shadow:0 0 22px rgba(0,240,255,0.8),0 0 44px rgba(0,240,255,0.3);}}
-
-    /* ── Widget dark overrides ── */
-    [data-testid="stFileUploader"]{background:transparent!important;}
-    [data-testid="stFileUploader"] section{
-      background:#0d1117!important;
-      border:2px dashed rgba(0,240,255,0.35)!important;
-      border-radius:14px!important;
-    }
-    [data-testid="stFileUploader"] section:hover{
-      background:rgba(0,240,255,0.04)!important;
-      border-color:rgba(0,240,255,0.65)!important;
-    }
-    [data-testid="stFileUploader"] section svg{color:#00F0FF!important;}
-    [data-testid="stFileUploader"] section span{color:#00F0FF!important;font-weight:600!important;}
-    [data-testid="stFileUploader"] section small{color:#64748b!important;}
-    [data-testid="stFileUploader"] button{
-      background:rgba(0,240,255,0.08)!important;
-      border:1px solid rgba(0,240,255,0.3)!important;
-      color:#00F0FF!important;
-      border-radius:10px!important;
-    }
-    /* uploaded file badge */
-    [data-testid="stFileUploader"] [data-testid="stFileUploaderDeleteBtn"] ~ div,
-    [data-testid="uploadedFileData"],
-    [data-testid="stUploadedFileData"],
-    [data-testid="stFileUploader"] li,
-    [data-testid="stFileUploader"] ul{
-      background:#0d1117!important;
-      color:#e2e8f0!important;
-      border-color:rgba(0,240,255,0.25)!important;
-    }
-    [data-testid="stFileUploader"] li span,
-    [data-testid="stFileUploader"] li p,
-    [data-testid="stFileUploader"] [class*="uploadedFileName"]{
-      color:#e2e8f0!important;
-    }
-    [data-testid="stFileUploader"] [class*="uploadedFileSize"]{
-      color:#64748b!important;
-    }
-    [data-testid="stFileUploaderDeleteBtn"] button,
-    [data-testid="stFileUploaderDeleteBtn"] svg{
-      color:#e2e8f0!important;
-    }
-    [data-testid="stTextInput"] input,
-    [data-testid="stTextInput"] > div > div > input{
-      background:#0d1117!important;
-      background-color:#0d1117!important;
-      border:1px solid rgba(0,240,255,0.3)!important;
-      color:#e2e8f0!important;
-      border-radius:12px!important;
-      caret-color:#00F0FF!important;
-    }
-    [data-testid="stTextInput"] input:focus,
-    [data-testid="stTextInput"] > div > div > input:focus{
-      border-color:#00F0FF!important;
-      box-shadow:0 0 0 3px rgba(0,240,255,0.12)!important;
-      background:#0d1117!important;
-    }
-    [data-testid="stTextInput"] input::placeholder{color:#475569!important;}
-    [data-testid="stTextInput"] > div{
-      background:#0d1117!important;
-      border-radius:12px!important;
-    }
-    [data-testid="stBaseButton-primary"]{
-      background:linear-gradient(135deg,#00b8c4,#7c2ff7)!important;
-      border:none!important;border-radius:12px!important;
-      color:white!important;font-weight:700!important;font-size:15px!important;
-      box-shadow:0 0 24px rgba(0,240,255,0.35)!important;
-      transition:box-shadow .2s,transform .15s!important;
-    }
-    [data-testid="stBaseButton-primary"]:hover{
-      box-shadow:0 0 40px rgba(0,240,255,0.55)!important;
-      transform:scale(1.02)!important;
-    }
-    [data-testid="stBaseButton-secondary"]{
-      background:rgba(255,255,255,0.05)!important;
-      border:1px solid rgba(255,255,255,0.12)!important;
-      color:#94a3b8!important;border-radius:10px!important;
-    }
-    /* spinner / info / success on dark */
-    .stAlert{background:rgba(0,240,255,0.05)!important;border:1px solid rgba(0,240,255,0.2)!important;color:#e2e8f0!important;}
     </style>
     """, unsafe_allow_html=True)
 
-    # ── FULL 3D BACKDROP ─────────────────────────────────────────────────
+    # ── TOP NAV BAR ──────────────────────────────────────────────────────────
     st.markdown("""
-    <!-- tech grid -->
-    <div style="position:fixed;inset:0;pointer-events:none;z-index:0;
-                background-image:linear-gradient(rgba(0,240,255,0.03) 1px,transparent 1px),
-                linear-gradient(90deg,rgba(0,240,255,0.03) 1px,transparent 1px);
-                background-size:55px 55px;"></div>
-    <!-- globe top-right -->
-    <div style="position:fixed;top:-120px;right:-120px;width:520px;height:520px;
-                border-radius:50%;pointer-events:none;z-index:0;
-                background:radial-gradient(circle at 40% 40%,
-                  rgba(0,180,200,0.12) 0%,rgba(0,80,120,0.08) 40%,transparent 70%);
-                border:1px solid rgba(0,240,255,0.06);
-                box-shadow:0 0 80px rgba(0,240,255,0.06) inset;"></div>
-    <!-- cyan glow top-center -->
-    <div style="position:fixed;top:-80px;left:50%;transform:translateX(-50%);
-                width:600px;height:300px;pointer-events:none;z-index:0;
-                background:radial-gradient(ellipse at center,rgba(0,240,255,0.08) 0%,transparent 70%);"></div>
-    <!-- purple glow right -->
-    <div style="position:fixed;top:20%;right:0;width:300px;height:400px;
-                pointer-events:none;z-index:0;
-                background:radial-gradient(ellipse at right,rgba(176,38,255,0.09) 0%,transparent 65%);"></div>
-    """, unsafe_allow_html=True)
-
-    # ── HERO (logo + headline + trust pills) ─────────────────────────────
-    st.markdown("""
-    <div style="text-align:center;padding:60px 20px 10px;position:relative;z-index:1;
-                animation:fadeUp .6s ease both;">
-      <h2 style="font-size:2.2rem;font-weight:900;margin:0 0 14px;letter-spacing:-1px;
-                 color:#00F0FF;text-shadow:0 0 28px rgba(0,240,255,0.6),0 0 60px rgba(0,240,255,0.3);">
-        cas.360 view
-      </h2>
-      <div style="display:inline-flex;align-items:center;gap:8px;
-                  background:rgba(0,240,255,0.07);border:1px solid rgba(0,240,255,0.35);
-                  border-radius:40px;padding:6px 18px;margin-bottom:32px;">
-        <span style="width:7px;height:7px;border-radius:50%;background:#00F0FF;
-                     box-shadow:0 0 8px #00F0FF;display:inline-block;animation:pulse 2s ease infinite;"></span>
-        <span style="font-size:10px;font-weight:700;color:#00F0FF;
-                     letter-spacing:2px;text-transform:uppercase;">
-          Mutual Fund Intelligence Platform</span>
+    <div style="display:flex;align-items:center;justify-content:space-between;
+                padding:16px 32px;border-bottom:1px solid rgba(139,92,246,0.15);
+                background:#0d0d24;margin-bottom:0;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <div style="width:32px;height:32px;background:linear-gradient(135deg,#7c3aed,#a855f7);
+                    border-radius:8px;display:flex;align-items:center;justify-content:center;
+                    font-size:16px;font-weight:800;color:#fff;">&#9672;</div>
+        <div>
+          <span style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800;
+                       color:#f0f0ff;letter-spacing:-0.3px;">CAS 360 </span>
+          <span style="font-family:'Syne',sans-serif;font-size:15px;font-weight:800;
+                       background:linear-gradient(90deg,#a855f7,#e879f9);
+                       -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                       background-clip:text;">View</span>
+        </div>
       </div>
-      <h1 style="font-size:clamp(2.8rem,6vw,5rem);font-weight:900;letter-spacing:-3px;
-                 line-height:1.05;margin:0 0 20px;
-                 background:linear-gradient(135deg,#00F0FF 0%,#B026FF 55%,#00F0FF 100%);
-                 background-size:200% auto;animation:gradShift 4s ease infinite;
-                 -webkit-background-clip:text;-webkit-text-fill-color:transparent;
-                 background-clip:text;filter:drop-shadow(0 0 28px rgba(0,240,255,0.3));">
-        Your Portfolio,<br>Fully Decoded.
-      </h1>
-      <p style="font-size:1.1rem;color:#94a3b8;max-width:560px;margin:0 auto 32px;
-                line-height:1.75;">
-        Upload your CAS PDF and instantly unlock a complete 360° view of all your
-        mutual fund investments — live NAV, XIRR, SIP health, and more.
-      </p>
-      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-bottom:56px;">
-        <span style="background:rgba(0,240,255,0.07);border:1px solid rgba(0,240,255,0.3);
-                     color:#7ee8f5;font-size:12px;font-weight:600;padding:6px 16px;border-radius:40px;">
-          🔒 Zero data storage</span>
-        <span style="background:rgba(0,240,255,0.07);border:1px solid rgba(0,240,255,0.3);
-                     color:#7ee8f5;font-size:12px;font-weight:600;padding:6px 16px;border-radius:40px;">
-          ⚡ Instant analysis</span>
-        <span style="background:rgba(0,240,255,0.07);border:1px solid rgba(0,240,255,0.3);
-                     color:#7ee8f5;font-size:12px;font-weight:600;padding:6px 16px;border-radius:40px;">
-          🏦 CAMS + KFintech</span>
-        <span style="background:rgba(0,240,255,0.07);border:1px solid rgba(0,240,255,0.3);
-                     color:#7ee8f5;font-size:12px;font-weight:600;padding:6px 16px;border-radius:40px;">
-          📊 Live NAV &amp; XIRR</span>
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:10px;font-weight:700;letter-spacing:2px;
+                     color:#6b7280;text-transform:uppercase;">Portfolio Intelligence</span>
+        <div style="width:6px;height:6px;border-radius:50%;background:#a855f7;
+                    box-shadow:0 0 8px rgba(168,85,247,0.7);"></div>
+        <span style="font-size:10px;color:#6b7280;">v4</span>
       </div>
     </div>
     """, unsafe_allow_html=True)
 
-    # ── 3-PANEL ROW: left HUDs · upload portal · right HUDs ─────────────
-    lc, cc, rc = st.columns([3, 4, 3], gap="medium")
+    # ── HERO SECTION ─────────────────────────────────────────────────────────
+    st.markdown("""
+    <div style="text-align:center;padding:56px 20px 40px;">
+      <div style="display:inline-flex;align-items:center;gap:6px;
+                  background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.25);
+                  border-radius:20px;padding:5px 14px;margin-bottom:20px;">
+        <div style="width:5px;height:5px;border-radius:50%;background:#a855f7;
+                    box-shadow:0 0 6px #a855f7;"></div>
+        <span style="font-size:10px;font-weight:700;color:#a855f7;
+                     letter-spacing:2px;text-transform:uppercase;">
+          Mutual Fund Intelligence</span>
+      </div>
+      <h1 style="font-family:'Syne',sans-serif;font-size:clamp(2.4rem,5vw,4rem);
+                 font-weight:900;letter-spacing:-2px;line-height:1.05;margin:0 0 16px;
+                 background:linear-gradient(135deg,#f0f0ff 40%,#a855f7 100%);
+                 -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                 background-clip:text;">
+        Your Portfolio,<br>Fully Decoded.
+      </h1>
+      <p style="font-size:1rem;color:#94a3b8;max-width:520px;margin:0 auto 28px;line-height:1.7;">
+        Upload your CAS PDF for a complete 360&#176; view &#8212; live NAV, XIRR,
+        SIP health, P&amp;L analytics, and more.
+      </p>
+      <div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:48px;">
+        <span style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.22);
+                     color:#a855f7;font-size:11px;font-weight:600;
+                     padding:5px 14px;border-radius:20px;">&#128274; Zero data storage</span>
+        <span style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.22);
+                     color:#a855f7;font-size:11px;font-weight:600;
+                     padding:5px 14px;border-radius:20px;">&#9889; Instant analysis</span>
+        <span style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.22);
+                     color:#a855f7;font-size:11px;font-weight:600;
+                     padding:5px 14px;border-radius:20px;">&#127974; CAMS + KFintech</span>
+        <span style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.22);
+                     color:#a855f7;font-size:11px;font-weight:600;
+                     padding:5px 14px;border-radius:20px;">&#128202; Live NAV &amp; XIRR</span>
+      </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    with lc:
-        st.markdown("""
-        <div style="display:flex;flex-direction:column;gap:14px;padding-top:20px;">
-
-          <!-- HUD 1: Circuit Lock -->
-          <div style="position:relative;overflow:hidden;border-radius:18px;
-                      border:1px solid rgba(0,240,255,0.35);
-                      animation:floatA 4s ease-in-out infinite;
-                      box-shadow:0 0 32px rgba(0,240,255,0.08),inset 0 0 24px rgba(0,240,255,0.04);">
-            <!-- circuit board SVG background -->
-            <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 220 160" preserveAspectRatio="xMidYMid slice">
-              <defs>
-                <radialGradient id="lockGlow" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stop-color="rgba(0,240,255,0.18)"/>
-                  <stop offset="100%" stop-color="rgba(0,240,255,0)"/>
-                </radialGradient>
-              </defs>
-              <rect width="220" height="160" fill="rgba(0,10,18,0.92)"/>
-              <ellipse cx="110" cy="80" rx="55" ry="55" fill="url(#lockGlow)"/>
-              <!-- circuit traces -->
-              <path d="M0 30 H30 V10 H70" stroke="rgba(0,240,255,0.25)" stroke-width="1" fill="none"/>
-              <path d="M70 10 H110 V40" stroke="rgba(0,240,255,0.25)" stroke-width="1" fill="none"/>
-              <path d="M0 80 H20 V60 H50 V90 H80" stroke="rgba(0,240,255,0.18)" stroke-width="1" fill="none"/>
-              <path d="M220 40 H190 V20 H155" stroke="rgba(0,240,255,0.25)" stroke-width="1" fill="none"/>
-              <path d="M220 100 H200 V120 H165 V100 H140" stroke="rgba(0,240,255,0.18)" stroke-width="1" fill="none"/>
-              <path d="M30 160 V140 H60 V120 H90" stroke="rgba(0,240,255,0.18)" stroke-width="1" fill="none"/>
-              <path d="M190 160 V145 H160 V130 H130" stroke="rgba(0,240,255,0.15)" stroke-width="1" fill="none"/>
-              <!-- nodes -->
-              <circle cx="30" cy="30" r="2.5" fill="rgba(0,240,255,0.6)"/>
-              <circle cx="70" cy="10" r="2.5" fill="rgba(0,240,255,0.6)"/>
-              <circle cx="110" cy="40" r="2.5" fill="rgba(0,240,255,0.6)"/>
-              <circle cx="50" cy="90" r="2.5" fill="rgba(0,240,255,0.4)"/>
-              <circle cx="190" cy="20" r="2.5" fill="rgba(0,240,255,0.6)"/>
-              <circle cx="165" cy="100" r="2.5" fill="rgba(0,240,255,0.4)"/>
-              <circle cx="60" cy="120" r="2.5" fill="rgba(0,240,255,0.4)"/>
-            </svg>
-            <!-- lock icon -->
-            <div style="position:relative;z-index:1;padding:20px;text-align:center;">
-              <svg width="54" height="62" viewBox="0 0 54 62" style="margin:0 auto 10px;display:block;filter:drop-shadow(0 0 12px rgba(0,240,255,0.7));">
-                <rect x="7" y="28" width="40" height="28" rx="7" fill="rgba(0,240,255,0.15)" stroke="#00F0FF" stroke-width="1.5"/>
-                <path d="M14 28 V20 C14 11.2 40 11.2 40 20 V28" fill="none" stroke="#00F0FF" stroke-width="2" stroke-linecap="round"/>
-                <circle cx="27" cy="42" r="5" fill="#00F0FF" style="filter:drop-shadow(0 0 6px #00F0FF)"/>
-                <line x1="27" y1="47" x2="27" y2="52" stroke="#00F0FF" stroke-width="2" stroke-linecap="round"/>
-              </svg>
-              <p style="font-size:13px;font-weight:700;color:white;margin:0 0 2px;">Zero Storage</p>
-              <p style="font-size:10px;color:rgba(0,240,255,0.55);margin:0;">On-device parsing · encrypted</p>
-            </div>
-          </div>
-
-          <!-- HUD 2: SIP EKG -->
-          <div style="position:relative;overflow:hidden;border-radius:18px;
-                      border:1px solid rgba(176,38,255,0.35);
-                      animation:floatB 5s ease-in-out .8s infinite;
-                      box-shadow:0 0 32px rgba(176,38,255,0.08),inset 0 0 24px rgba(176,38,255,0.04);">
-            <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 220 130" preserveAspectRatio="xMidYMid slice">
-              <rect width="220" height="130" fill="rgba(15,0,25,0.92)"/>
-              <!-- grid lines -->
-              <line x1="0" y1="32" x2="220" y2="32" stroke="rgba(176,38,255,0.08)" stroke-width="1"/>
-              <line x1="0" y1="65" x2="220" y2="65" stroke="rgba(176,38,255,0.08)" stroke-width="1"/>
-              <line x1="0" y1="97" x2="220" y2="97" stroke="rgba(176,38,255,0.08)" stroke-width="1"/>
-              <line x1="55" y1="0" x2="55" y2="130" stroke="rgba(176,38,255,0.06)" stroke-width="1"/>
-              <line x1="110" y1="0" x2="110" y2="130" stroke="rgba(176,38,255,0.06)" stroke-width="1"/>
-              <line x1="165" y1="0" x2="165" y2="130" stroke="rgba(176,38,255,0.06)" stroke-width="1"/>
-              <!-- EKG glow underlay -->
-              <polyline points="0,65 25,65 35,65 40,20 48,105 56,10 64,85 75,65 95,65 105,65 110,50 116,65 130,65 150,65 158,40 166,90 174,65 220,65"
-                fill="none" stroke="rgba(176,38,255,0.2)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
-              <!-- EKG main line -->
-              <polyline points="0,65 25,65 35,65 40,20 48,105 56,10 64,85 75,65 95,65 105,65 110,50 116,65 130,65 150,65 158,40 166,90 174,65 220,65"
-                fill="none" stroke="#B026FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <!-- highlight dot -->
-              <circle cx="56" cy="10" r="4" fill="#c084fc" style="filter:drop-shadow(0 0 6px #B026FF)"/>
-            </svg>
-            <div style="position:relative;z-index:1;padding:14px 16px 12px;">
-              <p style="font-size:9px;font-weight:700;color:#c084fc;text-transform:uppercase;letter-spacing:2px;margin:0 0 68px;">SIP Health</p>
-              <div style="display:flex;align-items:center;justify-content:space-between;">
-                <div style="display:flex;align-items:center;gap:6px;">
-                  <span style="width:6px;height:6px;border-radius:50%;background:#c084fc;animation:pulse 2s ease infinite;display:inline-block;"></span>
-                  <span style="font-size:10px;color:#c084fc;">9 active</span>
-                </div>
-                <span style="font-size:10px;color:#34d399;font-weight:700;">0 bounced</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
-
+    # ── UPLOAD CARD ──────────────────────────────────────────────────────────
+    _, cc, _ = st.columns([1, 2, 1])
     with cc:
-        # glowing upload portal header
         st.markdown("""
-        <div style="position:relative;margin-bottom:-8px;">
-          <div style="position:absolute;inset:-20px;border-radius:32px;
-                      background:radial-gradient(ellipse at center,rgba(0,240,255,0.12) 0%,rgba(176,38,255,0.07) 50%,transparent 70%);
-                      filter:blur(20px);pointer-events:none;"></div>
-          <div style="position:relative;border-radius:22px 22px 0 0;padding:28px 28px 20px;
-                      background:rgba(11,14,20,0.95);backdrop-filter:blur(20px);
-                      border:2px solid transparent;border-bottom:none;
-                      background-image:linear-gradient(rgba(11,14,20,0.95),rgba(11,14,20,0.95)),
-                                       linear-gradient(135deg,#00F0FF,#B026FF);
-                      background-origin:border-box;background-clip:padding-box,border-box;
-                      box-shadow:0 -10px 40px rgba(0,0,0,0.4),inset 0 0 40px rgba(0,240,255,0.02);
-                      text-align:center;">
-            <div style="width:52px;height:52px;margin:0 auto 14px;border-radius:14px;
-                        background:linear-gradient(135deg,rgba(0,240,255,0.15),rgba(176,38,255,0.15));
-                        border:1px solid rgba(0,240,255,0.3);font-size:24px;line-height:52px;
-                        box-shadow:0 0 20px rgba(0,240,255,0.2);animation:neonPulse 3s ease infinite;">📂</div>
-            <p style="font-size:19px;font-weight:800;color:white;margin:0 0 5px;">Upload your CAS PDF</p>
-            <p style="font-size:12px;color:#475569;margin:0;line-height:1.6;">Drag &amp; drop or click · PDF only</p>
+        <div style="background:#0d0d24;border:1px solid rgba(139,92,246,0.25);
+                    border-radius:16px;padding:28px 28px 20px;margin-bottom:0;">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;">
+            <div style="width:36px;height:36px;border-radius:10px;
+                        background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.25);
+                        display:flex;align-items:center;justify-content:center;font-size:18px;">&#128194;</div>
+            <div>
+              <div style="font-size:14px;font-weight:700;color:#f0f0ff;">Upload your CAS PDF</div>
+              <div style="font-size:11px;color:#6b7280;">Drag &amp; drop or click &middot; PDF only</div>
+            </div>
           </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1858,23 +1695,27 @@ def show_upload():
         )
 
         st.markdown("""
-        <div style="margin:12px 0 5px;text-align:center;">
-          <p style="font-size:11px;font-weight:600;color:#475569;margin:0 0 3px;
-                    text-transform:uppercase;letter-spacing:1.5px;">Password</p>
-          <p style="font-size:10px;color:#334155;margin:0;">PAN (ABCDE1234F) or DOB (DDMMYYYY)</p>
+        <div style="margin:14px 0 6px;">
+          <div style="font-size:11px;font-weight:600;color:#6b7280;
+                      text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">
+            Password
+          </div>
+          <div style="font-size:10px;color:#4a5568;">
+            PAN (ABCDE1234F) or Date of Birth (DDMMYYYY)
+          </div>
         </div>
         """, unsafe_allow_html=True)
 
         password = st.text_input(
             "CAS Password", type="password",
-            placeholder="ABCDE1234F or 01011990",
+            placeholder="ABCDE1234F  or  01011990",
             key="pdf_password", label_visibility="collapsed",
         )
-        st.markdown("<div style='height:8px'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height:6px'></div>", unsafe_allow_html=True)
 
         if uploaded and password:
-            if st.button("Analyze My Portfolio →", use_container_width=True, type="primary"):
-                with st.spinner("Parsing…"):
+            if st.button("Analyse My Portfolio →", use_container_width=True, type="primary"):
+                with st.spinner("Parsing your CAS PDF…"):
                     data, error = parse_pdf(uploaded.read(), password)
                 if error == "wrong_password":
                     st.error("Wrong password. Try PAN (ABCDE1234F) or DOB (DDMMYYYY).")
@@ -1889,223 +1730,57 @@ def show_upload():
                     st.success(f"✅ Loaded — {investor_name}")
                     st.rerun()
         elif uploaded:
-            st.markdown('<p style="text-align:center;font-size:12px;color:#475569;">Enter password above</p>', unsafe_allow_html=True)
+            st.markdown(
+                '<p style="text-align:center;font-size:12px;color:#6b7280;padding:4px 0;">Enter password above</p>',
+                unsafe_allow_html=True
+            )
         else:
-            st.markdown('<p style="text-align:center;font-size:12px;color:#475569;">Upload your PDF above</p>', unsafe_allow_html=True)
+            st.markdown(
+                '<p style="text-align:center;font-size:12px;color:#6b7280;padding:4px 0;">Upload your PDF to get started</p>',
+                unsafe_allow_html=True
+            )
 
         st.markdown("""
-        <div style="text-align:center;margin-top:12px;">
-          <span style="font-size:10px;color:#334155;">🔒 Processed on your device · Nothing stored</span>
+        <div style="text-align:center;margin-top:10px;">
+          <span style="font-size:10px;color:#4a5568;">
+            &#128274; Processed on your device &middot; Nothing stored on any server
+          </span>
         </div>
         """, unsafe_allow_html=True)
 
-    with rc:
-        st.markdown("""
-        <div style="display:flex;flex-direction:column;gap:14px;padding-top:20px;">
-
-          <!-- HUD 3: Database stack -->
-          <div style="position:relative;overflow:hidden;border-radius:18px;
-                      border:1px solid rgba(0,240,255,0.35);
-                      animation:floatC 4.5s ease-in-out .4s infinite;
-                      box-shadow:0 0 32px rgba(0,240,255,0.08);">
-            <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 220 160" preserveAspectRatio="xMidYMid slice">
-              <rect width="220" height="160" fill="rgba(0,10,20,0.92)"/>
-              <!-- background grid -->
-              <line x1="0" y1="40" x2="220" y2="40" stroke="rgba(0,240,255,0.06)" stroke-width="1"/>
-              <line x1="0" y1="80" x2="220" y2="80" stroke="rgba(0,240,255,0.06)" stroke-width="1"/>
-              <line x1="0" y1="120" x2="220" y2="120" stroke="rgba(0,240,255,0.06)" stroke-width="1"/>
-              <!-- CAMS cylinder -->
-              <ellipse cx="75" cy="68" rx="34" ry="10" fill="rgba(0,240,255,0.12)" stroke="rgba(0,240,255,0.5)" stroke-width="1.2"/>
-              <rect x="41" y="68" width="68" height="30" fill="rgba(0,240,255,0.08)" stroke="none"/>
-              <ellipse cx="75" cy="98" rx="34" ry="10" fill="rgba(0,240,255,0.15)" stroke="rgba(0,240,255,0.5)" stroke-width="1.2"/>
-              <line x1="41" y1="68" x2="41" y2="98" stroke="rgba(0,240,255,0.5)" stroke-width="1.2"/>
-              <line x1="109" y1="68" x2="109" y2="98" stroke="rgba(0,240,255,0.5)" stroke-width="1.2"/>
-              <!-- KFintech cylinder (offset) -->
-              <ellipse cx="148" cy="80" rx="30" ry="9" fill="rgba(176,38,255,0.12)" stroke="rgba(176,38,255,0.5)" stroke-width="1.2"/>
-              <rect x="118" y="80" width="60" height="26" fill="rgba(176,38,255,0.07)" stroke="none"/>
-              <ellipse cx="148" cy="106" rx="30" ry="9" fill="rgba(176,38,255,0.15)" stroke="rgba(176,38,255,0.5)" stroke-width="1.2"/>
-              <line x1="118" y1="80" x2="118" y2="106" stroke="rgba(176,38,255,0.5)" stroke-width="1.2"/>
-              <line x1="178" y1="80" x2="178" y2="106" stroke="rgba(176,38,255,0.5)" stroke-width="1.2"/>
-              <!-- connecting beam -->
-              <line x1="109" y1="83" x2="118" y2="83" stroke="rgba(0,240,255,0.4)" stroke-width="1" stroke-dasharray="3 2"/>
-              <circle cx="109" cy="83" r="2" fill="#00F0FF"/>
-              <circle cx="118" cy="83" r="2" fill="#B026FF"/>
-            </svg>
-            <div style="position:relative;z-index:1;padding:14px 16px 12px;">
-              <p style="font-size:9px;font-weight:700;color:#7ee8f5;text-transform:uppercase;letter-spacing:2px;margin:0 0 80px;">Data Sources</p>
-              <div style="display:flex;justify-content:space-around;">
-                <span style="font-size:11px;font-weight:700;color:rgba(0,240,255,0.9);">CAMS</span>
-                <span style="font-size:11px;font-weight:700;color:rgba(176,38,255,0.9);">KFintech</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- HUD 4: Candlestick XIRR -->
-          <div style="position:relative;overflow:hidden;border-radius:18px;
-                      border:1px solid rgba(16,185,129,0.35);
-                      animation:floatD 5.5s ease-in-out 1.2s infinite;
-                      box-shadow:0 0 32px rgba(16,185,129,0.08);">
-            <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 220 130" preserveAspectRatio="xMidYMid slice">
-              <rect width="220" height="130" fill="rgba(0,15,10,0.92)"/>
-              <!-- grid -->
-              <line x1="0" y1="30" x2="220" y2="30" stroke="rgba(16,185,129,0.08)" stroke-width="1"/>
-              <line x1="0" y1="65" x2="220" y2="65" stroke="rgba(16,185,129,0.08)" stroke-width="1"/>
-              <line x1="0" y1="100" x2="220" y2="100" stroke="rgba(16,185,129,0.08)" stroke-width="1"/>
-              <!-- candlesticks (wick + body) -->
-              <line x1="22" y1="55" x2="22" y2="85" stroke="#34d399" stroke-width="1.2"/>
-              <rect x="18" y="62" width="8" height="16" rx="1" fill="rgba(52,211,153,0.35)" stroke="#34d399" stroke-width="1"/>
-              <line x1="48" y1="48" x2="48" y2="80" stroke="#34d399" stroke-width="1.2"/>
-              <rect x="44" y="55" width="8" height="18" rx="1" fill="rgba(52,211,153,0.35)" stroke="#34d399" stroke-width="1"/>
-              <line x1="74" y1="60" x2="74" y2="95" stroke="#f87171" stroke-width="1.2"/>
-              <rect x="70" y="66" width="8" height="20" rx="1" fill="rgba(248,113,113,0.35)" stroke="#f87171" stroke-width="1"/>
-              <line x1="100" y1="42" x2="100" y2="72" stroke="#34d399" stroke-width="1.2"/>
-              <rect x="96" y="48" width="8" height="17" rx="1" fill="rgba(52,211,153,0.35)" stroke="#34d399" stroke-width="1"/>
-              <line x1="126" y1="50" x2="126" y2="85" stroke="#f87171" stroke-width="1.2"/>
-              <rect x="122" y="58" width="8" height="19" rx="1" fill="rgba(248,113,113,0.35)" stroke="#f87171" stroke-width="1"/>
-              <line x1="152" y1="35" x2="152" y2="62" stroke="#34d399" stroke-width="1.2"/>
-              <rect x="148" y="40" width="8" height="16" rx="1" fill="rgba(52,211,153,0.5)" stroke="#34d399" stroke-width="1.5"/>
-              <line x1="178" y1="28" x2="178" y2="55" stroke="#34d399" stroke-width="1.2"/>
-              <rect x="174" y="32" width="8" height="16" rx="1" fill="rgba(52,211,153,0.6)" stroke="#34d399" stroke-width="1.5"
-                    style="filter:drop-shadow(0 0 4px rgba(52,211,153,0.8))"/>
-              <!-- trend line -->
-              <polyline points="22,70 48,60 74,76 100,55 126,65 152,46 178,38"
-                stroke="rgba(52,211,153,0.4)" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
-            </svg>
-            <div style="position:relative;z-index:1;padding:14px 16px 12px;">
-              <p style="font-size:9px;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:2px;margin:0 0 65px;">Portfolio XIRR</p>
-              <div style="display:flex;align-items:center;gap:8px;">
-                <span style="font-size:16px;font-weight:800;color:#34d399;text-shadow:0 0 12px rgba(52,211,153,0.6);">▲ 8.3%</span>
-                <span style="width:6px;height:6px;border-radius:50%;background:#34d399;animation:pulse 2s ease infinite;display:inline-block;"></span>
-                <span style="font-size:9px;color:rgba(52,211,153,0.5);font-family:monospace;">LIVE NAV</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        """, unsafe_allow_html=True)
-
-    # ── DIVIDER ───────────────────────────────────────────────────────────
+    # ── FEATURES STRIP ───────────────────────────────────────────────────────
     st.markdown("""
-    <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(0,240,255,0.3),transparent);
-                margin:64px 0 0;"></div>
-    """, unsafe_allow_html=True)
-
-    # ── FEATURES GRID ─────────────────────────────────────────────────────
-    st.markdown("""
-    <div style="text-align:center;padding:56px 0 40px;">
-      <div style="display:inline-flex;align-items:center;gap:8px;
-                  background:rgba(176,38,255,0.07);border:1px solid rgba(176,38,255,0.3);
-                  border-radius:40px;padding:5px 16px;margin-bottom:16px;">
-        <span style="font-size:10px;font-weight:700;color:#c084fc;
-                     letter-spacing:2px;text-transform:uppercase;">WHY CAS 360</span>
-      </div>
-      <h2 style="font-size:clamp(1.8rem,4vw,3rem);font-weight:900;color:white;
-                 letter-spacing:-2px;margin:0 0 10px;line-height:1.1;">
-        Everything your portfolio needs,<br>in one place.
-      </h2>
-      <p style="font-size:1rem;color:#64748b;margin:0;">
-        Institutional-grade portfolio intelligence for every Indian investor.
-      </p>
+    <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(139,92,246,0.3),transparent);
+                margin:48px 0 36px;"></div>
+    <div style="text-align:center;margin-bottom:28px;">
+      <span style="font-size:10px;font-weight:700;color:#6b7280;
+                   text-transform:uppercase;letter-spacing:2px;">What you get</span>
     </div>
     """, unsafe_allow_html=True)
 
-    # Row 1: 3 cards
-    f1, f2, f3 = st.columns(3, gap="medium")
-    def _dark_card(col, icon, title, body, accent="cyan"):
-        bc = "rgba(0,240,255,0.12)" if accent=="cyan" else "rgba(176,38,255,0.12)"
-        ic = "rgba(0,240,255,0.08)" if accent=="cyan" else "rgba(176,38,255,0.08)"
-        tc = "#00F0FF" if accent=="cyan" else "#c084fc"
+    f1, f2, f3, f4 = st.columns(4, gap="medium")
+    features = [
+        ("&#128202;", "Live NAV &amp; XIRR", "Real-time NAV from AMFI. Per-scheme XIRR calculated across full history."),
+        ("&#128260;", "360&#176; Portfolio View", "Every folio from CAMS and KFintech unified in one clean dashboard."),
+        ("&#128176;", "P&amp;L Analytics", "Realised &amp; unrealised gains by scheme, category, and time period."),
+        ("&#128274;", "100% Private", "CAS PDF parsed on your device. No data uploaded or stored anywhere."),
+    ]
+    for col, (icon, title, desc) in zip([f1, f2, f3, f4], features):
         col.markdown(f"""
-        <div style="background:rgba(255,255,255,0.03);backdrop-filter:blur(12px);
-                    border:1px solid {bc};border-radius:20px;padding:24px;height:100%;">
-          <div style="width:44px;height:44px;border-radius:12px;background:{ic};
-                      border:1px solid {bc};font-size:20px;line-height:44px;
-                      text-align:center;margin-bottom:14px;">{icon}</div>
-          <p style="font-size:15px;font-weight:700;color:white;margin:0 0 8px;">{title}</p>
-          <p style="font-size:13px;color:#64748b;line-height:1.65;margin:0;">{body}</p>
-        </div>""", unsafe_allow_html=True)
-
-    _dark_card(f1, "📊", "Live NAV &amp; XIRR",
-               "Real-time NAV from MFAPI. Per-scheme XIRR calculated automatically across your entire portfolio history.")
-    _dark_card(f2, "🔄", "360° Portfolio View",
-               "Every folio, scheme, and transaction from both CAMS and KFintech — unified in a single clean dashboard.", "purple")
-    _dark_card(f3, "💰", "P&amp;L Analytics",
-               "Realised &amp; unrealised gains broken down by scheme, category, and time period — with a visual summary.")
-
-    st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
-
-    # Row 2: wide SIP + Family
-    fs1, fs2 = st.columns([1.6, 1], gap="medium")
-    with fs1:
-        st.markdown("""
-        <div style="background:linear-gradient(135deg,rgba(79,46,229,0.5) 0%,rgba(139,92,246,0.3) 50%,rgba(37,99,235,0.4) 100%);
-                    backdrop-filter:blur(12px);border:1px solid rgba(139,92,246,0.4);
-                    border-radius:20px;padding:26px 24px;">
-          <div style="width:44px;height:44px;border-radius:12px;background:rgba(255,255,255,0.1);
-                      border:1px solid rgba(255,255,255,0.2);font-size:20px;line-height:44px;
-                      text-align:center;margin-bottom:14px;">🔄</div>
-          <p style="font-size:18px;font-weight:800;color:white;margin:0 0 8px;">SIP Health Monitor</p>
-          <p style="font-size:13px;color:rgba(255,255,255,0.7);line-height:1.65;margin:0 0 16px;">
-            Track every active SIP — next due dates, mandate status, bounce alerts, and historical SIP investment timeline.</p>
-          <span style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);
-                       color:white;font-size:10px;font-weight:600;padding:3px 12px;border-radius:20px;margin-right:6px;">Active SIPs</span>
-          <span style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);
-                       color:white;font-size:10px;font-weight:600;padding:3px 12px;border-radius:20px;margin-right:6px;">Bounce Alerts</span>
-          <span style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);
-                       color:white;font-size:10px;font-weight:600;padding:3px 12px;border-radius:20px;">Next Due Date</span>
-        </div>""", unsafe_allow_html=True)
-    with fs2:
-        st.markdown("""
-        <div style="background:rgba(15,23,42,0.85);backdrop-filter:blur(12px);
-                    border:1px solid rgba(59,130,246,0.2);border-radius:20px;padding:24px;height:100%;">
-          <div style="width:44px;height:44px;border-radius:12px;background:rgba(59,130,246,0.1);
-                      border:1px solid rgba(59,130,246,0.25);font-size:20px;line-height:44px;
-                      text-align:center;margin-bottom:14px;">👨‍👩‍👧</div>
-          <p style="font-size:15px;font-weight:700;color:white;margin:0 0 8px;">Family View</p>
-          <p style="font-size:13px;color:#64748b;line-height:1.65;margin:0;">
-            Analyse multiple CAS files together. Compare portfolios across family members
-            with a consolidated wealth summary.</p>
-        </div>""", unsafe_allow_html=True)
-
-    st.markdown("<div style='height:14px'></div>", unsafe_allow_html=True)
-
-    # Row 3: Asset Allocation + Privacy
-    fp1, fp2 = st.columns([1, 1.6], gap="medium")
-    with fp1:
-        st.markdown("""
-        <div style="background:rgba(255,255,255,0.03);backdrop-filter:blur(12px);
-                    border:1px solid rgba(0,240,255,0.12);border-radius:20px;padding:24px;height:100%;">
-          <div style="width:44px;height:44px;border-radius:12px;background:rgba(0,240,255,0.07);
-                      border:1px solid rgba(0,240,255,0.2);font-size:20px;line-height:44px;
-                      text-align:center;margin-bottom:14px;">🥧</div>
-          <p style="font-size:15px;font-weight:700;color:white;margin:0 0 8px;">Asset Allocation</p>
-          <p style="font-size:13px;color:#64748b;line-height:1.65;margin:0;">
-            Equity vs Debt breakdown with interactive charts. Understand your actual risk exposure at a glance.</p>
-        </div>""", unsafe_allow_html=True)
-    with fp2:
-        st.markdown("""
-        <div style="background:rgba(255,255,255,0.03);backdrop-filter:blur(12px);
-                    border:1px solid rgba(16,185,129,0.15);border-radius:20px;padding:24px;height:100%;">
-          <div style="width:44px;height:44px;border-radius:12px;background:rgba(16,185,129,0.08);
-                      border:1px solid rgba(16,185,129,0.25);font-size:20px;line-height:44px;
-                      text-align:center;margin-bottom:14px;">🛡️</div>
-          <p style="font-size:15px;font-weight:700;color:white;margin:0 0 8px;">100% Private by Design</p>
-          <p style="font-size:13px;color:#64748b;line-height:1.65;margin:0 0 14px;">
-            Your CAS PDF is parsed entirely on your device using casparser.
-            No data is uploaded, logged, or stored anywhere.</p>
-          <span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);
-                       color:#34d399;font-size:10px;font-weight:700;padding:3px 12px;border-radius:20px;margin-right:6px;">
-            ✓ No server storage</span>
-          <span style="background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);
-                       color:#34d399;font-size:10px;font-weight:700;padding:3px 12px;border-radius:20px;">
-            ✓ Local processing</span>
+        <div style="background:#0d0d24;border:1px solid rgba(139,92,246,0.15);
+                    border-radius:12px;padding:18px 16px;height:100%;">
+          <div style="font-size:22px;margin-bottom:10px;">{icon}</div>
+          <div style="font-size:13px;font-weight:600;color:#f0f0ff;margin-bottom:6px;">{title}</div>
+          <div style="font-size:12px;color:#6b7280;line-height:1.6;">{desc}</div>
         </div>""", unsafe_allow_html=True)
 
     st.markdown("""
-    <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(176,38,255,0.3),transparent);
-                margin:56px 0 24px;"></div>
-    <p style="text-align:center;color:#334155;font-size:11px;padding-bottom:48px;">
-      © 2026 cas.360 view &nbsp;·&nbsp; All data processed locally &nbsp;·&nbsp; Zero server storage
-    </p>
+    <div style="text-align:center;padding:40px 0 24px;">
+      <span style="font-size:10px;color:#4a5568;">
+        &copy; 2026 CAS 360 View &nbsp;&middot;&nbsp; All data processed locally
+        &nbsp;&middot;&nbsp; Zero server storage
+      </span>
+    </div>
     """, unsafe_allow_html=True)
 
 
