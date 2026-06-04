@@ -138,6 +138,24 @@ def inject_global_styles():
         ::-webkit-scrollbar { width: 4px; height: 4px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
         ::-webkit-scrollbar-thumb { background: var(--faint); border-radius: 4px; }
+        /* Force dark on any inline-styled white/light backgrounds */
+        [style*="background:#ffffff"],[style*="background: #ffffff"],
+        [style*="background:#fff;"],[style*="background: #fff;"],
+        [style*="background:#fff "],[style*="background: #fff "] {
+          background: var(--bg2) !important; color: var(--text) !important;
+        }
+        [style*="background:#f8fafc"],[style*="background: #f8fafc"],
+        [style*="background:#f1f5f9"],[style*="background: #f1f5f9"],
+        [style*="background:#f0f4f8"],[style*="background: #f0f4f8"] {
+          background: var(--bg3) !important; color: var(--text) !important;
+        }
+        /* Force light on dark text that would be invisible on dark bg */
+        [style*="color:#0f172a"],[style*="color: #0f172a"],
+        [style*="color:#1e293b"],[style*="color: #1e293b"],
+        [style*="color:#334155"],[style*="color: #334155"],
+        [style*="color:#2d3748"],[style*="color: #2d3748"] {
+          color: var(--text) !important;
+        }
         .card { background: var(--bg2); border: 1px solid var(--border); border-radius: 14px; padding: 22px 24px; margin-bottom: 16px; position: relative; }
         .card-title { font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px; }
         .pill-gain { display: inline-flex; align-items: center; gap: 4px; background: rgba(72,187,120,0.1); border: 1px solid rgba(72,187,120,0.25); color: var(--gain); font-family: 'IBM Plex Mono',monospace; font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px; }
@@ -994,31 +1012,29 @@ def render_dashboard(data):
             unsafe_allow_html=True,
         )
 
-        timeframe = st.segmented_control("tf", ["1M", "6M", "1Y", "3Y", "ALL"], default="1Y", label_visibility="collapsed")
-        base_value = display_wealth
-        invested_value = data["total_invested"]
-        slices = {
-            "1M": (["May 5", "May 10", "May 15", "May 20", "May 27"], [base_value * 0.97, base_value * 0.985, base_value * 0.975, base_value * 0.99, base_value]),
-            "6M": (["Dec", "Jan", "Feb", "Mar", "Apr", "May"], [invested_value * 0.87, invested_value * 0.92, invested_value * 0.95, invested_value * 0.97, base_value * 0.99, base_value]),
-            "1Y": (["Jun '25", "Sep '25", "Dec '25", "Mar '26", "May '26"], [invested_value * 0.91, invested_value * 0.95, invested_value * 0.97, base_value * 0.99, base_value]),
-            "3Y": (["May '23", "Nov '23", "May '24", "Nov '24", "May '25", "Nov '25", "May '26"], [invested_value * 0.35, invested_value * 0.55, invested_value * 0.70, invested_value * 0.83, invested_value * 0.93, base_value * 0.98, base_value]),
-            "ALL": (["Jan '24", "Jul '24", "Jan '25", "Jul '25", "Jan '26", "May '26"], [invested_value * 0.20, invested_value * 0.48, invested_value * 0.68, invested_value * 0.83, invested_value * 0.93, base_value]),
-        }
-        xs, ys = slices.get(timeframe, slices["1Y"])
+        top_n = sorted(data["holdings"], key=lambda x: x["value"], reverse=True)[:8]
+        df_wj = pd.DataFrame([
+            {
+                "Scheme": clean_name(h["scheme"])[:28],
+                "Invested": h["invested"],
+                "Current Value": h["value"],
+            }
+            for h in top_n
+        ])
         fig = go.Figure()
-        fig.add_trace(go.Scatter(
-            x=xs,
-            y=ys,
-            mode="lines+markers",
-            line=dict(color=C_ACCENT, width=2.5, shape="spline"),
-            fill="tozeroy",
-            fillcolor="rgba(99,179,237,0.06)",
-            hovertemplate="<b>%{x}</b><br>₹%{y:,.0f}<extra></extra>",
+        fig.add_trace(go.Bar(
+            name="Invested", x=df_wj["Scheme"], y=df_wj["Invested"],
+            marker_color="rgba(99,179,237,0.45)", hovertemplate="<b>%{x}</b><br>Invested: ₹%{y:,.0f}<extra></extra>",
+        ))
+        fig.add_trace(go.Bar(
+            name="Current Value", x=df_wj["Scheme"], y=df_wj["Current Value"],
+            marker_color=C_ACCENT, hovertemplate="<b>%{x}</b><br>Value: ₹%{y:,.0f}<extra></extra>",
         ))
         fig.update_layout(
-            height=220,
-            xaxis=dict(showgrid=False, tickfont=dict(size=11, color="#4a5568")),
-            yaxis=dict(showgrid=True, gridcolor=GRID, tickfont=dict(size=11, color="#4a5568")),
+            height=220, barmode="group",
+            xaxis=dict(showgrid=False, tickfont=dict(size=10, color="#4a5568"), tickangle=-20),
+            yaxis=dict(showgrid=True, gridcolor=GRID, tickfont=dict(size=10, color="#4a5568")),
+            legend=dict(font=dict(size=10, color="#718096"), bgcolor="rgba(0,0,0,0)", orientation="h", x=1, xanchor="right", y=1.15),
             hovermode="x unified",
             **PLOT_BASE,
         )
@@ -1230,6 +1246,8 @@ def render_my_portfolio(data):
     for label, category, color in [
         ("Equity Funds", "Equity Funds", C_ACCENT),
         ("Debt Funds", "Debt Funds", "#f6ad55"),
+        ("Gold Funds", "Gold Funds", C_GAIN),
+        ("International", "International", C_ACCENT2),
     ]:
         group = [item for item in data["holdings"] if item["category"] == category]
         if not group:
