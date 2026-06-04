@@ -177,14 +177,14 @@ def safe_float(value, default=0.0):
 PLOT_BASE = dict(
     paper_bgcolor='rgba(0,0,0,0)',
     plot_bgcolor='rgba(0,0,0,0)',
-    font=dict(family='Instrument Sans', color='#64748b'),
+    font=dict(family='Inter', color='#6d6d9a'),
     margin=dict(l=0, r=0, t=10, b=10),
 )
-GRID = 'rgba(0,0,0,0.06)'
-C_GAIN = '#059669'
-C_LOSS = '#dc2626'
-C_ACCENT = '#3b82f6'
-C_ACCENT2 = '#8b5cf6'
+GRID = 'rgba(139,92,246,0.08)'
+C_GAIN = '#34d399'
+C_LOSS = '#f87171'
+C_ACCENT = '#a855f7'
+C_ACCENT2 = '#e879f9'
 
 
 def apply_page_config():
@@ -202,23 +202,26 @@ def inject_global_styles():
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@700;800;900&display=swap');
 
         :root {
-          --bg:        #f0f4fa;
-          --bg2:       #ffffff;
-          --bg3:       #e8edf5;
-          --border:    rgba(37,99,235,0.10);
-          --border-hi: rgba(37,99,235,0.30);
-          --accent:    #2563eb;
-          --accent2:   #7c3aed;
-          --accent3:   #0891b2;
-          --gain:      #059669;
-          --loss:      #dc2626;
-          --warn:      #d97706;
-          --text:      #0f172a;
-          --muted:     #475569;
-          --faint:     #94a3b8;
-          --shadow:    0 1px 3px rgba(37,99,235,0.06),0 1px 2px rgba(0,0,0,0.04);
-          --shadow-md: 0 4px 20px rgba(37,99,235,0.10),0 2px 6px rgba(0,0,0,0.05);
-          --shadow-lg: 0 8px 32px rgba(37,99,235,0.12),0 2px 8px rgba(0,0,0,0.06);
+          --bg:         #08081a;
+          --bg2:        #0d0d24;
+          --bg3:        #12123a;
+          --bg4:        #1a1a4a;
+          --border:     rgba(139,92,246,0.15);
+          --border-hi:  rgba(168,85,247,0.45);
+          --purple:     #8b5cf6;
+          --purple-hi:  #a855f7;
+          --purple-glow:rgba(139,92,246,0.25);
+          --pink:       #e879f9;
+          --cyan:       #22d3ee;
+          --gain:       #10b981;
+          --loss:       #f87171;
+          --warn:       #fbbf24;
+          --text:       #f0f0ff;
+          --muted:      #94a3b8;
+          --faint:      #4a5568;
+          --shadow:     0 2px 12px rgba(139,92,246,0.10),0 1px 4px rgba(0,0,0,0.4);
+          --shadow-md:  0 6px 28px rgba(139,92,246,0.18),0 2px 8px rgba(0,0,0,0.5);
+          --shadow-lg:  0 12px 48px rgba(139,92,246,0.22),0 4px 16px rgba(0,0,0,0.6);
           --card-radius: 16px;
         }
 
@@ -229,29 +232,20 @@ def inject_global_styles():
           color: var(--text) !important;
           font-family: 'Inter', sans-serif !important;
           background-image:
-            radial-gradient(circle, rgba(37,99,235,0.045) 1px, transparent 1px) !important;
+            radial-gradient(circle, rgba(139,92,246,0.04) 1px, transparent 1px) !important;
           background-size: 28px 28px !important;
         }
 
-        /* ── Main content area ──────────────────────────────────────────── */
-        .block-container {
-          background: transparent !important;
-          padding-top: 1.5rem !important;
-        }
-        div[data-testid="stAppViewBlockContainer"] {
-          padding-top: 1.5rem !important;
-        }
+        .block-container { background: transparent !important; padding-top: 1.5rem !important; }
+        div[data-testid="stAppViewBlockContainer"] { padding-top: 1.5rem !important; }
 
         /* ── Sidebar ────────────────────────────────────────────────────── */
         [data-testid="stSidebar"] {
-          background: #ffffff !important;
-          border-right: 1px solid rgba(37,99,235,0.10) !important;
-          box-shadow: 2px 0 24px rgba(37,99,235,0.07) !important;
+          background: var(--bg2) !important;
+          border-right: 1px solid rgba(139,92,246,0.18) !important;
+          box-shadow: 2px 0 32px rgba(139,92,246,0.10) !important;
         }
-        [data-testid="stSidebar"] * {
-          font-family: 'Inter', sans-serif !important;
-          color: var(--text) !important;
-        }
+        [data-testid="stSidebar"] * { font-family: 'Inter', sans-serif !important; color: var(--text) !important; }
         [data-testid="stSidebar"] [role="radiogroup"] { gap: 2px !important; }
         [data-testid="stSidebar"] [data-testid="stRadio"] label {
           display: flex !important; align-items: center !important;
@@ -261,19 +255,17 @@ def inject_global_styles():
           transition: background .15s, color .15s !important; margin: 0 !important;
         }
         [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
-          background: rgba(37,99,235,0.06) !important;
-          color: var(--accent) !important;
+          background: rgba(139,92,246,0.10) !important;
+          color: var(--purple-hi) !important;
         }
-        [data-testid="stSidebar"] [data-testid="stRadio"] [data-baseweb="radio"] > div:first-child {
-          display: none !important;
-        }
+        [data-testid="stSidebar"] [data-testid="stRadio"] [data-baseweb="radio"] > div:first-child { display: none !important; }
         [data-testid="stSidebar"] [data-testid="stRadio"] > label:first-child { display: none !important; }
 
         /* ── Metric cards ───────────────────────────────────────────────── */
         div[data-testid="stMetric"] {
-          background: #ffffff !important;
-          border: 1px solid rgba(37,99,235,0.10) !important;
-          border-top: 3px solid var(--accent) !important;
+          background: var(--bg2) !important;
+          border: 1px solid var(--border) !important;
+          border-top: 2px solid var(--purple) !important;
           border-radius: var(--card-radius) !important;
           padding: 18px 20px !important;
           box-shadow: var(--shadow) !important;
@@ -281,7 +273,7 @@ def inject_global_styles():
         }
         div[data-testid="stMetric"]:hover {
           box-shadow: var(--shadow-md) !important;
-          border-color: rgba(37,99,235,0.25) !important;
+          border-color: var(--border-hi) !important;
           transform: translateY(-2px);
         }
         div[data-testid="stMetricValue"] > div {
@@ -303,121 +295,120 @@ def inject_global_styles():
         }
         [data-testid="stDataFrame"] * { color: var(--text) !important; }
         [data-testid="stDataFrame"] th {
-          background: #eef2ff !important; color: #4f46e5 !important;
+          background: rgba(139,92,246,0.15) !important;
+          color: var(--purple-hi) !important;
           font-size: 10px !important; font-weight: 700 !important;
           text-transform: uppercase !important; letter-spacing: 1px !important;
         }
         [data-testid="stDataFrame"] td {
-          background: #ffffff !important; color: var(--text) !important; font-size: 12px !important;
+          background: var(--bg2) !important; color: var(--text) !important; font-size: 12px !important;
         }
-        [data-testid="stDataFrame"] tr:nth-child(even) td { background: #f8faff !important; }
+        [data-testid="stDataFrame"] tr:nth-child(even) td { background: var(--bg3) !important; }
 
         /* ── Inputs ─────────────────────────────────────────────────────── */
         [data-testid="stSelectbox"] > div > div,
         [data-testid="stTextInput"] input {
-          background: #ffffff !important;
-          border: 1px solid rgba(37,99,235,0.18) !important;
+          background: var(--bg3) !important;
+          border: 1px solid var(--border) !important;
           border-radius: 10px !important; color: var(--text) !important;
         }
         [data-testid="stTextInput"] input { font-family: 'IBM Plex Mono', monospace !important; }
         [data-testid="stTextInput"] input:focus {
-          border-color: var(--accent) !important;
-          box-shadow: 0 0 0 3px rgba(37,99,235,0.12) !important;
+          border-color: var(--purple) !important;
+          box-shadow: 0 0 0 3px rgba(139,92,246,0.18) !important;
         }
+        [data-testid="stTextInput"] input::placeholder { color: var(--faint) !important; }
         .stApp input, .stApp select, .stApp textarea {
-          color: var(--text) !important; background: #ffffff !important;
+          color: var(--text) !important; background: var(--bg3) !important;
         }
 
         /* ── Segmented control ──────────────────────────────────────────── */
         [data-testid="stSegmentedControl"] > div {
-          background: #e8edf5 !important;
-          border: 1px solid rgba(37,99,235,0.12) !important;
+          background: var(--bg3) !important;
+          border: 1px solid var(--border) !important;
           border-radius: 12px !important;
         }
-        [data-testid="stSegmentedControl"] button[aria-checked="true"] {
-          background: linear-gradient(135deg,#2563eb,#7c3aed) !important;
-          color: #fff !important; border-radius: 9px !important;
-          box-shadow: 0 2px 10px rgba(37,99,235,0.28) !important;
-          font-weight: 600 !important;
+        [data-testid="stSegmentedControl"] button {
+          color: var(--muted) !important;
         }
-        [data-testid="stSegmentedControl"] button[aria-checked="false"] {
-          color: var(--muted) !important; font-weight: 500 !important;
+        [data-testid="stSegmentedControl"] button[aria-checked="true"] {
+          background: linear-gradient(135deg,#7c3aed,#a855f7) !important;
+          color: #fff !important; border-radius: 9px !important;
+          box-shadow: 0 2px 12px rgba(139,92,246,0.40) !important;
+          font-weight: 600 !important;
         }
 
         /* ── Buttons ────────────────────────────────────────────────────── */
         button[kind="primary"] {
-          background: linear-gradient(135deg,#2563eb,#7c3aed) !important;
+          background: linear-gradient(135deg,#7c3aed,#a855f7) !important;
           color: #fff !important; border: none !important;
-          box-shadow: 0 2px 12px rgba(37,99,235,0.30) !important;
+          box-shadow: 0 2px 16px rgba(139,92,246,0.40) !important;
           border-radius: 10px !important; font-weight: 600 !important;
         }
         button[kind="primary"]:hover {
-          box-shadow: 0 4px 22px rgba(37,99,235,0.42) !important;
+          box-shadow: 0 4px 28px rgba(168,85,247,0.55) !important;
           transform: translateY(-1px) !important;
         }
         button[kind="secondary"] {
-          background: #ffffff !important;
-          border: 1px solid rgba(37,99,235,0.15) !important;
+          background: var(--bg3) !important;
+          border: 1px solid var(--border) !important;
           color: var(--muted) !important; border-radius: 10px !important;
         }
         button[kind="secondary"]:hover {
-          background: #eff6ff !important;
-          border-color: #bfdbfe !important; color: #2563eb !important;
+          background: rgba(139,92,246,0.10) !important;
+          border-color: var(--border-hi) !important; color: var(--purple-hi) !important;
         }
 
         /* ── File uploader ──────────────────────────────────────────────── */
         [data-testid="stFileUploader"] {
-          background: rgba(37,99,235,0.03) !important;
-          border: 2px dashed rgba(37,99,235,0.22) !important;
+          background: rgba(139,92,246,0.04) !important;
+          border: 2px dashed rgba(139,92,246,0.25) !important;
           border-radius: 14px !important;
         }
 
         /* ── Scrollbar ──────────────────────────────────────────────────── */
         hr { border-color: var(--border) !important; }
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar { width: 5px; height: 5px; }
         ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: #bfdbfe; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.35); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(168,85,247,0.55); }
 
         /* ── Cards ──────────────────────────────────────────────────────── */
         .card {
-          background: #ffffff;
-          border: 1px solid rgba(37,99,235,0.10);
+          background: var(--bg2);
+          border: 1px solid var(--border);
           border-radius: var(--card-radius);
-          padding: 22px 24px;
-          margin-bottom: 16px;
-          position: relative;
+          padding: 22px 24px; margin-bottom: 16px;
+          position: relative; overflow: hidden;
           box-shadow: var(--shadow);
-          overflow: hidden;
         }
         .card::before {
           content: '';
-          position: absolute; top: 0; left: 0; right: 0; height: 3px;
-          background: linear-gradient(90deg, #2563eb, #7c3aed);
+          position: absolute; top: 0; left: 0; right: 0; height: 2px;
+          background: linear-gradient(90deg, #7c3aed, #a855f7, #e879f9);
         }
         .card-title {
-          font-family: 'Syne', sans-serif;
-          font-size: 11px; font-weight: 800;
-          background: linear-gradient(90deg,#2563eb,#7c3aed);
+          font-family: 'Syne', sans-serif; font-size: 11px; font-weight: 800;
+          background: linear-gradient(90deg, #a855f7, #e879f9);
           -webkit-background-clip: text; -webkit-text-fill-color: transparent;
           background-clip: text;
-          text-transform: uppercase; letter-spacing: 2px;
-          margin-bottom: 14px;
+          text-transform: uppercase; letter-spacing: 2px; margin-bottom: 14px;
         }
         .pill-gain {
           display: inline-flex; align-items: center; gap: 4px;
-          background: rgba(5,150,105,0.07); border: 1px solid rgba(5,150,105,0.20);
-          color: #059669; font-family: 'IBM Plex Mono',monospace;
+          background: rgba(16,185,129,0.12); border: 1px solid rgba(16,185,129,0.30);
+          color: #34d399; font-family: 'IBM Plex Mono',monospace;
           font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px;
         }
         .pill-loss {
           display: inline-flex; align-items: center; gap: 4px;
-          background: rgba(220,38,38,0.07); border: 1px solid rgba(220,38,38,0.20);
-          color: #dc2626; font-family: 'IBM Plex Mono',monospace;
+          background: rgba(248,113,113,0.12); border: 1px solid rgba(248,113,113,0.30);
+          color: #f87171; font-family: 'IBM Plex Mono',monospace;
           font-size: 11px; font-weight: 600; padding: 2px 10px; border-radius: 20px;
         }
         .notice {
-          background: rgba(37,99,235,0.04); border: 1px solid rgba(37,99,235,0.14);
-          border-left: 3px solid #2563eb; border-radius: 0 10px 10px 0;
+          background: rgba(139,92,246,0.06); border: 1px solid rgba(139,92,246,0.18);
+          border-left: 3px solid var(--purple); border-radius: 0 10px 10px 0;
           padding: 12px 16px; font-size: 13px; color: var(--muted);
           margin-bottom: 22px; display: flex; align-items: flex-start; gap: 10px;
         }
@@ -431,16 +422,15 @@ def inject_global_styles():
         /* ── Page header ────────────────────────────────────────────────── */
         .page-title {
           font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 900;
-          background: linear-gradient(135deg, #0f172a 30%, #2563eb 100%);
+          background: linear-gradient(135deg, #f0f0ff 30%, #a855f7 100%);
           -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-          background-clip: text;
-          letter-spacing: -0.8px; margin-bottom: 4px;
+          background-clip: text; letter-spacing: -0.8px; margin-bottom: 4px;
         }
         .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 22px; }
 
         /* ── SIP / alloc / alert cards ──────────────────────────────────── */
         .sip-card {
-          background: #f8faff; border: 1px solid rgba(37,99,235,0.10);
+          background: var(--bg3); border: 1px solid var(--border);
           border-radius: 12px; padding: 12px 14px; margin-bottom: 8px;
           display: flex; justify-content: space-between; align-items: center;
         }
@@ -450,44 +440,80 @@ def inject_global_styles():
         }
         .alert-card {
           border-left: 3px solid; border-radius: 0 10px 10px 0;
-          padding: 12px 16px; margin-bottom: 10px; background: #ffffff;
-          box-shadow: var(--shadow);
+          padding: 12px 16px; margin-bottom: 10px;
+          background: var(--bg2); box-shadow: var(--shadow);
         }
 
         /* ── Selectbox / dropdown ───────────────────────────────────────── */
         [data-baseweb="select"] * { color: var(--text) !important; }
-        [data-baseweb="select"] > div { background: #ffffff !important; border-color: rgba(37,99,235,0.18) !important; }
-        [data-baseweb="popover"] { background: #ffffff !important; border: 1px solid var(--border) !important; box-shadow: 0 4px 20px rgba(37,99,235,0.10) !important; border-radius: 12px !important; }
+        [data-baseweb="select"] > div { background: var(--bg3) !important; border-color: var(--border) !important; }
+        [data-baseweb="popover"] { background: var(--bg2) !important; border: 1px solid var(--border) !important; box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important; border-radius: 12px !important; }
         [data-baseweb="popover"] * { color: var(--text) !important; }
-        [data-baseweb="popover"] [role="listbox"] { background: #ffffff !important; }
-        [data-baseweb="menu"] { background: #ffffff !important; border-radius: 10px !important; }
-        [data-baseweb="menu"] ul { background: #ffffff !important; padding: 4px !important; }
+        [data-baseweb="popover"] [role="listbox"] { background: var(--bg2) !important; }
+        [data-baseweb="menu"] { background: var(--bg2) !important; border-radius: 10px !important; }
+        [data-baseweb="menu"] ul { background: var(--bg2) !important; padding: 4px !important; }
         [data-baseweb="menu"] li {
-          background: #ffffff !important; color: var(--text) !important;
+          background: var(--bg2) !important; color: var(--text) !important;
           font-size: 13px !important; font-weight: 500 !important;
           border-radius: 8px !important; padding: 8px 12px !important;
         }
         [data-baseweb="menu"] li:hover,
         [data-baseweb="menu"] li[aria-selected="true"] {
-          background: #eff6ff !important; color: #2563eb !important;
+          background: rgba(139,92,246,0.12) !important; color: var(--purple-hi) !important;
         }
         [data-baseweb="menu"] li * { color: inherit !important; background: transparent !important; }
-        [data-baseweb="option"] { color: var(--text) !important; background: #ffffff !important; }
+        [data-baseweb="option"] { color: var(--text) !important; background: var(--bg2) !important; }
 
         /* ── Widget labels ──────────────────────────────────────────────── */
         [data-testid="stSelectbox"] label { color: var(--muted) !important; font-size: 12px !important; }
         [data-testid="stSelectbox"] span { color: var(--text) !important; }
         [data-testid="stMarkdownContainer"] { color: var(--text) !important; }
-        [data-testid="stMarkdownContainer"] table td { color: var(--text) !important; font-size:12px !important; }
-        [data-testid="stMarkdownContainer"] table th { color: #4f46e5 !important; font-size:10px !important; font-weight:700 !important; text-transform:uppercase !important; }
-        [data-testid="stMarkdownContainer"] .cas-gain { color: #059669 !important; }
-        [data-testid="stMarkdownContainer"] .cas-loss { color: #dc2626 !important; }
+        [data-testid="stMarkdownContainer"] table { border-collapse: collapse; width: 100%; }
+        [data-testid="stMarkdownContainer"] table td {
+          color: var(--text) !important; font-size:12px !important;
+          border-bottom: 1px solid var(--border) !important;
+          padding: 8px 12px !important;
+        }
+        [data-testid="stMarkdownContainer"] table th {
+          color: var(--purple-hi) !important; font-size:10px !important;
+          font-weight:700 !important; text-transform:uppercase !important;
+          background: rgba(139,92,246,0.10) !important;
+          padding: 10px 12px !important;
+        }
+        [data-testid="stMarkdownContainer"] table tr:hover td {
+          background: rgba(139,92,246,0.05) !important;
+        }
+        [data-testid="stMarkdownContainer"] .cas-gain { color: #34d399 !important; }
+        [data-testid="stMarkdownContainer"] .cas-loss { color: #f87171 !important; }
         [data-testid="stMarkdownContainer"] .cas-muted { color: var(--muted) !important; }
 
-        /* ── stAlert ────────────────────────────────────────────────────── */
-        .stAlert {
+        /* ── Alerts ─────────────────────────────────────────────────────── */
+        .stAlert { border-radius: 12px !important; border-left-width: 3px !important; }
+        div[data-testid="stAlert"] {
+          background: rgba(139,92,246,0.08) !important;
+          border: 1px solid rgba(139,92,246,0.20) !important;
           border-radius: 12px !important;
-          border-left-width: 3px !important;
+        }
+        div[data-testid="stAlert"] * { color: var(--text) !important; }
+
+        /* ── Expander ───────────────────────────────────────────────────── */
+        [data-testid="stExpander"] {
+          background: var(--bg2) !important;
+          border: 1px solid var(--border) !important;
+          border-radius: 14px !important;
+        }
+        [data-testid="stExpander"] summary { color: var(--text) !important; }
+
+        /* ── Tabs ───────────────────────────────────────────────────────── */
+        [data-testid="stTabs"] [data-baseweb="tab-list"] {
+          background: var(--bg3) !important; border-radius: 10px !important;
+        }
+        [data-testid="stTabs"] [data-baseweb="tab"] {
+          color: var(--muted) !important;
+        }
+        [data-testid="stTabs"] [aria-selected="true"] {
+          color: var(--purple-hi) !important;
+          border-bottom: 2px solid var(--purple) !important;
         }
 
         /* ── Hide Streamlit chrome ──────────────────────────────────────── */
@@ -2005,53 +2031,62 @@ def build_sidebar(data):
         st.markdown("""
         <style>
         [data-testid="stSidebar"] {
-            background: #ffffff !important;
-            border-right: 1px solid rgba(0,0,0,0.07) !important;
-            box-shadow: 2px 0 12px rgba(0,0,0,0.05) !important;
+            background: #0d0d24 !important;
+            border-right: 1px solid rgba(139,92,246,0.18) !important;
+            box-shadow: 2px 0 32px rgba(139,92,246,0.10) !important;
         }
         [data-testid="stSidebar"] > div:first-child { padding: 0 !important; }
+        [data-testid="stSidebar"] * { color: #f0f0ff !important; }
         [data-testid="stSidebar"] [role="radiogroup"] { gap: 2px !important; }
         [data-testid="stSidebar"] [data-testid="stRadio"] label {
             display: flex !important; align-items: center !important;
             padding: 10px 16px !important; border-radius: 10px !important;
             font-size: 13px !important; font-weight: 500 !important;
-            color: #64748b !important; cursor: pointer !important;
+            color: #94a3b8 !important; cursor: pointer !important;
             transition: background .15s, color .15s !important; margin: 0 !important;
         }
         [data-testid="stSidebar"] [data-testid="stRadio"] label:hover {
-            background: #f1f5f9 !important; color: #0f172a !important;
+            background: rgba(139,92,246,0.12) !important; color: #a855f7 !important;
         }
         [data-testid="stSidebar"] [data-testid="stRadio"] label[data-checked="true"],
         [data-testid="stSidebar"] [data-testid="stRadio"] [aria-checked="true"] + div label {
-            background: #eff6ff !important; color: #2563eb !important; font-weight: 600 !important;
+            background: rgba(139,92,246,0.15) !important; color: #c084fc !important; font-weight: 600 !important;
         }
         [data-testid="stSidebar"] [data-testid="stRadio"] [data-baseweb="radio"] > div:first-child {
             display: none !important;
         }
         [data-testid="stSidebar"] [data-testid="stRadio"] > label:first-child { display: none !important; }
         [data-testid="stSidebar"] button[kind="secondary"] {
-            background: #f8fafc !important; border: 1px solid rgba(0,0,0,0.08) !important;
-            color: #64748b !important; border-radius: 10px !important; font-size: 12px !important;
+            background: rgba(139,92,246,0.08) !important;
+            border: 1px solid rgba(139,92,246,0.20) !important;
+            color: #94a3b8 !important; border-radius: 10px !important; font-size: 12px !important;
         }
         [data-testid="stSidebar"] button[kind="secondary"]:hover {
-            background: #eff6ff !important; border-color: #bfdbfe !important; color: #2563eb !important;
+            background: rgba(139,92,246,0.18) !important;
+            border-color: rgba(168,85,247,0.45) !important; color: #c084fc !important;
+        }
+        [data-testid="stSidebar"] [data-baseweb="select"] > div {
+            background: rgba(139,92,246,0.08) !important;
+            border-color: rgba(139,92,246,0.20) !important;
         }
         </style>
         """, unsafe_allow_html=True)
 
         # ── Logo ───────────────────────────────────────────────────────────
         st.markdown("""
-        <div style="padding:24px 20px 16px;">
+        <div style="padding:24px 20px 16px;border-bottom:1px solid rgba(139,92,246,0.15);margin-bottom:8px;">
           <div style="display:flex;align-items:center;gap:10px;">
-            <div style="width:36px;height:36px;
-                        background:linear-gradient(135deg,#2563eb,#7c3aed);
+            <div style="width:38px;height:38px;
+                        background:linear-gradient(135deg,#7c3aed,#a855f7);
                         border-radius:12px;display:flex;align-items:center;justify-content:center;
-                        font-size:18px;box-shadow:0 4px 12px rgba(37,99,235,0.3);">◈</div>
+                        font-size:18px;box-shadow:0 4px 16px rgba(139,92,246,0.45);">◈</div>
             <div>
               <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;
-                          color:#0f172a;letter-spacing:-0.5px;line-height:1.1;">
-                CAS 360 <span style="color:#2563eb;">View</span></div>
-              <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;
+                          color:#f0f0ff;letter-spacing:-0.5px;line-height:1.1;">
+                CAS 360 <span style="background:linear-gradient(90deg,#a855f7,#e879f9);
+                               -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                               background-clip:text;">View</span></div>
+              <div style="font-size:9px;color:#6d6d9a;text-transform:uppercase;
                           letter-spacing:2.5px;font-weight:600;margin-top:2px;">
                 Portfolio Intelligence</div>
             </div>
@@ -2063,7 +2098,7 @@ def build_sidebar(data):
             profiles_count = len(st.session_state.profiles)
 
             st.markdown(
-                "<div style='font-size:9px;color:#94a3b8;text-transform:uppercase;"
+                "<div style='font-size:9px;color:#6d6d9a;text-transform:uppercase;"
                 "letter-spacing:2px;font-weight:700;padding:0 20px;margin-bottom:4px;'>Navigate</div>",
                 unsafe_allow_html=True,
             )
@@ -2076,7 +2111,7 @@ def build_sidebar(data):
             menu = st.radio("", nav_items, label_visibility="hidden")
 
             st.markdown(
-                "<div style='height:1px;background:rgba(0,0,0,0.06);margin:12px 8px;'></div>",
+                "<div style='height:1px;background:rgba(139,92,246,0.15);margin:12px 8px;'></div>",
                 unsafe_allow_html=True,
             )
 
@@ -2089,42 +2124,42 @@ def build_sidebar(data):
 
             initials = "".join(w[0].upper() for w in data["investor_name"].split()[:2])
             pnl      = data["total_value"] - data["total_invested"]
-            pnl_c    = "#059669" if pnl >= 0 else "#dc2626"
-            pnl_bg   = "#f0fdf4" if pnl >= 0 else "#fef2f2"
+            pnl_c    = "#34d399" if pnl >= 0 else "#f87171"
+            pnl_bg   = "rgba(16,185,129,0.12)" if pnl >= 0 else "rgba(248,113,113,0.12)"
             pnl_ar   = "▲" if pnl >= 0 else "▼"
             pnl_pct  = abs(pnl / data["total_invested"] * 100) if data["total_invested"] else 0
 
             st.markdown(
                 f"""
-                <div style="background:#f8fafc;border:1px solid rgba(0,0,0,0.07);
+                <div style="background:rgba(139,92,246,0.06);border:1px solid rgba(139,92,246,0.18);
                             border-radius:14px;padding:14px 16px;margin:0 4px 8px;
-                            box-shadow:0 1px 4px rgba(0,0,0,0.05);">
+                            box-shadow:0 2px 16px rgba(139,92,246,0.10);">
                   <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
                     <div style="width:38px;height:38px;border-radius:50%;
-                                background:linear-gradient(135deg,#2563eb,#7c3aed);
+                                background:linear-gradient(135deg,#7c3aed,#a855f7);
                                 display:flex;align-items:center;justify-content:center;
                                 font-family:'Syne',sans-serif;font-size:14px;
                                 font-weight:800;color:#fff;flex-shrink:0;
-                                box-shadow:0 2px 8px rgba(37,99,235,0.3);">
+                                box-shadow:0 2px 12px rgba(139,92,246,0.45);">
                       {initials}</div>
                     <div style="min-width:0;">
-                      <div style="font-size:13px;font-weight:700;color:#0f172a;
+                      <div style="font-size:13px;font-weight:700;color:#f0f0ff;
                                   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
                         {data['investor_name'].title()}</div>
-                      <div style="font-size:10px;color:#94a3b8;margin-top:1px;">
+                      <div style="font-size:10px;color:#6d6d9a;margin-top:1px;">
                         📅 {statement_date}</div>
                     </div>
                   </div>
                   <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
-                    <div style="background:#eff6ff;border-radius:8px;padding:8px 10px;">
-                      <div style="font-size:9px;color:#64748b;text-transform:uppercase;
+                    <div style="background:rgba(139,92,246,0.12);border:1px solid rgba(139,92,246,0.20);border-radius:8px;padding:8px 10px;">
+                      <div style="font-size:9px;color:#6d6d9a;text-transform:uppercase;
                                   letter-spacing:1px;margin-bottom:3px;">Wealth</div>
                       <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;
-                                  font-weight:700;color:#2563eb;">
+                                  font-weight:700;color:#c084fc;">
                         {fmt_inr_short(data['total_value'])}</div>
                     </div>
-                    <div style="background:{pnl_bg};border-radius:8px;padding:8px 10px;">
-                      <div style="font-size:9px;color:#64748b;text-transform:uppercase;
+                    <div style="background:{pnl_bg};border:1px solid rgba(255,255,255,0.05);border-radius:8px;padding:8px 10px;">
+                      <div style="font-size:9px;color:#6d6d9a;text-transform:uppercase;
                                   letter-spacing:1px;margin-bottom:3px;">P&L</div>
                       <div style="font-family:'IBM Plex Mono',monospace;font-size:11px;
                                   font-weight:700;color:{pnl_c};">
@@ -2179,7 +2214,7 @@ def build_sidebar(data):
 
             # ── Action buttons ────────────────────────────────────────────
             st.markdown(
-                "<div style='height:1px;background:rgba(0,0,0,0.06);margin:8px 0;'></div>",
+                "<div style='height:1px;background:rgba(139,92,246,0.15);margin:8px 0;'></div>",
                 unsafe_allow_html=True,
             )
             if st.button("＋ Add Another CAS", use_container_width=True, key="add_cas_btn"):
@@ -2193,8 +2228,8 @@ def build_sidebar(data):
 
             # ── Export section ────────────────────────────────────────────
             st.markdown(
-                "<div style='height:1px;background:rgba(0,0,0,0.06);margin:10px 0 8px;'></div>"
-                "<div style='font-size:9px;color:#2d3748;text-transform:uppercase;"
+                "<div style='height:1px;background:rgba(139,92,246,0.15);margin:10px 0 8px;'></div>"
+                "<div style='font-size:9px;color:#6d6d9a;text-transform:uppercase;"
                 "letter-spacing:2px;font-weight:700;margin-bottom:8px;'>Export</div>",
                 unsafe_allow_html=True,
             )
@@ -2312,21 +2347,26 @@ def render_dashboard(data):
 
     # ── Header ────────────────────────────────────────────────────────────────
     st.markdown(f"""
-    <div style="background:linear-gradient(135deg,#eef2ff 0%,#f0f9ff 50%,#f5f3ff 100%);
-                border:1px solid rgba(37,99,235,0.12);border-radius:20px;
-                padding:24px 28px 20px;margin-bottom:20px;
-                box-shadow:0 2px 16px rgba(37,99,235,0.08);position:relative;overflow:hidden;">
-      <div style="position:absolute;top:-30px;right:-30px;width:160px;height:160px;
-                  background:radial-gradient(circle,rgba(124,58,237,0.08) 0%,transparent 70%);
+    <div style="background:linear-gradient(135deg,rgba(124,58,237,0.12) 0%,rgba(13,13,36,0.95) 40%,rgba(232,121,249,0.08) 100%);
+                border:1px solid rgba(139,92,246,0.25);border-radius:20px;
+                padding:26px 30px 22px;margin-bottom:20px;
+                box-shadow:0 4px 32px rgba(139,92,246,0.15);position:relative;overflow:hidden;">
+      <div style="position:absolute;top:-40px;right:-40px;width:200px;height:200px;
+                  background:radial-gradient(circle,rgba(168,85,247,0.15) 0%,transparent 65%);
                   pointer-events:none;"></div>
-      <div style="position:absolute;bottom:-20px;left:100px;width:120px;height:120px;
-                  background:radial-gradient(circle,rgba(37,99,235,0.06) 0%,transparent 70%);
+      <div style="position:absolute;bottom:-30px;left:60px;width:180px;height:180px;
+                  background:radial-gradient(circle,rgba(232,121,249,0.08) 0%,transparent 65%);
                   pointer-events:none;"></div>
-      <div style="font-size:10px;font-weight:700;color:#6366f1;text-transform:uppercase;
-                  letter-spacing:2px;margin-bottom:6px;">Portfolio Intelligence</div>
+      <div style="position:absolute;top:0;left:0;right:0;height:2px;
+                  background:linear-gradient(90deg,#7c3aed,#a855f7,#e879f9);"></div>
+      <div style="font-size:10px;font-weight:700;letter-spacing:2.5px;margin-bottom:8px;
+                  background:linear-gradient(90deg,#a855f7,#e879f9);
+                  -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+                  background-clip:text;text-transform:uppercase;">Portfolio Intelligence</div>
       <div class="page-title">Welcome back, {first_name} 👋</div>
-      <div style="font-size:12px;color:#64748b;margin-top:5px;display:flex;align-items:center;gap:8px;">
-        <span style="width:6px;height:6px;border-radius:50%;background:#2563eb;display:inline-block;"></span>
+      <div style="font-size:12px;color:#6d6d9a;margin-top:6px;display:flex;align-items:center;gap:8px;">
+        <span style="width:6px;height:6px;border-radius:50%;background:#a855f7;
+                     box-shadow:0 0 8px rgba(168,85,247,0.7);display:inline-block;"></span>
         CAS Statement · {statement_date} &nbsp;·&nbsp; Base figures from your uploaded PDF
       </div>
     </div>""", unsafe_allow_html=True)
@@ -2404,57 +2444,64 @@ def render_dashboard(data):
         score_dash  = int(283 * (1 - score / 100))
 
         # ── KPI CARDS ────────────────────────────────────────────────────────
-        pnl_color = "#059669" if display_pnl >= 0 else "#dc2626"
+        pnl_color = "#34d399" if display_pnl >= 0 else "#f87171"
         pnl_arrow = "▲" if display_pnl >= 0 else "▼"
-        pnl_bg    = "rgba(5,150,105,0.07)" if display_pnl >= 0 else "rgba(220,38,38,0.07)"
-        pnl_bdr   = "rgba(5,150,105,0.18)" if display_pnl >= 0 else "rgba(220,38,38,0.18)"
+        pnl_bg    = "rgba(52,211,153,0.10)" if display_pnl >= 0 else "rgba(248,113,113,0.10)"
+        pnl_bdr   = "rgba(52,211,153,0.28)" if display_pnl >= 0 else "rgba(248,113,113,0.28)"
 
         def _kpi_md(col, label, value, sub, color, bg_tint, bdr_tint):
             col.markdown(f"""
-            <div style="background:#ffffff;border:1px solid {bdr_tint};
-                        border-top:3px solid {color};
+            <div style="background:#0d0d24;border:1px solid {bdr_tint};
+                        border-top:2px solid {color};
                         border-radius:16px;padding:18px 20px;
-                        box-shadow:0 2px 12px rgba(37,99,235,0.07);
+                        box-shadow:0 4px 24px rgba(0,0,0,0.4),0 0 0 0px {bdr_tint};
                         height:100%;transition:transform .18s,box-shadow .18s;
                         position:relative;overflow:hidden;">
-              <div style="position:absolute;top:0;right:0;width:80px;height:80px;
+              <div style="position:absolute;top:0;right:0;width:90px;height:90px;
                           background:radial-gradient(circle at top right,{bg_tint} 0%,transparent 70%);
                           pointer-events:none;"></div>
-              <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;
+              <div style="font-size:9px;color:#6d6d9a;text-transform:uppercase;
                           letter-spacing:1.8px;font-weight:700;margin-bottom:10px;">{label}</div>
               <div style="font-family:'IBM Plex Mono',monospace;font-size:20px;font-weight:800;
                           color:{color};letter-spacing:-0.5px;line-height:1.15;margin-bottom:6px;">{value}</div>
-              <div style="font-size:10px;color:#94a3b8;font-weight:500;">{sub}</div>
+              <div style="font-size:10px;color:#6d6d9a;font-weight:500;">{sub}</div>
             </div>""", unsafe_allow_html=True)
 
         k1, k2, k3, k4, k5 = st.columns(5, gap="small")
         _kpi_md(k1, "Total Wealth",    fmt_inr(display_wealth),
-                "Portfolio value",       "#2563eb", "rgba(37,99,235,0.06)",  "rgba(37,99,235,0.15)")
+                "Portfolio value",       "#c084fc", "rgba(192,132,252,0.10)",  "rgba(192,132,252,0.25)")
         _kpi_md(k2, "Total Invested",  fmt_inr(data["total_invested"]),
-                "Cost basis (CAS)",      "#7c3aed", "rgba(124,58,237,0.06)", "rgba(124,58,237,0.15)")
+                "Cost basis (CAS)",      "#e879f9", "rgba(232,121,249,0.10)", "rgba(232,121,249,0.25)")
         _kpi_md(k3, "Unrealized P&L",  f"{pnl_arrow} {fmt_inr(display_pnl)}",
                 f"{pnl_arrow} {abs(pnl_pct):.2f}% all-time", pnl_color, pnl_bg, pnl_bdr)
         _kpi_md(k4, "Monthly SIP",     fmt_inr(sip_monthly),
                 f"{live_count} active · {dead_count} stopped",
-                "#059669", "rgba(5,150,105,0.06)", "rgba(5,150,105,0.15)")
+                "#34d399", "rgba(52,211,153,0.10)", "rgba(52,211,153,0.25)")
         with k5:
             st.markdown(f"""
-            <div style="background:#fff;border:1px solid {score_color}33;border-radius:14px;
-                        padding:16px 18px;box-shadow:0 1px 4px rgba(0,0,0,0.06);height:100%;">
-              <div style="font-size:9px;color:#94a3b8;text-transform:uppercase;
-                          letter-spacing:1.4px;font-weight:600;margin-bottom:10px;">
+            <div style="background:#0d0d24;border:1px solid {score_color}44;
+                        border-top:2px solid {score_color};
+                        border-radius:16px;padding:18px 20px;
+                        box-shadow:0 4px 24px rgba(0,0,0,0.4);height:100%;
+                        position:relative;overflow:hidden;">
+              <div style="position:absolute;top:0;right:0;width:90px;height:90px;
+                          background:radial-gradient(circle at top right,{score_color}1a 0%,transparent 70%);
+                          pointer-events:none;"></div>
+              <div style="font-size:9px;color:#6d6d9a;text-transform:uppercase;
+                          letter-spacing:1.8px;font-weight:700;margin-bottom:10px;">
                 SIP Health Score</div>
-              <div style="display:flex;align-items:center;gap:10px;">
+              <div style="display:flex;align-items:center;gap:12px;">
                 <svg width="48" height="48" viewBox="0 0 100 100">
-                  <circle cx="50" cy="50" r="45" fill="none" stroke="#f1f5f9" stroke-width="10"/>
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="10"/>
                   <circle cx="50" cy="50" r="45" fill="none" stroke="{score_color}" stroke-width="10"
                    stroke-dasharray="283" stroke-dashoffset="{score_dash}"
-                   stroke-linecap="round" transform="rotate(-90 50 50)"/>
+                   stroke-linecap="round" transform="rotate(-90 50 50)"
+                   style="filter:drop-shadow(0 0 4px {score_color})"/>
                 </svg>
                 <div>
-                  <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;
-                              font-weight:700;color:{score_color};">{score}</div>
-                  <div style="font-size:10px;color:{score_color};font-weight:600;">{score_label}</div>
+                  <div style="font-family:'IBM Plex Mono',monospace;font-size:24px;
+                              font-weight:800;color:{score_color};line-height:1;">{score}</div>
+                  <div style="font-size:10px;color:{score_color};font-weight:600;margin-top:3px;">{score_label}</div>
                 </div>
               </div>
             </div>""", unsafe_allow_html=True)
@@ -2464,43 +2511,45 @@ def render_dashboard(data):
         sp1, sp2 = st.columns(2, gap="medium")
         with sp1:
             st.markdown(f"""
-            <div style="background:#fff;border:1px solid rgba(37,99,235,0.15);border-radius:14px;
-                        padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-              <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;
+            <div style="background:#0d0d24;border:1px solid rgba(192,132,252,0.22);
+                        border-top:2px solid #c084fc;border-radius:14px;
+                        padding:16px 20px;box-shadow:0 4px 20px rgba(0,0,0,0.4);">
+              <div style="font-size:10px;color:#6d6d9a;text-transform:uppercase;
                           letter-spacing:1.2px;margin-bottom:8px;">🔄 SIP Invested</div>
               <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;
-                          font-weight:700;color:#2563eb;">{fmt_inr(total_sip)}</div>
-              <div style="font-size:11px;color:#94a3b8;margin-top:4px;">{sip_pct:.1f}% of total invested</div>
+                          font-weight:700;color:#c084fc;">{fmt_inr(total_sip)}</div>
+              <div style="font-size:11px;color:#6d6d9a;margin-top:4px;">{sip_pct:.1f}% of total invested</div>
             </div>""", unsafe_allow_html=True)
         with sp2:
             st.markdown(f"""
-            <div style="background:#fff;border:1px solid rgba(124,58,237,0.15);border-radius:14px;
-                        padding:16px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
-              <div style="font-size:10px;color:#94a3b8;text-transform:uppercase;
+            <div style="background:#0d0d24;border:1px solid rgba(232,121,249,0.22);
+                        border-top:2px solid #e879f9;border-radius:14px;
+                        padding:16px 20px;box-shadow:0 4px 20px rgba(0,0,0,0.4);">
+              <div style="font-size:10px;color:#6d6d9a;text-transform:uppercase;
                           letter-spacing:1.2px;margin-bottom:8px;">💰 Lump Sum Invested</div>
               <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;
-                          font-weight:700;color:#7c3aed;">{fmt_inr(total_lump)}</div>
-              <div style="font-size:11px;color:#94a3b8;margin-top:4px;">{lump_pct:.1f}% of total invested</div>
+                          font-weight:700;color:#e879f9;">{fmt_inr(total_lump)}</div>
+              <div style="font-size:11px;color:#6d6d9a;margin-top:4px;">{lump_pct:.1f}% of total invested</div>
             </div>""", unsafe_allow_html=True)
         st.markdown(f"""
-        <div style="background:#fff;border:1px solid rgba(0,0,0,0.07);border-radius:14px;
-                    padding:14px 20px;box-shadow:0 1px 4px rgba(0,0,0,0.06);margin-top:10px;">
-          <div style="font-size:10px;font-weight:700;color:#64748b;
+        <div style="background:#0d0d24;border:1px solid rgba(139,92,246,0.18);border-radius:14px;
+                    padding:14px 20px;box-shadow:0 2px 16px rgba(0,0,0,0.4);margin-top:10px;">
+          <div style="font-size:10px;font-weight:700;color:#6d6d9a;
                       text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;">
             Investment Mode Split — SIP vs Lump Sum
           </div>
-          <div style="background:#f1f5f9;border-radius:8px;height:10px;overflow:hidden;">
+          <div style="background:rgba(255,255,255,0.06);border-radius:8px;height:10px;overflow:hidden;">
             <div style="width:{sip_pct:.1f}%;height:100%;
-                        background:linear-gradient(90deg,#2563eb,#3b82f6);
+                        background:linear-gradient(90deg,#7c3aed,#a855f7);
                         border-radius:8px 0 0 8px;float:left;"></div>
             <div style="width:{lump_pct:.1f}%;height:100%;
-                        background:linear-gradient(90deg,#7c3aed,#8b5cf6);
+                        background:linear-gradient(90deg,#a855f7,#e879f9);
                         border-radius:0 8px 8px 0;float:left;"></div>
           </div>
           <div style="display:flex;justify-content:space-between;margin-top:6px;">
-            <div style="font-size:10px;color:#2563eb;font-family:'IBM Plex Mono',monospace;">
+            <div style="font-size:10px;color:#a855f7;font-family:'IBM Plex Mono',monospace;">
               ● SIP {sip_pct:.1f}%</div>
-            <div style="font-size:10px;color:#7c3aed;font-family:'IBM Plex Mono',monospace;">
+            <div style="font-size:10px;color:#e879f9;font-family:'IBM Plex Mono',monospace;">
               Lump Sum {lump_pct:.1f}% ●</div>
           </div>
         </div>
@@ -2515,7 +2564,7 @@ def render_dashboard(data):
             pill_cls = "pill-gain" if display_pnl >= 0 else "pill-loss"
             st.markdown(
                 f'<div style="font-family:\'IBM Plex Mono\',monospace;font-size:26px;font-weight:700;'
-                f'color:#0f172a;letter-spacing:-1px;margin-bottom:8px;">{fmt_inr(display_wealth)}</div>'
+                f'color:#f0f0ff;letter-spacing:-1px;margin-bottom:8px;">{fmt_inr(display_wealth)}</div>'
                 f'<span class="{pill_cls}">{gain_arrow(display_pnl)} {fmt_inr(display_pnl)}</span>',
                 unsafe_allow_html=True,
             )
@@ -2531,12 +2580,13 @@ def render_dashboard(data):
             xs, ys = slices.get(tf, slices["1Y"])
             fig = go.Figure()
             fig.add_trace(go.Scatter(x=xs, y=ys, mode="lines+markers",
-                line=dict(color=C_ACCENT, width=2.5, shape="spline"),
-                fill="tozeroy", fillcolor="rgba(99,179,237,0.06)",
+                line=dict(color="#a855f7", width=2.5, shape="spline"),
+                marker=dict(color="#e879f9", size=6),
+                fill="tozeroy", fillcolor="rgba(168,85,247,0.08)",
                 hovertemplate="<b>%{x}</b><br>₹%{y:,.0f}<extra></extra>"))
             fig.update_layout(height=220,
-                xaxis=dict(showgrid=False, tickfont=dict(size=11, color="#4a5568")),
-                yaxis=dict(showgrid=True, gridcolor=GRID, tickfont=dict(size=11, color="#4a5568")),
+                xaxis=dict(showgrid=False, tickfont=dict(size=11, color="#6d6d9a")),
+                yaxis=dict(showgrid=True, gridcolor=GRID, tickfont=dict(size=11, color="#6d6d9a")),
                 hovermode="x unified", **PLOT_BASE)
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
             st.markdown('</div>', unsafe_allow_html=True)
