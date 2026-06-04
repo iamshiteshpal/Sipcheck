@@ -1580,47 +1580,83 @@ def show_upload():
         st.markdown("""
         <div style="display:flex;flex-direction:column;gap:14px;padding-top:20px;">
 
-          <!-- HUD 1: Lock -->
-          <div style="background:rgba(255,255,255,0.03);backdrop-filter:blur(16px);
-                      border:1px solid rgba(0,240,255,0.2);border-radius:18px;padding:18px;
-                      animation:floatA 4s ease-in-out infinite;">
-            <div style="display:flex;flex-direction:column;align-items:center;gap:10px;">
-              <div style="width:48px;height:48px;border-radius:12px;
-                          background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.3);
-                          display:flex;align-items:center;justify-content:center;
-                          box-shadow:0 0 18px rgba(0,240,255,0.2);font-size:22px;">🔒</div>
-              <div style="text-align:center;">
-                <p style="font-size:12px;font-weight:700;color:white;margin:0 0 3px;">Zero Storage</p>
-                <p style="font-size:10px;color:#64748b;margin:0;">On-device parsing only</p>
-              </div>
-              <svg width="140" height="32" viewBox="0 0 140 32" style="opacity:0.5;margin-top:4px;">
-                <path d="M0 16 H20 V6 H56 V26 H92 V10 H132" stroke="#00F0FF" stroke-width="1.2" fill="none"/>
-                <circle cx="20" cy="6" r="2.5" fill="#00F0FF"/>
-                <circle cx="56" cy="26" r="2.5" fill="#00F0FF"/>
-                <circle cx="92" cy="10" r="2.5" fill="#00F0FF"/>
-                <circle cx="132" cy="10" r="3" fill="#00F0FF" style="filter:drop-shadow(0 0 4px #00F0FF)"/>
+          <!-- HUD 1: Circuit Lock -->
+          <div style="position:relative;overflow:hidden;border-radius:18px;
+                      border:1px solid rgba(0,240,255,0.35);
+                      animation:floatA 4s ease-in-out infinite;
+                      box-shadow:0 0 32px rgba(0,240,255,0.08),inset 0 0 24px rgba(0,240,255,0.04);">
+            <!-- circuit board SVG background -->
+            <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 220 160" preserveAspectRatio="xMidYMid slice">
+              <defs>
+                <radialGradient id="lockGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="rgba(0,240,255,0.18)"/>
+                  <stop offset="100%" stop-color="rgba(0,240,255,0)"/>
+                </radialGradient>
+              </defs>
+              <rect width="220" height="160" fill="rgba(0,10,18,0.92)"/>
+              <ellipse cx="110" cy="80" rx="55" ry="55" fill="url(#lockGlow)"/>
+              <!-- circuit traces -->
+              <path d="M0 30 H30 V10 H70" stroke="rgba(0,240,255,0.25)" stroke-width="1" fill="none"/>
+              <path d="M70 10 H110 V40" stroke="rgba(0,240,255,0.25)" stroke-width="1" fill="none"/>
+              <path d="M0 80 H20 V60 H50 V90 H80" stroke="rgba(0,240,255,0.18)" stroke-width="1" fill="none"/>
+              <path d="M220 40 H190 V20 H155" stroke="rgba(0,240,255,0.25)" stroke-width="1" fill="none"/>
+              <path d="M220 100 H200 V120 H165 V100 H140" stroke="rgba(0,240,255,0.18)" stroke-width="1" fill="none"/>
+              <path d="M30 160 V140 H60 V120 H90" stroke="rgba(0,240,255,0.18)" stroke-width="1" fill="none"/>
+              <path d="M190 160 V145 H160 V130 H130" stroke="rgba(0,240,255,0.15)" stroke-width="1" fill="none"/>
+              <!-- nodes -->
+              <circle cx="30" cy="30" r="2.5" fill="rgba(0,240,255,0.6)"/>
+              <circle cx="70" cy="10" r="2.5" fill="rgba(0,240,255,0.6)"/>
+              <circle cx="110" cy="40" r="2.5" fill="rgba(0,240,255,0.6)"/>
+              <circle cx="50" cy="90" r="2.5" fill="rgba(0,240,255,0.4)"/>
+              <circle cx="190" cy="20" r="2.5" fill="rgba(0,240,255,0.6)"/>
+              <circle cx="165" cy="100" r="2.5" fill="rgba(0,240,255,0.4)"/>
+              <circle cx="60" cy="120" r="2.5" fill="rgba(0,240,255,0.4)"/>
+            </svg>
+            <!-- lock icon -->
+            <div style="position:relative;z-index:1;padding:20px;text-align:center;">
+              <svg width="54" height="62" viewBox="0 0 54 62" style="margin:0 auto 10px;display:block;filter:drop-shadow(0 0 12px rgba(0,240,255,0.7));">
+                <rect x="7" y="28" width="40" height="28" rx="7" fill="rgba(0,240,255,0.15)" stroke="#00F0FF" stroke-width="1.5"/>
+                <path d="M14 28 V20 C14 11.2 40 11.2 40 20 V28" fill="none" stroke="#00F0FF" stroke-width="2" stroke-linecap="round"/>
+                <circle cx="27" cy="42" r="5" fill="#00F0FF" style="filter:drop-shadow(0 0 6px #00F0FF)"/>
+                <line x1="27" y1="47" x2="27" y2="52" stroke="#00F0FF" stroke-width="2" stroke-linecap="round"/>
               </svg>
+              <p style="font-size:13px;font-weight:700;color:white;margin:0 0 2px;">Zero Storage</p>
+              <p style="font-size:10px;color:rgba(0,240,255,0.55);margin:0;">On-device parsing · encrypted</p>
             </div>
           </div>
 
-          <!-- HUD 2: SIP Pulse -->
-          <div style="background:rgba(255,255,255,0.03);backdrop-filter:blur(16px);
-                      border:1px solid rgba(176,38,255,0.2);border-radius:18px;padding:18px;
-                      animation:floatB 5s ease-in-out .8s infinite;">
-            <p style="font-size:9px;font-weight:700;color:#c084fc;text-transform:uppercase;
-                      letter-spacing:2px;margin:0 0 10px;">SIP Health</p>
-            <svg width="160" height="44" viewBox="0 0 160 44">
-              <polyline points="0,22 16,22 26,4 42,40 56,8 72,32 92,12 108,26 126,16 160,16"
-                fill="none" stroke="#B026FF" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round"/>
-              <polyline points="0,22 16,22 26,4 42,40 56,8 72,32 92,12 108,26 126,16 160,16"
-                fill="none" stroke="rgba(176,38,255,0.15)" stroke-width="8"
-                stroke-linecap="round" stroke-linejoin="round"/>
+          <!-- HUD 2: SIP EKG -->
+          <div style="position:relative;overflow:hidden;border-radius:18px;
+                      border:1px solid rgba(176,38,255,0.35);
+                      animation:floatB 5s ease-in-out .8s infinite;
+                      box-shadow:0 0 32px rgba(176,38,255,0.08),inset 0 0 24px rgba(176,38,255,0.04);">
+            <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 220 130" preserveAspectRatio="xMidYMid slice">
+              <rect width="220" height="130" fill="rgba(15,0,25,0.92)"/>
+              <!-- grid lines -->
+              <line x1="0" y1="32" x2="220" y2="32" stroke="rgba(176,38,255,0.08)" stroke-width="1"/>
+              <line x1="0" y1="65" x2="220" y2="65" stroke="rgba(176,38,255,0.08)" stroke-width="1"/>
+              <line x1="0" y1="97" x2="220" y2="97" stroke="rgba(176,38,255,0.08)" stroke-width="1"/>
+              <line x1="55" y1="0" x2="55" y2="130" stroke="rgba(176,38,255,0.06)" stroke-width="1"/>
+              <line x1="110" y1="0" x2="110" y2="130" stroke="rgba(176,38,255,0.06)" stroke-width="1"/>
+              <line x1="165" y1="0" x2="165" y2="130" stroke="rgba(176,38,255,0.06)" stroke-width="1"/>
+              <!-- EKG glow underlay -->
+              <polyline points="0,65 25,65 35,65 40,20 48,105 56,10 64,85 75,65 95,65 105,65 110,50 116,65 130,65 150,65 158,40 166,90 174,65 220,65"
+                fill="none" stroke="rgba(176,38,255,0.2)" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- EKG main line -->
+              <polyline points="0,65 25,65 35,65 40,20 48,105 56,10 64,85 75,65 95,65 105,65 110,50 116,65 130,65 150,65 158,40 166,90 174,65 220,65"
+                fill="none" stroke="#B026FF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <!-- highlight dot -->
+              <circle cx="56" cy="10" r="4" fill="#c084fc" style="filter:drop-shadow(0 0 6px #B026FF)"/>
             </svg>
-            <div style="display:flex;align-items:center;gap:6px;margin-top:6px;">
-              <span style="width:6px;height:6px;border-radius:50%;background:#c084fc;
-                           animation:pulse 2s ease infinite;display:inline-block;"></span>
-              <p style="font-size:10px;color:#c084fc;margin:0;">9 active · 0 bounced</p>
+            <div style="position:relative;z-index:1;padding:14px 16px 12px;">
+              <p style="font-size:9px;font-weight:700;color:#c084fc;text-transform:uppercase;letter-spacing:2px;margin:0 0 68px;">SIP Health</p>
+              <div style="display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span style="width:6px;height:6px;border-radius:50%;background:#c084fc;animation:pulse 2s ease infinite;display:inline-block;"></span>
+                  <span style="font-size:10px;color:#c084fc;">9 active</span>
+                </div>
+                <span style="font-size:10px;color:#34d399;font-weight:700;">0 bounced</span>
+              </div>
             </div>
           </div>
         </div>
@@ -1703,54 +1739,81 @@ def show_upload():
         st.markdown("""
         <div style="display:flex;flex-direction:column;gap:14px;padding-top:20px;">
 
-          <!-- HUD 3: CAMS + KFintech -->
-          <div style="background:rgba(255,255,255,0.03);backdrop-filter:blur(16px);
-                      border:1px solid rgba(0,240,255,0.2);border-radius:18px;padding:18px;
-                      animation:floatC 4.5s ease-in-out .4s infinite;">
-            <p style="font-size:9px;font-weight:700;color:#7ee8f5;text-transform:uppercase;
-                      letter-spacing:2px;margin:0 0 12px;">Data Sources</p>
-            <div style="display:flex;flex-direction:column;gap:8px;">
-              <div style="display:flex;align-items:center;gap:10px;">
-                <div style="width:30px;height:30px;border-radius:8px;
-                            background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.25);
-                            font-size:14px;line-height:30px;text-align:center;">🏦</div>
-                <span style="font-size:12px;font-weight:600;color:white;">CAMS</span>
-              </div>
-              <div style="display:flex;align-items:center;gap:10px;">
-                <div style="width:30px;height:30px;border-radius:8px;
-                            background:rgba(0,240,255,0.08);border:1px solid rgba(0,240,255,0.25);
-                            font-size:14px;line-height:30px;text-align:center;">🏦</div>
-                <span style="font-size:12px;font-weight:600;color:white;">KFintech</span>
+          <!-- HUD 3: Database stack -->
+          <div style="position:relative;overflow:hidden;border-radius:18px;
+                      border:1px solid rgba(0,240,255,0.35);
+                      animation:floatC 4.5s ease-in-out .4s infinite;
+                      box-shadow:0 0 32px rgba(0,240,255,0.08);">
+            <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 220 160" preserveAspectRatio="xMidYMid slice">
+              <rect width="220" height="160" fill="rgba(0,10,20,0.92)"/>
+              <!-- background grid -->
+              <line x1="0" y1="40" x2="220" y2="40" stroke="rgba(0,240,255,0.06)" stroke-width="1"/>
+              <line x1="0" y1="80" x2="220" y2="80" stroke="rgba(0,240,255,0.06)" stroke-width="1"/>
+              <line x1="0" y1="120" x2="220" y2="120" stroke="rgba(0,240,255,0.06)" stroke-width="1"/>
+              <!-- CAMS cylinder -->
+              <ellipse cx="75" cy="68" rx="34" ry="10" fill="rgba(0,240,255,0.12)" stroke="rgba(0,240,255,0.5)" stroke-width="1.2"/>
+              <rect x="41" y="68" width="68" height="30" fill="rgba(0,240,255,0.08)" stroke="none"/>
+              <ellipse cx="75" cy="98" rx="34" ry="10" fill="rgba(0,240,255,0.15)" stroke="rgba(0,240,255,0.5)" stroke-width="1.2"/>
+              <line x1="41" y1="68" x2="41" y2="98" stroke="rgba(0,240,255,0.5)" stroke-width="1.2"/>
+              <line x1="109" y1="68" x2="109" y2="98" stroke="rgba(0,240,255,0.5)" stroke-width="1.2"/>
+              <!-- KFintech cylinder (offset) -->
+              <ellipse cx="148" cy="80" rx="30" ry="9" fill="rgba(176,38,255,0.12)" stroke="rgba(176,38,255,0.5)" stroke-width="1.2"/>
+              <rect x="118" y="80" width="60" height="26" fill="rgba(176,38,255,0.07)" stroke="none"/>
+              <ellipse cx="148" cy="106" rx="30" ry="9" fill="rgba(176,38,255,0.15)" stroke="rgba(176,38,255,0.5)" stroke-width="1.2"/>
+              <line x1="118" y1="80" x2="118" y2="106" stroke="rgba(176,38,255,0.5)" stroke-width="1.2"/>
+              <line x1="178" y1="80" x2="178" y2="106" stroke="rgba(176,38,255,0.5)" stroke-width="1.2"/>
+              <!-- connecting beam -->
+              <line x1="109" y1="83" x2="118" y2="83" stroke="rgba(0,240,255,0.4)" stroke-width="1" stroke-dasharray="3 2"/>
+              <circle cx="109" cy="83" r="2" fill="#00F0FF"/>
+              <circle cx="118" cy="83" r="2" fill="#B026FF"/>
+            </svg>
+            <div style="position:relative;z-index:1;padding:14px 16px 12px;">
+              <p style="font-size:9px;font-weight:700;color:#7ee8f5;text-transform:uppercase;letter-spacing:2px;margin:0 0 80px;">Data Sources</p>
+              <div style="display:flex;justify-content:space-around;">
+                <span style="font-size:11px;font-weight:700;color:rgba(0,240,255,0.9);">CAMS</span>
+                <span style="font-size:11px;font-weight:700;color:rgba(176,38,255,0.9);">KFintech</span>
               </div>
             </div>
-            <svg width="130" height="24" viewBox="0 0 130 24" style="margin-top:10px;opacity:0.5;">
-              <path d="M8 6 Q65 0 122 6" stroke="#00F0FF" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
-              <path d="M8 18 Q65 24 122 18" stroke="#00F0FF" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
-              <circle cx="8" cy="12" r="3" fill="#00F0FF"/>
-              <circle cx="122" cy="12" r="3" fill="#00F0FF"/>
-            </svg>
           </div>
 
-          <!-- HUD 4: XIRR chart -->
-          <div style="background:rgba(255,255,255,0.03);backdrop-filter:blur(16px);
-                      border:1px solid rgba(16,185,129,0.2);border-radius:18px;padding:18px;
-                      animation:floatD 5.5s ease-in-out 1.2s infinite;">
-            <p style="font-size:9px;font-weight:700;color:#34d399;text-transform:uppercase;
-                      letter-spacing:2px;margin:0 0 10px;">Portfolio XIRR</p>
-            <div style="display:flex;align-items:flex-end;gap:3px;height:50px;">
-              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:3px 3px 0 0;height:40%;"></div>
-              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:3px 3px 0 0;height:55%;"></div>
-              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:3px 3px 0 0;height:35%;"></div>
-              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:3px 3px 0 0;height:70%;"></div>
-              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:3px 3px 0 0;height:48%;"></div>
-              <div style="flex:1;background:linear-gradient(to top,#059669,#34d399);border-radius:3px 3px 0 0;
-                          height:92%;box-shadow:0 0 12px rgba(16,185,129,0.6);"></div>
-              <div style="flex:1;background:rgba(16,185,129,0.2);border-radius:3px 3px 0 0;height:62%;"></div>
-            </div>
-            <div style="display:flex;align-items:center;gap:6px;margin-top:8px;">
-              <span style="font-size:14px;font-weight:800;color:#34d399;">▲ XIRR 8.3%</span>
-              <span style="width:6px;height:6px;border-radius:50%;background:#34d399;
-                           animation:pulse 2s ease infinite;display:inline-block;"></span>
+          <!-- HUD 4: Candlestick XIRR -->
+          <div style="position:relative;overflow:hidden;border-radius:18px;
+                      border:1px solid rgba(16,185,129,0.35);
+                      animation:floatD 5.5s ease-in-out 1.2s infinite;
+                      box-shadow:0 0 32px rgba(16,185,129,0.08);">
+            <svg style="position:absolute;inset:0;width:100%;height:100%;" viewBox="0 0 220 130" preserveAspectRatio="xMidYMid slice">
+              <rect width="220" height="130" fill="rgba(0,15,10,0.92)"/>
+              <!-- grid -->
+              <line x1="0" y1="30" x2="220" y2="30" stroke="rgba(16,185,129,0.08)" stroke-width="1"/>
+              <line x1="0" y1="65" x2="220" y2="65" stroke="rgba(16,185,129,0.08)" stroke-width="1"/>
+              <line x1="0" y1="100" x2="220" y2="100" stroke="rgba(16,185,129,0.08)" stroke-width="1"/>
+              <!-- candlesticks (wick + body) -->
+              <line x1="22" y1="55" x2="22" y2="85" stroke="#34d399" stroke-width="1.2"/>
+              <rect x="18" y="62" width="8" height="16" rx="1" fill="rgba(52,211,153,0.35)" stroke="#34d399" stroke-width="1"/>
+              <line x1="48" y1="48" x2="48" y2="80" stroke="#34d399" stroke-width="1.2"/>
+              <rect x="44" y="55" width="8" height="18" rx="1" fill="rgba(52,211,153,0.35)" stroke="#34d399" stroke-width="1"/>
+              <line x1="74" y1="60" x2="74" y2="95" stroke="#f87171" stroke-width="1.2"/>
+              <rect x="70" y="66" width="8" height="20" rx="1" fill="rgba(248,113,113,0.35)" stroke="#f87171" stroke-width="1"/>
+              <line x1="100" y1="42" x2="100" y2="72" stroke="#34d399" stroke-width="1.2"/>
+              <rect x="96" y="48" width="8" height="17" rx="1" fill="rgba(52,211,153,0.35)" stroke="#34d399" stroke-width="1"/>
+              <line x1="126" y1="50" x2="126" y2="85" stroke="#f87171" stroke-width="1.2"/>
+              <rect x="122" y="58" width="8" height="19" rx="1" fill="rgba(248,113,113,0.35)" stroke="#f87171" stroke-width="1"/>
+              <line x1="152" y1="35" x2="152" y2="62" stroke="#34d399" stroke-width="1.2"/>
+              <rect x="148" y="40" width="8" height="16" rx="1" fill="rgba(52,211,153,0.5)" stroke="#34d399" stroke-width="1.5"/>
+              <line x1="178" y1="28" x2="178" y2="55" stroke="#34d399" stroke-width="1.2"/>
+              <rect x="174" y="32" width="8" height="16" rx="1" fill="rgba(52,211,153,0.6)" stroke="#34d399" stroke-width="1.5"
+                    style="filter:drop-shadow(0 0 4px rgba(52,211,153,0.8))"/>
+              <!-- trend line -->
+              <polyline points="22,70 48,60 74,76 100,55 126,65 152,46 178,38"
+                stroke="rgba(52,211,153,0.4)" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/>
+            </svg>
+            <div style="position:relative;z-index:1;padding:14px 16px 12px;">
+              <p style="font-size:9px;font-weight:700;color:#34d399;text-transform:uppercase;letter-spacing:2px;margin:0 0 65px;">Portfolio XIRR</p>
+              <div style="display:flex;align-items:center;gap:8px;">
+                <span style="font-size:16px;font-weight:800;color:#34d399;text-shadow:0 0 12px rgba(52,211,153,0.6);">▲ 8.3%</span>
+                <span style="width:6px;height:6px;border-radius:50%;background:#34d399;animation:pulse 2s ease infinite;display:inline-block;"></span>
+                <span style="font-size:9px;color:rgba(52,211,153,0.5);font-family:monospace;">LIVE NAV</span>
+              </div>
             </div>
           </div>
         </div>
