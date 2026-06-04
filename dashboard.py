@@ -1593,11 +1593,12 @@ def show_upload():
                 <p style="font-size:12px;font-weight:700;color:white;margin:0 0 3px;">Zero Storage</p>
                 <p style="font-size:10px;color:#64748b;margin:0;">On-device parsing only</p>
               </div>
-              <svg width="140" height="32" viewBox="0 0 140 32" style="opacity:0.45;">
-                <path d="M8 16 H38 V8 H80 V24 H112 H132" stroke="#00F0FF" stroke-width="1.2"
-                      fill="none" stroke-dasharray="4 3"/>
-                <circle cx="38" cy="8" r="2.5" fill="#00F0FF"/>
-                <circle cx="80" cy="24" r="2.5" fill="#00F0FF"/>
+              <svg width="140" height="32" viewBox="0 0 140 32" style="opacity:0.5;margin-top:4px;">
+                <path d="M0 16 H20 V6 H56 V26 H92 V10 H132" stroke="#00F0FF" stroke-width="1.2" fill="none"/>
+                <circle cx="20" cy="6" r="2.5" fill="#00F0FF"/>
+                <circle cx="56" cy="26" r="2.5" fill="#00F0FF"/>
+                <circle cx="92" cy="10" r="2.5" fill="#00F0FF"/>
+                <circle cx="132" cy="10" r="3" fill="#00F0FF" style="filter:drop-shadow(0 0 4px #00F0FF)"/>
               </svg>
             </div>
           </div>
@@ -1626,28 +1627,26 @@ def show_upload():
         """, unsafe_allow_html=True)
 
     with cc:
-        # glowing upload portal
+        # glowing upload portal header
         st.markdown("""
-        <div style="position:relative;padding:4px;">
-          <div style="position:absolute;inset:-16px;border-radius:28px;
-                      background:radial-gradient(ellipse at center,rgba(0,240,255,0.1) 0%,rgba(176,38,255,0.06) 50%,transparent 70%);
-                      filter:blur(18px);pointer-events:none;"></div>
-          <div style="position:relative;border-radius:22px;padding:32px 28px 24px;
-                      background:rgba(255,255,255,0.03);backdrop-filter:blur(20px);
-                      border:2px solid transparent;
+        <div style="position:relative;margin-bottom:-8px;">
+          <div style="position:absolute;inset:-20px;border-radius:32px;
+                      background:radial-gradient(ellipse at center,rgba(0,240,255,0.12) 0%,rgba(176,38,255,0.07) 50%,transparent 70%);
+                      filter:blur(20px);pointer-events:none;"></div>
+          <div style="position:relative;border-radius:22px 22px 0 0;padding:28px 28px 20px;
+                      background:rgba(11,14,20,0.95);backdrop-filter:blur(20px);
+                      border:2px solid transparent;border-bottom:none;
                       background-image:linear-gradient(rgba(11,14,20,0.95),rgba(11,14,20,0.95)),
                                        linear-gradient(135deg,#00F0FF,#B026FF);
                       background-origin:border-box;background-clip:padding-box,border-box;
-                      box-shadow:0 20px 60px rgba(0,0,0,0.5),inset 0 0 40px rgba(0,240,255,0.03);
+                      box-shadow:0 -10px 40px rgba(0,0,0,0.4),inset 0 0 40px rgba(0,240,255,0.02);
                       text-align:center;">
-            <div style="width:52px;height:52px;margin:0 auto 16px;border-radius:14px;
+            <div style="width:52px;height:52px;margin:0 auto 14px;border-radius:14px;
                         background:linear-gradient(135deg,rgba(0,240,255,0.15),rgba(176,38,255,0.15));
                         border:1px solid rgba(0,240,255,0.3);font-size:24px;line-height:52px;
-                        box-shadow:0 0 20px rgba(0,240,255,0.2);">☁️</div>
-            <p style="font-size:19px;font-weight:800;color:white;margin:0 0 6px;">
-              Upload your CAS PDF</p>
-            <p style="font-size:12px;color:#64748b;margin:0 0 20px;line-height:1.6;">
-              Drag and drop or click to browse<br>PDF files only</p>
+                        box-shadow:0 0 20px rgba(0,240,255,0.2);animation:neonPulse 3s ease infinite;">📂</div>
+            <p style="font-size:19px;font-weight:800;color:white;margin:0 0 5px;">Upload your CAS PDF</p>
+            <p style="font-size:12px;color:#475569;margin:0;line-height:1.6;">Drag &amp; drop or click · PDF only</p>
           </div>
         </div>
         """, unsafe_allow_html=True)
@@ -1659,10 +1658,10 @@ def show_upload():
         )
 
         st.markdown("""
-        <div style="margin:14px 0 6px;text-align:center;">
-          <p style="font-size:11px;font-weight:600;color:#334155;margin:0 0 4px;
+        <div style="margin:12px 0 5px;text-align:center;">
+          <p style="font-size:11px;font-weight:600;color:#475569;margin:0 0 3px;
                     text-transform:uppercase;letter-spacing:1.5px;">Password</p>
-          <p style="font-size:11px;color:#475569;margin:0;">PAN (ABCDE1234F) or DOB (DDMMYYYY)</p>
+          <p style="font-size:10px;color:#334155;margin:0;">PAN (ABCDE1234F) or DOB (DDMMYYYY)</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -1707,7 +1706,7 @@ def show_upload():
           <!-- HUD 3: CAMS + KFintech -->
           <div style="background:rgba(255,255,255,0.03);backdrop-filter:blur(16px);
                       border:1px solid rgba(0,240,255,0.2);border-radius:18px;padding:18px;
-                      animation:floatA 4.5s ease-in-out .4s infinite;">
+                      animation:floatC 4.5s ease-in-out .4s infinite;">
             <p style="font-size:9px;font-weight:700;color:#7ee8f5;text-transform:uppercase;
                       letter-spacing:2px;margin:0 0 12px;">Data Sources</p>
             <div style="display:flex;flex-direction:column;gap:8px;">
@@ -1735,7 +1734,7 @@ def show_upload():
           <!-- HUD 4: XIRR chart -->
           <div style="background:rgba(255,255,255,0.03);backdrop-filter:blur(16px);
                       border:1px solid rgba(16,185,129,0.2);border-radius:18px;padding:18px;
-                      animation:floatB 5.5s ease-in-out 1.2s infinite;">
+                      animation:floatD 5.5s ease-in-out 1.2s infinite;">
             <p style="font-size:9px;font-weight:700;color:#34d399;text-transform:uppercase;
                       letter-spacing:2px;margin:0 0 10px;">Portfolio XIRR</p>
             <div style="display:flex;align-items:flex-end;gap:3px;height:50px;">
@@ -1877,7 +1876,7 @@ def show_upload():
     st.markdown("""
     <div style="height:1px;background:linear-gradient(90deg,transparent,rgba(176,38,255,0.3),transparent);
                 margin:56px 0 24px;"></div>
-    <p style="text-align:center;color:#1e293b;font-size:11px;padding-bottom:48px;">
+    <p style="text-align:center;color:#334155;font-size:11px;padding-bottom:48px;">
       © 2026 cas.360 view &nbsp;·&nbsp; All data processed locally &nbsp;·&nbsp; Zero server storage
     </p>
     """, unsafe_allow_html=True)
