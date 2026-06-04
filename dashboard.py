@@ -657,6 +657,232 @@ def generate_html(d, live_data=None):
 
 
 # ─────────────────────────────────────────────
+# SIP / TRANSACTION CONSTANTS
+# ─────────────────────────────────────────────
+
+SIP_TX_KEYS = ["SIP", "SYSTEMATIC", "RECURRING", "AUTO DEBIT", "E-DEBIT", "ECS", "MANDATE"]
+
+TX_META = {
+    "SIP":                  {"icon": "🔁", "color": "#63b3ed",  "group": "inflow"},
+    "Lumpsum Purchase":     {"icon": "💰", "color": "#9f7aea",  "group": "inflow"},
+    "STP In":               {"icon": "⚡️", "color": "#68d391",  "group": "inflow"},
+    "Switch In":            {"icon": "🔀", "color": "#4fd1c5",  "group": "inflow"},
+    "STP Out":              {"icon": "⬇️", "color": "#f6ad55",  "group": "outflow"},
+    "Switch Out":           {"icon": "🔀", "color": "#ed8936",  "group": "outflow"},
+    "SWP":                  {"icon": "💸", "color": "#fc8181",  "group": "outflow"},
+    "Redemption":           {"icon": "🏦", "color": "#fc8181",  "group": "outflow"},
+    "SIP Reversal":         {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "STP In Reversal":      {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "STP Out Reversal":     {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "Switch In Reversal":   {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "Switch Out Reversal":  {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "SWP Reversal":         {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "Redemption Reversal":  {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "Reversal / Rejection": {"icon": "✖",  "color": "#fc8181",  "group": "reversal"},
+    "Other":                {"icon": "○",  "color": "#718096",  "group": "other"},
+}
+
+SPECIAL_TX_TYPES = [t for t in TX_META if t not in ("SIP", "Lumpsum Purchase", "Other")]
+
+
+# ─────────────────────────────────────────────
+# TRANSACTION CLASSIFICATION
+# ─────────────────────────────────────────────
+
+def classify_transaction(tx):
+    raw_units   = float(tx.get("units")  or 0.0)
+    txn_type    = str(tx.get("type",        "")).upper()
+    description = str(tx.get("description", "")).upper()
+    combined    = txn_type + " " + description
+
+    is_reversal_kw = any(k in combined for k in [
+        "REVERSAL", "REVERSED", "REJECTION", "REJECTED",
+        "BOUNCE", "BOUNCED", "INSUFFICIENT", "FAILED",
+        "RETURN", "CANCELLED", "CANCEL",
+    ])
+
+    is_stp_out    = "STP" in combined and ("OUT" in combined or "TRANSFER OUT" in combined)
+    is_stp_in     = "STP" in combined and ("IN" in combined or "TRANSFER IN" in combined) and not is_stp_out
+    is_switch_out = "SWITCH" in combined and "OUT" in combined
+    is_switch_in  = "SWITCH" in combined and "IN" in combined and not is_switch_out
+    is_swp        = "SWP" in combined or "SYSTEMATIC WITHDRAWAL" in combined
+    is_sip_kw     = any(k in combined for k in SIP_TX_KEYS)
+    is_redemption = any(k in combined for k in ["REDEMPTION", "PAYOUT", "WITHDRAWAL"]) and not is_swp
+    is_purchase   = any(k in combined for k in ["PURCHASE", "LUMPSUM", "NFO", "NEW FUND", "REINVEST", "DIVIDEND REINVEST"])
+
+    if is_stp_out:      base = "STP Out"
+    elif is_stp_in:     base = "STP In"
+    elif is_switch_out: base = "Switch Out"
+    elif is_switch_in:  base = "Switch In"
+    elif is_swp:        base = "SWP"
+    elif is_redemption: base = "Redemption"
+    elif is_sip_kw:     base = "SIP"
+    elif is_purchase:   base = "Lumpsum Purchase"
+    else:               base = "Other"
+
+    OUTFLOW_BASES = {"Redemption", "STP Out", "Switch Out", "SWP"}
+    INFLOW_BASES  = {"SIP", "Lumpsum Purchase", "STP In", "Switch In"}
+
+    if base in OUTFLOW_BASES:
+        is_reversal = (raw_units > 0) or is_reversal_kw
+    elif base in INFLOW_BASES:
+        is_reversal = (raw_units < 0) or is_reversal_kw
+    else:
+        is_reversal = is_reversal_kw
+
+    if is_reversal and base != "Other":
+        return base + " Reversal"
+    elif is_reversal:
+        return "Reversal / Rejection"
+    return base
+
+
+# ─────────────────────────────────────────────
+# TRANSACTION ACCOUNTING
+# ─────────────────────────────────────────────
+
+def account_transactions(transactions):
+    invested = sip_invested = lumpsum_invested = redeemed_amount = 0.0
+    special_txs = []
+
+    BUY_CLASSES      = {"SIP", "Lumpsum Purchase", "STP In",  "Switch In"}
+    SELL_CLASSES     = {"Redemption", "SWP", "STP Out", "Switch Out"}
+    REV_BUY_CLASSES  = {"SIP Reversal", "STP In Reversal", "Switch In Reversal"}
+    REV_SELL_CLASSES = {"Redemption Reversal", "SWP Reversal", "STP Out Reversal", "Switch Out Reversal"}
+
+    for tx in transactions:
+        amount    = abs(float(tx.get("amount") or 0.0))
+        raw_units = float(tx.get("units")  or 0.0)
+        tx_date   = to_date(tx.get("date"))
+        tx_class  = classify_transaction(tx)
+
+        if tx_class in BUY_CLASSES:
+            invested += amount
+            if tx_class == "SIP":
+                sip_invested += amount
+            else:
+                lumpsum_invested += amount
+        elif tx_class in REV_BUY_CLASSES:
+            invested = max(0.0, invested - amount)
+            if tx_class == "SIP Reversal":
+                sip_invested = max(0.0, sip_invested - amount)
+            else:
+                lumpsum_invested = max(0.0, lumpsum_invested - amount)
+        elif tx_class in SELL_CLASSES:
+            redeemed_amount += amount
+        elif tx_class in REV_SELL_CLASSES:
+            redeemed_amount = max(0.0, redeemed_amount - amount)
+
+        special_txs.append({
+            "date_obj":    tx_date,
+            "Date":        tx_date.strftime("%d %b %Y"),
+            "Type":        tx_class,
+            "Amount":      amount,
+            "Raw Amount":  float(tx.get("amount") or 0.0),
+            "Units":       raw_units,
+            "Description": tx.get("description", ""),
+        })
+
+    return {
+        "invested":         invested,
+        "sip_invested":     sip_invested,
+        "lumpsum_invested": lumpsum_invested,
+        "redeemed_amount":  redeemed_amount,
+        "special_txs":      special_txs,
+    }
+
+
+# ─────────────────────────────────────────────
+# SIP MANDATE DETECTION
+# ─────────────────────────────────────────────
+
+def detect_sip_mandates(sip_transactions, scheme_name, units, valuation_date_str):
+    import re as _re
+
+    def get_mandate_key(tx):
+        desc      = str(tx.get("description", "")).upper()
+        amount    = str(abs(float(tx.get("amount") or 0)))
+        is_multi  = "MULTI" in desc
+        multi_flag= "MULTI" if is_multi else "SINGLE"
+        m = _re.search(r"(\d+)/(\d+)", desc)
+        if m:
+            total = int(m.group(2))
+            return f"LONG_{amount}_{multi_flag}" if total > 100 else f"{total}_{multi_flag}"
+        return f"AMT_{amount}_{multi_flag}"
+
+    mandate_groups = {}
+    for tx in sip_transactions:
+        mandate_groups.setdefault(get_mandate_key(tx), []).append(tx)
+
+    # Merge small orphan groups with same amount into the largest group
+    if len(mandate_groups) > 1:
+        amount_to_groups = {}
+        for mk, mtxs in mandate_groups.items():
+            amt = str(abs(float(mtxs[0].get("amount") or 0)))
+            amount_to_groups.setdefault(amt, []).append((mk, mtxs))
+        merged = {}
+        for amt, groups in amount_to_groups.items():
+            if len(groups) == 1:
+                mk, mtxs = groups[0]
+                merged[mk] = mtxs
+            else:
+                sorted_by_size = sorted(groups, key=lambda x: len(x[1]), reverse=True)
+                main_key, main_txs = sorted_by_size[0]
+                main_multi = "MULTI" in main_key
+                for mk, mtxs in sorted_by_size[1:]:
+                    if len(mtxs) <= 2 and ("MULTI" in mk) == main_multi:
+                        main_txs = main_txs + mtxs
+                    else:
+                        merged[mk] = mtxs
+                merged[main_key] = main_txs
+        mandate_groups = merged
+
+    statement_date_obj = to_date(valuation_date_str)
+    cutoff_live        = statement_date_obj - datetime.timedelta(days=75)
+    sip_records        = []
+
+    for _mandate_key, mandate_txs in mandate_groups.items():
+        sorted_mandate = sorted(mandate_txs, key=lambda x: to_date(x.get("date")))
+        latest_tx      = sorted_mandate[-1]
+        amount_sip     = float(latest_tx.get("amount", 0.0))
+        if amount_sip <= 0:
+            continue
+
+        days      = [to_date(t.get("date")).day for t in mandate_txs]
+        dom       = Counter(days).most_common(1)[0][0] if days else 1
+        last_date = to_date(latest_tx.get("date"))
+        next_due  = next_due_date(dom)
+
+        is_recent = last_date >= cutoff_live
+        status    = "Live" if (units > 0.01 and is_recent) else "Inactive"
+
+        sip_label = scheme_name
+        if len(mandate_groups) > 1:
+            desc = str(latest_tx.get("description", ""))
+            sip_label = scheme_name + (" (Multi SIP)" if "MULTI" in desc.upper() else " (Physical)")
+
+        days_since_last   = (statement_date_obj - last_date).days
+        missed_last_month = (status == "Live" and days_since_last > 39)
+
+        sip_records.append({
+            "scheme":            sip_label,
+            "amount":            amount_sip,
+            "day_label":         ordinal(dom),
+            "dom":               dom,
+            "last_date":         last_date.strftime("%d %b %Y"),
+            "last_date_obj":     last_date,
+            "next_date":         next_due.strftime("%d %b %Y"),
+            "next_iso":          next_due.isoformat(),
+            "installments":      len(mandate_txs),
+            "days_since_last":   days_since_last,
+            "missed_last_month": missed_last_month,
+            "status":            status,
+        })
+
+    return sip_records
+
+
+# ─────────────────────────────────────────────
 # DATA PROCESSING
 # ─────────────────────────────────────────────
 
@@ -665,42 +891,46 @@ def process(raw):
     info = raw.get("investor_info", {})
 
     result = {
-        "investor_name": info.get("name", "Investor"),
-        "investor_email": info.get("email", ""),
-        "investor_pan": info.get("pan", "—"),
-        "statement_date": str(date.today()),
-        "total_value": 0.0,
-        "total_invested": 0.0,
-        "unrealized_pnl": 0.0,
-        "realized_pnl": 0.0,
-        "alloc_values": {},
-        "alloc_pct": {},
-        "holdings": [],
-        "live_sips": [],
-        "dead_sips": [],
-        "redeemed": [],
-        "recent_redemptions": [],
-        "tx_map": {},
-        "agg_map": {},
-        "duplicate_alerts": [],
+        "investor_name":          info.get("name", "Investor"),
+        "investor_email":         info.get("email", ""),
+        "investor_pan":           info.get("pan", "—"),
+        "statement_date":         str(date.today()),
+        "total_value":            0.0,
+        "total_invested":         0.0,
+        "total_sip_invested":     0.0,
+        "total_lumpsum_invested": 0.0,
+        "unrealized_pnl":         0.0,
+        "realized_pnl":           0.0,
+        "alloc_values":           {},
+        "alloc_pct":              {},
+        "holdings":               [],
+        "live_sips":              [],
+        "dead_sips":              [],
+        "redeemed":               [],
+        "recent_redemptions":     [],
+        "special_transactions":   [],
+        "tx_map":                 {},
+        "agg_map":                {},
+        "duplicate_alerts":       [],
     }
 
     total_val = 0.0
     total_inv = 0.0
-    type_map = {}
+    type_map  = {}
 
     for folio in raw.get("folios", []):
         for scheme in folio.get("schemes", []):
-            valuation = scheme.get("valuation", {})
+            valuation   = scheme.get("valuation", {})
             scheme_name = scheme.get("scheme", "Unknown")
             valuation_date = str(valuation.get("date", result["statement_date"]))
             result["statement_date"] = valuation_date
 
-            cost = float(valuation.get("cost", 0.0))
-            value = float(valuation.get("value", 0.0))
-            units = float(scheme.get("close", 0.0))
-            scheme_type = str(scheme.get("type", "EQUITY")).upper()
+            cost   = float(valuation.get("cost",  0.0))
+            value  = float(valuation.get("value", 0.0))
+            units  = float(scheme.get("close",    0.0))
+
             sname_lower = scheme_name.lower()
+            scheme_type = str(scheme.get("type", "EQUITY")).upper()
             if any(k in sname_lower for k in ("gold", "silver", "metal", "commodity")):
                 category = "Gold & Commodities"
             elif any(k in sname_lower for k in ("international", "global", "overseas", "us ", "nasdaq", "s&p", "hang seng", "japan", "europe")):
@@ -713,37 +943,37 @@ def process(raw):
             transactions = scheme.get("transactions", [])
             result["tx_map"][scheme_name] = transactions
 
-            invested = 0.0
-            redeemed_amount = 0.0
-            for tx in transactions:
-                amount = abs(float(tx.get("amount", 0.0)))
-                txn_type = str(tx.get("type", "")).upper()
-                description = str(tx.get("description", "")).upper()
-                is_buy = any(k in txn_type or k in description for k in ["PURCHASE", "REINVEST", "SIP", "STP-IN"])
-                is_sell = any(k in txn_type or k in description for k in ["REDEMPTION", "PAYOUT", "WITHDRAWAL", "STP-OUT"])
+            # ── Accounting ──────────────────────────────────────────
+            acct             = account_transactions(transactions)
+            invested         = acct["invested"]
+            sip_invested     = acct["sip_invested"]
+            lumpsum_invested = acct["lumpsum_invested"]
+            redeemed_amount  = acct["redeemed_amount"]
 
-                if is_buy:
-                    invested += amount
-                if is_sell:
-                    redeemed_amount += amount
-                    try:
-                        redemption_date = to_date(tx.get("date"))
-                        result["recent_redemptions"].append({
-                            "date_obj": redemption_date,
-                            "Date": redemption_date.strftime("%d %b %Y"),
-                            "Scheme": clean_name(scheme_name),
-                            "Payout": amount,
-                        })
-                    except Exception:
-                        pass
+            # Enrich special txs with scheme + category
+            for stx in acct["special_txs"]:
+                stx["Scheme"]   = clean_name(scheme_name)
+                stx["Category"] = category
+                result["special_transactions"].append(stx)
 
+            # Populate recent_redemptions from classified txs
+            for stx in acct["special_txs"]:
+                if stx["Type"] in ("Redemption", "SWP"):
+                    result["recent_redemptions"].append({
+                        "date_obj": stx["date_obj"],
+                        "Date":     stx["Date"],
+                        "Scheme":   clean_name(scheme_name),
+                        "Payout":   stx["Amount"],
+                    })
+
+            # ── Fully redeemed position ──────────────────────────────
             if units < 0.001 and invested > 0 and redeemed_amount > 0:
                 profit = redeemed_amount - invested
                 result["redeemed"].append({
-                    "scheme": scheme_name,
+                    "scheme":   scheme_name,
                     "invested": invested,
                     "redeemed": redeemed_amount,
-                    "profit": profit,
+                    "profit":   profit,
                 })
                 result["realized_pnl"] += profit
                 result["agg_map"][scheme_name] = {"cost": cost, "units": units, "value": value}
@@ -754,70 +984,56 @@ def process(raw):
             type_map[category] = type_map.get(category, 0.0) + value
             result["agg_map"][scheme_name] = {"cost": cost, "units": units, "value": value}
 
-            pnl = value - cost
+            pnl        = value - cost
             xirr_value = calc_xirr(transactions, value, valuation_date)
-            cas_nav = float(valuation.get("nav", 0.0))
+            cas_nav    = float(valuation.get("nav", 0.0))
             if cas_nav == 0.0 and units > 0:
                 cas_nav = value / units
 
             result["holdings"].append({
-                "scheme": scheme_name,
-                "amfi": scheme.get("amfi"),
-                "units": units,
-                "invested": cost,
-                "value": value,
-                "pnl": pnl,
-                "xirr": xirr_value,
-                "category": category,
-                "cas_nav": cas_nav,
-                "cas_date": valuation_date,
+                "scheme":            scheme_name,
+                "amfi":              scheme.get("amfi"),
+                "units":             units,
+                "invested":          invested,
+                "sip_invested":      sip_invested,
+                "lumpsum_invested":  lumpsum_invested,
+                "value":             value,
+                "pnl":               pnl,
+                "xirr":              xirr_value,
+                "category":          category,
+                "cas_nav":           cas_nav,
+                "cas_date":          valuation_date,
             })
 
-            sip_keywords = ["SIP", "SYSTEMATIC", "RECURRING", "AUTO", "DEBIT", "E-DEBIT", "ECS", "MANDATE"]
-            sip_transactions = [
+            # ── SIP mandate detection ────────────────────────────────
+            sip_txs = [
                 t for t in transactions
-                if any(k in str(t.get("description", "")).upper() or k in str(t.get("type", "")).upper() for k in sip_keywords)
+                if any(k in str(t.get("description","")).upper()
+                       or k in str(t.get("type","")).upper()
+                       for k in SIP_TX_KEYS)
+                and float(t.get("units")  or 0.0) > 0
+                and float(t.get("amount") or 0.0) > 0
             ]
-
-            if sip_transactions:
-                days = [to_date(t.get("date")).day for t in sip_transactions]
-                dom = Counter(days).most_common(1)[0][0] if days else 1
-
-                sorted_sip = sorted(sip_transactions, key=lambda x: to_date(x.get("date")))
-                latest_tx = sorted_sip[-1]
-                amount_sip = float(latest_tx.get("amount", 0.0))
-
-                if amount_sip > 0:
-                    last_date = to_date(latest_tx.get("date"))
-                    statement_date_obj = to_date(valuation_date)
-                    cutoff = statement_date_obj - datetime.timedelta(days=90)
-                    next_due = next_due_date(dom)
-                    next_due_label = next_due.strftime("%d %b %Y")
-                    next_due_iso = next_due.isoformat()
-
-                    sip_record = {
-                        "scheme": scheme_name,
-                        "amount": amount_sip,
-                        "day_label": ordinal(dom),
-                        "last_date": last_date.strftime("%d %b %Y"),
-                        "next_date": next_due_label,
-                        "next_iso": next_due_iso,
-                        "status": "Live" if last_date >= cutoff and units > 0.01 else "Inactive",
-                    }
-
-                    if sip_record["status"] == "Live":
-                        result["live_sips"].append(sip_record)
+            if sip_txs:
+                for rec in detect_sip_mandates(sip_txs, scheme_name, units, valuation_date):
+                    if rec["status"] == "Live":
+                        result["live_sips"].append(rec)
                     else:
-                        result["dead_sips"].append(sip_record)
+                        result["dead_sips"].append(rec)
 
-    result["total_value"] = total_val
-    result["total_invested"] = total_inv
-    result["unrealized_pnl"] = total_val - total_inv
-    result["alloc_values"] = type_map
-    result["alloc_pct"] = {k: (v / total_val) * 100 for k, v in type_map.items()} if total_val else {}
+    result["total_value"]            = total_val
+    result["total_invested"]         = total_inv
+    result["total_sip_invested"]     = sum(h["sip_invested"]     for h in result["holdings"])
+    result["total_lumpsum_invested"] = sum(h["lumpsum_invested"]  for h in result["holdings"])
+    result["unrealized_pnl"]         = total_val - total_inv
+    result["alloc_values"]           = type_map
+    result["alloc_pct"]              = {k: (v / total_val) * 100 for k, v in type_map.items()} if total_val else {}
 
     result["recent_redemptions"] = sorted(
         result["recent_redemptions"], key=lambda x: x["date_obj"], reverse=True
+    )
+    result["special_transactions"] = sorted(
+        result["special_transactions"], key=lambda x: x["date_obj"], reverse=True
     )
 
     return result
