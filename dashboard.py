@@ -128,21 +128,21 @@ def gain_arrow(v):
 def _table_style():
     return """
 <style>
-.cas-wrap{overflow-x:auto;border-radius:12px;border:1px solid rgba(0,0,0,0.07);
-          box-shadow:0 1px 4px rgba(0,0,0,0.05);}
+.cas-wrap{overflow-x:auto;border-radius:12px;border:1px solid rgba(139,92,246,0.18);
+          box-shadow:0 2px 12px rgba(139,92,246,0.10),0 1px 4px rgba(0,0,0,0.4);}
 .cas-tbl{width:100%;border-collapse:collapse;}
-.cas-tbl th{background:#f1f5f9!important;color:#8b5cf6!important;font-size:10px!important;
+.cas-tbl th{background:rgba(139,92,246,0.15)!important;color:#a855f7!important;font-size:10px!important;
   font-weight:700!important;text-transform:uppercase!important;letter-spacing:1px!important;
   padding:11px 14px!important;text-align:left!important;white-space:nowrap!important;
-  border-bottom:1px solid rgba(0,0,0,0.07)!important;}
-.cas-tbl td{color:#0f172a!important;font-size:12px!important;
-  padding:11px 14px!important;border-bottom:1px solid rgba(0,0,0,0.05)!important;}
-.cas-tbl tr.even td{background:#ffffff!important;}
-.cas-tbl tr.odd  td{background:#f8fafc!important;}
-.cas-tbl tr:hover td{background:#eff6ff!important;}
-.cas-gain{color:#059669!important;}
-.cas-loss{color:#dc2626!important;}
-.cas-muted{color:#64748b!important;}
+  border-bottom:1px solid rgba(139,92,246,0.20)!important;}
+.cas-tbl td{color:#e2e8f0!important;font-size:12px!important;
+  padding:11px 14px!important;border-bottom:1px solid rgba(139,92,246,0.08)!important;}
+.cas-tbl tr.even td{background:#0d0d24!important;}
+.cas-tbl tr.odd  td{background:#12123a!important;}
+.cas-tbl tr:hover td{background:rgba(139,92,246,0.08)!important;}
+.cas-gain{color:#34d399!important;}
+.cas-loss{color:#f87171!important;}
+.cas-muted{color:#94a3b8!important;}
 .cas-mono{font-family:'IBM Plex Mono',monospace!important;}
 </style>
 """
@@ -151,9 +151,32 @@ def render_table(rows, key=""):
     if not rows:
         st.info("No data to display.")
         return
-    import pandas as _pd
-    df = _pd.DataFrame(rows)
-    st.dataframe(df, use_container_width=True, hide_index=True)
+    cols = list(rows[0].keys())
+    def _cell_class(col, val):
+        v = str(val)
+        if col in ("P&L", "Return %", "XIRR %", "Profit/Loss"):
+            if v.startswith("▲") or (v.startswith("+") or (v.lstrip("▲ ₹+").replace(",","").replace(".","").lstrip("-").isdigit() and not v.startswith("▼"))):
+                return "cas-gain cas-mono"
+            if v.startswith("▼") or v.startswith("-"):
+                return "cas-loss cas-mono"
+        if col in ("Invested", "Value", "SIP", "Lumpsum", "Amount", "Monthly SIP"):
+            return "cas-mono"
+        return ""
+    thead = "".join(f"<th>{c}</th>" for c in cols)
+    tbody = ""
+    for i, row in enumerate(rows):
+        cls = "even" if i % 2 == 0 else "odd"
+        cells = "".join(
+            f"<td class='{_cell_class(c, row[c])}'>{row[c]}</td>" for c in cols
+        )
+        tbody += f"<tr class='{cls}'>{cells}</tr>"
+    html = (
+        _table_style()
+        + f"<div class='cas-wrap'><table class='cas-tbl'>"
+        + f"<thead><tr>{thead}</tr></thead>"
+        + f"<tbody>{tbody}</tbody></table></div>"
+    )
+    st.markdown(html, unsafe_allow_html=True)
 
 
 def gain_color(v):
@@ -524,6 +547,72 @@ def inject_global_styles():
         [data-testid="manage-app-button"], button[title="Manage app"],
         ._profileContainer_gzau3_53, ._container_gzau3_1,
         [class*="ViewerBadge"], [data-testid="stActionButton"] { display:none!important; }
+
+        /* ── Force dark on CSS-class-based cards ────────────────────────── */
+        .swk { background: #0d0d24 !important; color: #e2e8f0 !important; }
+        .rk  { background: #0d0d24 !important; color: #e2e8f0 !important; }
+        .swl,.rl { color: #94a3b8 !important; }
+        .sws,.rs { color: #94a3b8 !important; }
+
+        /* ── Force dark on inline-styled white/light backgrounds ────────── */
+        [data-testid="stMarkdown"] [style*="background:#ffffff"],
+        [data-testid="stMarkdownContainer"] [style*="background:#ffffff"] {
+          background: #0d0d24 !important;
+        }
+        [data-testid="stMarkdown"] [style*="background:#fff;"],
+        [data-testid="stMarkdownContainer"] [style*="background:#fff;"] {
+          background: #0d0d24 !important;
+        }
+        [data-testid="stMarkdown"] [style*="background:#f8fafc"],
+        [data-testid="stMarkdownContainer"] [style*="background:#f8fafc"] {
+          background: #12123a !important;
+        }
+        [data-testid="stMarkdown"] [style*="background:#f1f5f9"],
+        [data-testid="stMarkdownContainer"] [style*="background:#f1f5f9"] {
+          background: #12123a !important;
+        }
+        [data-testid="stMarkdown"] [style*="background:#fff9f9"],
+        [data-testid="stMarkdownContainer"] [style*="background:#fff9f9"] {
+          background: rgba(220,38,38,0.10) !important;
+        }
+        [data-testid="stMarkdown"] [style*="background:#fff5f5"],
+        [data-testid="stMarkdownContainer"] [style*="background:#fff5f5"] {
+          background: rgba(220,38,38,0.08) !important;
+        }
+        [data-testid="stMarkdown"] [style*="background:#f0fdf4"],
+        [data-testid="stMarkdownContainer"] [style*="background:#f0fdf4"] {
+          background: rgba(16,185,129,0.08) !important;
+        }
+        /* ── Force light text on dark inline cards ───────────────────────── */
+        [data-testid="stMarkdown"] [style*="color:#0f172a"],
+        [data-testid="stMarkdownContainer"] [style*="color:#0f172a"] {
+          color: #e2e8f0 !important;
+        }
+        /* ── Fix SVG text fill on dark backgrounds ───────────────────────── */
+        [data-testid="stMarkdown"] [style*="fill:#0f172a"],
+        [data-testid="stMarkdownContainer"] [style*="fill:#0f172a"] {
+          fill: #e2e8f0 !important;
+        }
+        /* ── Fix SVG donut center circles ────────────────────────────────── */
+        [data-testid="stMarkdown"] circle[fill="#fff"],
+        [data-testid="stMarkdown"] circle[fill="'#fff'"],
+        [data-testid="stMarkdownContainer"] circle[fill="#fff"] {
+          fill: #0d0d24 !important;
+        }
+        /* ── Fix SIP health ring track ───────────────────────────────────── */
+        [data-testid="stMarkdown"] circle[stroke="#f1f5f9"],
+        [data-testid="stMarkdownContainer"] circle[stroke="#f1f5f9"] {
+          stroke: rgba(139,92,246,0.15) !important;
+        }
+        /* ── Fix legend/border dividers ──────────────────────────────────── */
+        [data-testid="stMarkdown"] [style*="border-bottom:1px solid rgba(0,0,0,0.06)"],
+        [data-testid="stMarkdownContainer"] [style*="border-bottom:1px solid rgba(0,0,0,0.06)"] {
+          border-bottom-color: rgba(139,92,246,0.12) !important;
+        }
+        [data-testid="stMarkdown"] [style*="border:1px solid rgba(0,0,0,0.07)"],
+        [data-testid="stMarkdownContainer"] [style*="border:1px solid rgba(0,0,0,0.07)"] {
+          border-color: rgba(139,92,246,0.18) !important;
+        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -3101,9 +3190,9 @@ def render_dashboard(data):
 
                     # Colour scheme: red border for missed, green for normal
                     if is_missed:
-                        card_bg   = "#fff9f9"
-                        card_brd  = "rgba(220,38,38,0.25)"
-                        amt_color = "#dc2626"
+                        card_bg   = "rgba(220,38,38,0.10)"
+                        card_brd  = "rgba(220,38,38,0.35)"
+                        amt_color = "#f87171"
                         status_badge = (
                             '<span style="background:rgba(220,38,38,0.08);'
                             'border:1px solid rgba(220,38,38,0.25);'
@@ -3122,9 +3211,9 @@ def render_dashboard(data):
                             f'</div>'
                         )
                     else:
-                        card_bg   = "#f0fdf4"
-                        card_brd  = "rgba(5,150,105,0.20)"
-                        amt_color = "#059669"
+                        card_bg   = "rgba(16,185,129,0.08)"
+                        card_brd  = "rgba(16,185,129,0.25)"
+                        amt_color = "#34d399"
                         status_badge = (
                             '<span style="background:rgba(5,150,105,0.10);'
                             'border:1px solid rgba(5,150,105,0.25);'
@@ -3251,10 +3340,10 @@ def render_dashboard(data):
                             recency = s["last_date"]
                         with cols_dead[ci]:
                             st.markdown(
-                                f'<div style="background:#fff5f5;border:1px solid rgba(220,38,38,0.18);'
-                                f'border-left:4px solid #dc2626;border-radius:14px;'
+                                f'<div style="background:rgba(220,38,38,0.08);border:1px solid rgba(220,38,38,0.25);'
+                                f'border-left:4px solid #f87171;border-radius:14px;'
                                 f'padding:16px 18px;margin-bottom:8px;'
-                                f'box-shadow:0 1px 4px rgba(0,0,0,0.05);">'
+                                f'box-shadow:0 2px 12px rgba(220,38,38,0.12);">'
                                 f'<div style="display:flex;justify-content:space-between;'
                                 f'align-items:flex-start;margin-bottom:10px;">'
                                 f'<div style="font-size:12px;color:#0f172a;font-weight:600;'
@@ -5567,20 +5656,20 @@ def render_returns_analysis(data, live_data=None):
     header_html = (
         "<div style='overflow-x:auto;'>"
         "<table style='width:100%;border-collapse:collapse;border-radius:10px;"
-        "overflow:hidden;border:1px solid rgba(0,0,0,0.07);'>"
+        "overflow:hidden;border:1px solid rgba(139,92,246,0.18);'>"
         "<thead><tr>"
-        "<th style='background:#f8fafc;color:#8b5cf6;font-size:10px;font-weight:700;"
+        "<th style='background:rgba(139,92,246,0.15);color:#a855f7;font-size:10px;font-weight:700;"
         "text-transform:uppercase;letter-spacing:1px;padding:11px 14px;text-align:left;"
         "min-width:180px;'>Scheme</th>"
     )
     for prd in all_periods[-12:]:  # show last 12 periods
         header_html += (
-            f"<th style='background:#f8fafc;color:#8b5cf6;font-size:10px;font-weight:700;"
+            f"<th style='background:rgba(139,92,246,0.15);color:#a855f7;font-size:10px;font-weight:700;"
             f"text-transform:uppercase;letter-spacing:1px;padding:11px 10px;"
             f"text-align:center;white-space:nowrap;'>{prd}</th>"
         )
     header_html += (
-        "<th style='background:#f8fafc;color:#3b82f6;font-size:10px;font-weight:700;"
+        "<th style='background:rgba(139,92,246,0.15);color:#e879f9;font-size:10px;font-weight:700;"
         "text-transform:uppercase;letter-spacing:1px;padding:11px 10px;"
         "text-align:center;'>Total</th>"
         "</tr></thead><tbody>"
@@ -5595,8 +5684,8 @@ def render_returns_analysis(data, live_data=None):
         )
         row_html = (
             f"<tr>"
-            f"<td style='background:#ffffff;color:#0f172a;font-size:11px;"
-            f"padding:10px 14px;border-bottom:1px solid rgba(0,0,0,0.06);"
+            f"<td style='background:#0d0d24;color:#e2e8f0;font-size:11px;"
+            f"padding:10px 14px;border-bottom:1px solid rgba(139,92,246,0.10);"
             f"display:flex;align-items:center;gap:8px;'>"
             f"<span style='width:8px;height:8px;border-radius:50%;"
             f"background:{color};display:inline-block;flex-shrink:0;'></span>"
@@ -5630,10 +5719,10 @@ def render_returns_analysis(data, live_data=None):
             row_html += cell
 
         row_html += (
-            f"<td style='background:#ffffff;color:#3b82f6;"
+            f"<td style='background:#0d0d24;color:#e879f9;"
             f"font-size:11px;font-weight:700;font-family:monospace;"
             f"padding:10px 10px;text-align:center;"
-            f"border-bottom:1px solid rgba(0,0,0,0.06);'>"
+            f"border-bottom:1px solid rgba(139,92,246,0.10);'>"
             f"{fmt_inr_short(total_inv)}</td>"
             f"</tr>"
         )
