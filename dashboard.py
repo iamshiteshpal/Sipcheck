@@ -814,8 +814,15 @@ def detect_sip_mandates(sip_transactions, scheme_name, units, valuation_date_str
     for tx in sip_transactions:
         mandate_groups.setdefault(get_mandate_key(tx), []).append(tx)
 
-    # Merge small orphan groups with same amount into the largest group
+    # Merge orphan first-instalments into the instalment-numbered series.
+    # Two-pass strategy:
+    #   Pass 1 (same-amount): same as before — merge small same-amount groups.
+    #   Pass 2 (cross-amount): merge AMT_* orphans (≤2 txs) into the largest
+    #     instalment-key group with the same MULTI flag, regardless of amount.
+    #     This handles the common case where instalment 1 has a different amount
+    #     (e.g. ₹1,999.90 first deduction vs ₹999.95 for instalments 2–62).
     if len(mandate_groups) > 1:
+        # Pass 1: same-amount merge
         amount_to_groups = {}
         for mk, mtxs in mandate_groups.items():
             amt = str(abs(float(mtxs[0].get("amount") or 0)))
@@ -836,6 +843,20 @@ def detect_sip_mandates(sip_transactions, scheme_name, units, valuation_date_str
                         merged[mk] = mtxs
                 merged[main_key] = main_txs
         mandate_groups = merged
+
+        # Pass 2: merge AMT_* orphans (no instalment number) into the largest
+        # instalment-numbered group with matching MULTI flag
+        if len(mandate_groups) > 1:
+            inst_keys   = [k for k in mandate_groups if not k.startswith("AMT_")]
+            orphan_keys = [k for k in mandate_groups if k.startswith("AMT_")
+                           and len(mandate_groups[k]) <= 2]
+            for ork in orphan_keys:
+                orphan_multi = "MULTI" in ork
+                candidates   = [(k, mandate_groups[k]) for k in inst_keys
+                                if ("MULTI" in k) == orphan_multi]
+                if candidates:
+                    best_key = max(candidates, key=lambda x: len(x[1]))[0]
+                    mandate_groups[best_key] = mandate_groups[best_key] + mandate_groups.pop(ork)
 
     statement_date_obj = to_date(valuation_date_str)
     cutoff_live        = statement_date_obj - datetime.timedelta(days=75)
