@@ -1976,236 +1976,458 @@ def render_mf_analytics():
         unsafe_allow_html=True,
     )
 
-    # JSX adapted for browser: imports stripped, export removed, globals used
-    _jsx = (
-        "const { useState, useMemo } = React;\n"
-        "const { PieChart, Pie, Cell, Tooltip, ResponsiveContainer,"
-        " AreaChart, Area, XAxis, YAxis, CartesianGrid, Sector,"
-        " BarChart, Bar, Legend, RadialBarChart, RadialBar } = Recharts;\n\n"
-        # ── helpers ──
-        "const formatINR = (v) => new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(v ?? 0);\n"
-        "const fmtPct = (v) => `${(v ?? 0) >= 0 ? '+' : ''}${(v ?? 0).toFixed(2)}%`;\n"
-        "const safeVal = (v) => (v == null || isNaN(v) ? 0 : v);\n\n"
-        # ── mock data ──
-        "const ALLOCATION_DATA = [\n"
-        "  { category: 'Large Cap',  invested: 450000,  currentValue: 558000,  color: '#10B981' },\n"
-        "  { category: 'Mid Cap',    invested: 300000,  currentValue: 384000,  color: '#3B82F6' },\n"
-        "  { category: 'Small Cap',  invested: 200000,  currentValue: 268000,  color: '#8B5CF6' },\n"
-        "  { category: 'Sectoral',   invested: 250000,  currentValue: 307500,  color: '#F59E0B' },\n"
-        "  { category: 'Debt',       invested: 180000,  currentValue: 198000,  color: '#06B6D4' },\n"
-        "  { category: 'Gold',       invested: 120000,  currentValue: 148800,  color: '#EC4899' },\n"
-        "];\n\n"
-        "const LUMPSUM_DATA = {\n"
-        "  summary: { totalInvested: 1500000, currentValue: 1864300, absoluteROI: 24.29 },\n"
-        "  growthTimeline: (() => {\n"
-        "    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];\n"
-        "    const years = [2023, 2024]; let v = 1500000;\n"
-        "    return years.flatMap(y => months.map(m => { v = v * (1 + (Math.random() * 0.025 - 0.004)); return { month: `${m} ${y}`, value: Math.round(v) }; }));\n"
-        "  })(),\n"
-        "  schemes: [\n"
-        "    { schemeName: 'Mirae Asset Large Cap', purchaseDate: '12 Jan 2023', navAtPurchase: 82.45, currentNAV: 104.32, units: 1820.50, investedAmount: 150000, currentValue: 189918 },\n"
-        "    { schemeName: 'Parag Parikh Flexi Cap', purchaseDate: '05 Mar 2023', navAtPurchase: 54.78, currentNAV: 74.91, units: 5476.46, investedAmount: 300000, currentValue: 410264 },\n"
-        "    { schemeName: 'Axis Bluechip Fund', purchaseDate: '20 Jun 2022', navAtPurchase: 41.20, currentNAV: 51.60, units: 7281.55, investedAmount: 300000, currentValue: 375728 },\n"
-        "    { schemeName: 'ICICI Pru Technology', purchaseDate: '14 Sep 2022', navAtPurchase: 120.10, currentNAV: 145.80, units: 2081.60, investedAmount: 250000, currentValue: 303497 },\n"
-        "    { schemeName: 'SBI Gold Fund', purchaseDate: '02 Nov 2023', navAtPurchase: 18.24, currentNAV: 22.41, units: 6578.95, investedAmount: 120000, currentValue: 147445 },\n"
-        "  ],\n"
-        "};\n\n"
-        "const SIP_DATA = {\n"
-        "  healthScore: 74,\n"
-        "  healthBreakdown: { regularity: 82, onTimePayment: 91, skipRate: 8 },\n"
-        "  missedOpportunities: [\n"
-        "    { schemeName: 'Mirae Asset Large Cap', missedDate: 'Mar 2024', missedAmount: 5000, currentValueIfInvested: 5543, opportunityCost: 543 },\n"
-        "    { schemeName: 'Parag Parikh Flexi Cap', missedDate: 'Jun 2024', missedAmount: 10000, currentValueIfInvested: 11097, opportunityCost: 1097 },\n"
-        "    { schemeName: 'Axis Bluechip Fund', missedDate: 'Aug 2024', missedAmount: 7500, currentValueIfInvested: 8096, opportunityCost: 596 },\n"
-        "  ],\n"
-        "  overlapAlerts: [\n"
-        "    { alertType: 'DUPLICATE_SIP', severity: 'HIGH', funds: ['Mirae Asset Large Cap', 'Axis Bluechip'], overlapPercent: 78, description: 'Both funds hold >75% overlap in top-10 holdings.', recommendation: 'Consolidate into one large-cap fund.' },\n"
-        "    { alertType: 'PORTFOLIO_OVERLAP', severity: 'MEDIUM', funds: ['Parag Parikh Flexi Cap', 'ICICI Nifty 50 Index'], overlapPercent: 42, description: '42% portfolio overlap by stock holdings.', recommendation: 'Monitor — rebalance if it exceeds 60%.' },\n"
-        "  ],\n"
-        "  monthlySIPs: [\n"
-        "    { schemeName: 'Mirae Large Cap', monthlyAmount: 5000, status: 'ACTIVE', completedInstallments: 21, skippedInstallments: 3 },\n"
-        "    { schemeName: 'Parag Parikh', monthlyAmount: 10000, status: 'ACTIVE', completedInstallments: 23, skippedInstallments: 1 },\n"
-        "    { schemeName: 'Axis Bluechip', monthlyAmount: 7500, status: 'ACTIVE', completedInstallments: 20, skippedInstallments: 4 },\n"
-        "    { schemeName: 'HDFC Mid Cap', monthlyAmount: 6000, status: 'ACTIVE', completedInstallments: 18, skippedInstallments: 0 },\n"
-        "    { schemeName: 'Nippon Small Cap', monthlyAmount: 4000, status: 'PAUSED', completedInstallments: 9, skippedInstallments: 3 },\n"
-        "    { schemeName: 'SBI Gold Fund', monthlyAmount: 2000, status: 'ACTIVE', completedInstallments: 12, skippedInstallments: 0 },\n"
-        "  ],\n"
-        "};\n\n"
-        "const SWP_DATA = {\n"
-        "  monthlyWithdrawals: [\n"
-        "    {month:'Jan 2024',amount:15000},{month:'Feb 2024',amount:15000},{month:'Mar 2024',amount:15000},{month:'Apr 2024',amount:18000},\n"
-        "    {month:'May 2024',amount:15000},{month:'Jun 2024',amount:15000},{month:'Jul 2024',amount:20000},{month:'Aug 2024',amount:15000},\n"
-        "    {month:'Sep 2024',amount:15000},{month:'Oct 2024',amount:15000},{month:'Nov 2024',amount:22000},{month:'Dec 2024',amount:15000},\n"
-        "  ],\n"
-        "  summary: { totalWithdrawn: 195000, remainingPrincipal: 1305000, monthlyWithdrawalRate: 15000, estimatedRunRateMonths: 87 },\n"
-        "  switchLog: [\n"
-        "    { date: '15 Jan 2024', sourceScheme: 'HDFC Balanced Adv.', destinationScheme: 'ICICI Pru Liquid', unitsTransferred: 842.50, navAtSwitch: 284.60, switchValue: 239880, taxType: 'LTCG', taxAmount: 4200 },\n"
-        "    { date: '08 Apr 2024', sourceScheme: 'Axis Bluechip', destinationScheme: 'Parag Parikh Flexi', unitsTransferred: 1200.00, navAtSwitch: 49.20, switchValue: 59040, taxType: 'STCG', taxAmount: 1180 },\n"
-        "    { date: '22 Jul 2024', sourceScheme: 'SBI Liquid Fund', destinationScheme: 'Mirae Large Cap', unitsTransferred: 450.75, navAtSwitch: 3421.80, switchValue: 1542797, taxType: 'NIL', taxAmount: 0 },\n"
-        "    { date: '10 Nov 2024', sourceScheme: 'Nippon Small Cap', destinationScheme: 'HDFC Mid Cap', unitsTransferred: 600.00, navAtSwitch: 132.40, switchValue: 79440, taxType: 'STCG', taxAmount: 2380 },\n"
-        "  ],\n"
-        "};\n\n"
-        "const REDEMPTION_DATA = {\n"
-        "  chartData: [\n"
-        "    {schemeName:'Axis Bluechip',redeemedAmount:85000,lockInRemaining:0},{schemeName:'SBI ELSS',redeemedAmount:50000,lockInRemaining:18000},\n"
-        "    {schemeName:'Mirae Large Cap',redeemedAmount:120000,lockInRemaining:0},{schemeName:'Parag Parikh',redeemedAmount:40000,lockInRemaining:0},\n"
-        "    {schemeName:'HDFC ELSS',redeemedAmount:60000,lockInRemaining:32000},{schemeName:'ICICI Tech',redeemedAmount:95000,lockInRemaining:0},\n"
-        "    {schemeName:'Nippon Small',redeemedAmount:30000,lockInRemaining:0},{schemeName:'DSP Midcap',redeemedAmount:70000,lockInRemaining:0},\n"
-        "  ],\n"
-        "  transactions: [\n"
-        "    {schemeName:'Axis Bluechip Fund',redemptionDate:'12 Mar 2024',units:1650,navAtRedemption:51.52,investedAmount:68000,redemptionValue:85008,exitLoad:0,taxType:'LTCG',bankAccount:'HDFC ****4521',status:'COMPLETED'},\n"
-        "    {schemeName:'SBI Long Term Equity',redemptionDate:'18 Apr 2024',units:820,navAtRedemption:61.00,investedAmount:40000,redemptionValue:50020,exitLoad:0,taxType:'LTCG',bankAccount:'SBI ****8834',status:'COMPLETED'},\n"
-        "    {schemeName:'Mirae Asset Large Cap',redemptionDate:'02 May 2024',units:1150,navAtRedemption:104.32,investedAmount:100000,redemptionValue:119968,exitLoad:0,taxType:'LTCG',bankAccount:'HDFC ****4521',status:'COMPLETED'},\n"
-        "    {schemeName:'Parag Parikh Flexi Cap',redemptionDate:'28 Jun 2024',units:534,navAtRedemption:74.91,investedAmount:32000,redemptionValue:40002,exitLoad:0,taxType:'LTCG',bankAccount:'ICICI ****2290',status:'PARTIAL'},\n"
-        "    {schemeName:'ICICI Pru Technology',redemptionDate:'15 Aug 2024',units:651,navAtRedemption:145.80,investedAmount:80000,redemptionValue:94937,exitLoad:500,taxType:'STCG',bankAccount:'SBI ****8834',status:'COMPLETED'},\n"
-        "    {schemeName:'Nippon India Small Cap',redemptionDate:'05 Oct 2024',units:220,navAtRedemption:136.40,investedAmount:25000,redemptionValue:30008,exitLoad:0,taxType:'STCG',bankAccount:'HDFC ****4521',status:'COMPLETED'},\n"
-        "  ],\n"
-        "};\n\n"
-        # ── shared styles ──
-        "const card = { background: '#111111', border: '1px solid #2A2A2A', borderRadius: 12, padding: 20 };\n"
-        "const muted = { color: '#6B7280' };\n"
-        "const secondary = { color: '#9CA3AF' };\n"
-        "const positive = { color: '#10B981' };\n"
-        "const negative = { color: '#EF4444' };\n\n"
-        # ── AllocationTab ──
-        "function AllocationTab() {\n"
-        "  const [activeIndex, setActiveIndex] = React.useState(null);\n"
-        "  const totalCurrentValue = ALLOCATION_DATA.reduce((s, d) => s + d.currentValue, 0);\n"
-        "  const totalInvested = ALLOCATION_DATA.reduce((s, d) => s + d.invested, 0);\n"
-        "  const tableData = ALLOCATION_DATA.map(d => ({ ...d, gain: d.currentValue - d.invested, allocationPct: (d.currentValue / totalCurrentValue) * 100 }));\n"
-        "  const renderActiveShape = (props) => { const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props; return <Sector cx={cx} cy={cy} innerRadius={innerRadius - 4} outerRadius={outerRadius + 8} startAngle={startAngle} endAngle={endAngle} fill={fill} />; };\n"
-        "  const CT = ({ active, payload }) => { if (!active || !payload?.length) return null; const d = payload[0].payload; return <div style={{ ...card, padding: 12 }}><p style={{ color: d.color, fontWeight: 700 }}>{d.category}</p><p style={secondary}>Value: {formatINR(d.currentValue)}</p><p style={secondary}>Alloc: {((d.currentValue / totalCurrentValue) * 100).toFixed(2)}%</p></div>; };\n"
-        "  return (<div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))', gap:20 }}>\n"
-        "    <div style={card}><h3 style={{ color:'#fff', fontWeight:700, marginBottom:16 }}>Portfolio Allocation</h3>\n"
-        "      <ResponsiveContainer width='100%' height={320}><PieChart>\n"
-        "        <Pie data={ALLOCATION_DATA} cx='50%' cy='50%' innerRadius={80} outerRadius={130} dataKey='currentValue' activeIndex={activeIndex} activeShape={renderActiveShape} onMouseEnter={(_,i)=>setActiveIndex(i)} onMouseLeave={()=>setActiveIndex(null)}>\n"
-        "          {ALLOCATION_DATA.map((d,i)=><Cell key={d.category} fill={d.color} />)}\n"
-        "        </Pie>\n"
-        "        <Tooltip content={<CT />} />\n"
-        "        <text x='50%' y='46%' textAnchor='middle' fill='#9CA3AF' fontSize={13}>Portfolio</text>\n"
-        "        <text x='50%' y='55%' textAnchor='middle' fill='#fff' fontSize={15} fontWeight={700}>{formatINR(totalCurrentValue)}</text>\n"
-        "      </PieChart></ResponsiveContainer></div>\n"
-        "    <div style={card}><h3 style={{ color:'#fff', fontWeight:700, marginBottom:16 }}>Breakdown</h3>\n"
-        "      <div style={{ display:'flex', flexDirection:'column', gap:10 }}>\n"
-        "        {tableData.map(d=>(<div key={d.category} style={{ background:'#1A1A1A', borderRadius:8, padding:'10px 14px' }}>\n"
-        "          <div style={{ display:'flex', justifyContent:'space-between', marginBottom:6 }}><div style={{ display:'flex', alignItems:'center', gap:8 }}><div style={{ width:10, height:10, borderRadius:'50%', background:d.color }} /><span style={{ color:'#fff', fontWeight:600 }}>{d.category}</span></div><span style={{ color:'#fff', fontWeight:700 }}>{d.allocationPct.toFixed(1)}%</span></div>\n"
-        "          <div style={{ display:'flex', justifyContent:'space-between', fontSize:12, marginBottom:6 }}><span style={secondary}>{formatINR(d.invested)}</span><span style={secondary}>{formatINR(d.currentValue)}</span><span style={d.gain>=0?positive:negative}>{formatINR(d.gain)}</span></div>\n"
-        "          <div style={{ background:'#2A2A2A', borderRadius:4, height:4 }}><div style={{ width:`${d.allocationPct}%`, height:4, borderRadius:4, background:d.color }} /></div>\n"
-        "        </div>))}\n"
-        "        <div style={{ background:'#1E1E1E', border:'1px solid #3A3A3A', borderRadius:8, padding:'10px 14px' }}><div style={{ display:'flex', justifyContent:'space-between' }}><span style={{ color:'#fff', fontWeight:700 }}>Total</span><div style={{ display:'flex', gap:16, fontSize:13 }}><span style={secondary}>{formatINR(totalInvested)}</span><span style={{ color:'#10B981', fontWeight:700 }}>{formatINR(totalCurrentValue)}</span><span style={positive}>{formatINR(totalCurrentValue-totalInvested)}</span></div></div></div>\n"
-        "      </div></div>\n"
-        "  </div>);\n"
-        "}\n\n"
-        # ── LumpsumTab ──
-        "function LumpsumTab() {\n"
-        "  const { summary, growthTimeline, schemes } = LUMPSUM_DATA;\n"
-        "  const CT = ({ active, payload, label }) => { if (!active || !payload?.length) return null; return <div style={{ ...card, padding:10 }}><p style={secondary}>{label}</p><p style={{ color:'#10B981', fontWeight:700 }}>{formatINR(payload[0]?.value)}</p></div>; };\n"
-        "  return (<div style={{ display:'flex', flexDirection:'column', gap:20 }}>\n"
-        "    <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:16 }}>\n"
-        "      {[{label:'Total Invested',value:formatINR(summary.totalInvested),color:'#9CA3AF'},{label:'Current Value',value:formatINR(summary.currentValue),color:'#10B981'},{label:'Absolute ROI',value:fmtPct(summary.absoluteROI),color:'#10B981'}].map(s=>(<div key={s.label} style={card}><p style={{ ...muted, fontSize:12, marginBottom:8 }}>{s.label}</p><p style={{ color:s.color, fontSize:22, fontWeight:700 }}>{s.value}</p></div>))}\n"
-        "    </div>\n"
-        "    <div style={card}><h3 style={{ color:'#fff', fontWeight:700, marginBottom:16 }}>Growth Trajectory</h3>\n"
-        "      <ResponsiveContainer width='100%' height={280}><AreaChart data={growthTimeline} margin={{ top:8, right:8, left:8, bottom:8 }}>\n"
-        "        <defs><linearGradient id='lumpsumGradient' x1='0' y1='0' x2='0' y2='1'><stop offset='5%' stopColor='#10B981' stopOpacity={0.4} /><stop offset='95%' stopColor='#10B981' stopOpacity={0} /></linearGradient></defs>\n"
-        "        <CartesianGrid strokeDasharray='3 3' stroke='#1A1A1A' />\n"
-        "        <XAxis dataKey='month' tick={{ fill:'#6B7280', fontSize:11 }} tickLine={false} interval={3} />\n"
-        "        <YAxis tick={{ fill:'#6B7280', fontSize:11 }} tickLine={false} axisLine={false} tickFormatter={v=>`\\u20b9${(v/100000).toFixed(1)}L`} />\n"
-        "        <Tooltip content={<CT />} />\n"
-        "        <Area type='monotone' dataKey='value' stroke='#10B981' strokeWidth={2} fill='url(#lumpsumGradient)' />\n"
-        "      </AreaChart></ResponsiveContainer></div>\n"
-        "    <div style={card}><h3 style={{ color:'#fff', fontWeight:700, marginBottom:16 }}>Scheme Breakdown</h3>\n"
-        "      <div style={{ overflowX:'auto' }}><table style={{ width:'100%', borderCollapse:'collapse', fontSize:13, minWidth:700 }}>\n"
-        "        <thead><tr style={{ borderBottom:'1px solid #2A2A2A' }}>{['Scheme','Date','NAV @ Buy','Current NAV','Units','Invested','Value','Return %'].map(h=>(<th key={h} style={{ ...muted, textAlign:'left', padding:'8px 10px', fontSize:11, textTransform:'uppercase' }}>{h}</th>))}</tr></thead>\n"
-        "        <tbody>{schemes.map(s=>{ const ret=((s.currentValue-s.investedAmount)/s.investedAmount)*100; return (<tr key={s.schemeName} style={{ borderBottom:'1px solid #1A1A1A' }}><td style={{ color:'#fff', padding:'10px', fontWeight:500 }}>{s.schemeName}</td><td style={{ ...secondary, padding:'10px' }}>{s.purchaseDate}</td><td style={{ ...secondary, padding:'10px', fontFamily:'monospace' }}>\\u20b9{s.navAtPurchase.toFixed(4)}</td><td style={{ ...secondary, padding:'10px', fontFamily:'monospace' }}>\\u20b9{s.currentNAV.toFixed(4)}</td><td style={{ ...secondary, padding:'10px' }}>{s.units.toFixed(2)}</td><td style={{ ...secondary, padding:'10px' }}>{formatINR(s.investedAmount)}</td><td style={{ color:'#10B981', padding:'10px', fontWeight:600 }}>{formatINR(s.currentValue)}</td><td style={{ padding:'10px', fontWeight:700, color:ret>=0?'#10B981':'#EF4444' }}>{fmtPct(ret)}</td></tr>); })}</tbody>\n"
-        "      </table></div></div>\n"
-        "  </div>);\n"
-        "}\n\n"
-        # ── SipTab ──
-        "function SipTab() {\n"
-        "  const { healthScore, healthBreakdown, missedOpportunities, overlapAlerts, monthlySIPs } = SIP_DATA;\n"
-        "  const scoreColor = healthScore>=75?'#10B981':healthScore>=50?'#F59E0B':'#EF4444';\n"
-        "  const totalOC = missedOpportunities.reduce((s,m)=>s+m.opportunityCost,0);\n"
-        "  return (<div style={{ display:'flex', flexDirection:'column', gap:20 }}>\n"
-        "    <div style={card}><h3 style={{ color:'#fff', fontWeight:700, marginBottom:16 }}>SIP Health Score</h3>\n"
-        "      <div style={{ display:'flex', alignItems:'center', gap:24, flexWrap:'wrap' }}>\n"
-        "        <ResponsiveContainer width={200} height={160}><RadialBarChart cx='50%' cy='70%' innerRadius={55} outerRadius={85} startAngle={180} endAngle={0} data={[{name:'H',value:healthScore,fill:scoreColor}]} barSize={16}><RadialBar background={{ fill:'#1A1A1A' }} dataKey='value' cornerRadius={8} /><text x='50%' y='68%' textAnchor='middle' fill={scoreColor} fontSize={32} fontWeight={800}>{healthScore}</text><text x='50%' y='85%' textAnchor='middle' fill='#6B7280' fontSize={12}>/100</text></RadialBarChart></ResponsiveContainer>\n"
-        "        <div style={{ display:'flex', gap:12, flexWrap:'wrap' }}>{[{label:'Regularity',value:healthBreakdown.regularity,color:'#10B981'},{label:'On-Time',value:healthBreakdown.onTimePayment,color:'#3B82F6'},{label:'Skip Rate',value:healthBreakdown.skipRate,color:'#EF4444'}].map(p=>(<div key={p.label} style={{ background:'#1A1A1A', borderRadius:8, padding:'10px 16px', textAlign:'center', minWidth:100 }}><p style={{ color:p.color, fontSize:22, fontWeight:700 }}>{p.value}%</p><p style={{ ...muted, fontSize:11 }}>{p.label}</p></div>))}</div>\n"
-        "      </div></div>\n"
-        "    <div style={card}><h3 style={{ color:'#fff', fontWeight:700, marginBottom:16 }}>SIP Mandates</h3>\n"
-        "      <ResponsiveContainer width='100%' height={240}><BarChart data={monthlySIPs} margin={{ top:8, right:8, left:0, bottom:8 }}><CartesianGrid strokeDasharray='3 3' stroke='#1A1A1A' /><XAxis dataKey='schemeName' tick={{ fill:'#6B7280', fontSize:11 }} tickLine={false} /><YAxis tick={{ fill:'#6B7280', fontSize:11 }} tickLine={false} axisLine={false} /><Tooltip contentStyle={{ background:'#111', border:'1px solid #2A2A2A', borderRadius:8 }} labelStyle={{ color:'#fff' }} /><Legend iconType='square' iconSize={10} wrapperStyle={{ color:'#9CA3AF', fontSize:12 }} /><Bar dataKey='completedInstallments' name='Completed' fill='#10B981' radius={[4,4,0,0]} /><Bar dataKey='skippedInstallments' name='Skipped' fill='#EF4444' radius={[4,4,0,0]} /></BarChart></ResponsiveContainer></div>\n"
-        "    <div style={card}><div style={{ display:'flex', gap:8, marginBottom:16 }}><span style={{ fontSize:18 }}>&#9888;&#65039;</span><h3 style={{ color:'#fff', fontWeight:700 }}>Missed SIP Opportunities</h3></div>\n"
-        "      <div style={{ display:'flex', flexDirection:'column', gap:10 }}>\n"
-        "        {missedOpportunities.map((m,i)=>(<div key={i} style={{ background:'#1A1A1A', borderRadius:8, padding:'12px 16px', display:'flex', justifyContent:'space-between', flexWrap:'wrap', gap:8 }}><div><p style={{ color:'#fff', fontWeight:600 }}>{m.schemeName}</p><p style={{ ...muted, fontSize:12 }}>Missed: {m.missedDate} &middot; {formatINR(m.missedAmount)}</p></div><div style={{ textAlign:'right' }}><p style={{ color:'#10B981' }}>Worth {formatINR(m.currentValueIfInvested)} today</p><p style={{ color:'#EF4444', fontSize:13 }}>Cost: {formatINR(m.opportunityCost)}</p></div></div>))}\n"
-        "        <div style={{ textAlign:'right', marginTop:8 }}><span style={{ ...muted, fontSize:13 }}>Total Cost: </span><span style={{ color:'#EF4444', fontWeight:800, fontSize:20 }}>{formatINR(totalOC)}</span></div>\n"
-        "      </div></div>\n"
-        "    <div style={card}><h3 style={{ color:'#fff', fontWeight:700, marginBottom:16 }}>Overlap &amp; Duplicate Alerts</h3>\n"
-        "      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>\n"
-        "        {(overlapAlerts||[]).map((a,i)=>{ const isH=a.severity==='HIGH'; const bc=isH?'#EF4444':'#F59E0B'; const bs=isH?{background:'rgba(239,68,68,0.15)',color:'#EF4444'}:{background:'rgba(245,158,11,0.15)',color:'#F59E0B'}; return (<div key={i} style={{ borderLeft:`4px solid ${bc}`, background:'#1A1A1A', borderRadius:'0 8px 8px 0', padding:'14px 16px' }}><div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:8, flexWrap:'wrap' }}><span style={{ ...bs, borderRadius:4, padding:'2px 8px', fontSize:11, fontWeight:700 }}>{a.severity}</span><span style={{ color:'#9CA3AF', fontSize:12 }}>{a.alertType.replace(/_/g,' ')}</span><span style={{ color:bc, fontSize:22, fontWeight:800, marginLeft:'auto' }}>{a.overlapPercent}%</span></div><div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:8 }}>{a.funds.map(f=>(<span key={f} style={{ background:'#2A2A2A', color:'#e2e8f0', borderRadius:4, padding:'2px 8px', fontSize:12 }}>{f}</span>))}</div><p style={{ color:'#9CA3AF', fontSize:13, marginBottom:4 }}>{a.description}</p><p style={{ ...muted, fontSize:12 }}>&#128161; {a.recommendation}</p></div>); })}\n"
-        "      </div></div>\n"
-        "  </div>);\n"
-        "}\n\n"
-        # ── SwpTab ──
-        "function SwpTab() {\n"
-        "  const { monthlyWithdrawals, summary, switchLog } = SWP_DATA;\n"
-        "  const taxBadge = (t) => { const s=t==='STCG'?{background:'rgba(245,158,11,0.15)',color:'#F59E0B'}:t==='LTCG'?{background:'rgba(59,130,246,0.15)',color:'#3B82F6'}:{background:'rgba(16,185,129,0.15)',color:'#10B981'}; return <span style={{ ...s, borderRadius:4, padding:'2px 8px', fontSize:11, fontWeight:700 }}>{t}</span>; };\n"
-        "  return (<div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))', gap:20 }}>\n"
-        "    <div style={{ display:'flex', flexDirection:'column', gap:16 }}>\n"
-        "      <div style={card}><h3 style={{ color:'#fff', fontWeight:700, marginBottom:16 }}>Monthly Withdrawals</h3>\n"
-        "        <ResponsiveContainer width='100%' height={220}><BarChart data={monthlyWithdrawals} margin={{ top:4, right:4, left:4, bottom:4 }}><CartesianGrid strokeDasharray='3 3' stroke='#1A1A1A' /><XAxis dataKey='month' tick={{ fill:'#6B7280', fontSize:10 }} tickLine={false} tickFormatter={v=>v.split(' ')[0]} /><YAxis tick={{ fill:'#6B7280', fontSize:10 }} tickLine={false} axisLine={false} tickFormatter={v=>`\\u20b9${(v/1000).toFixed(0)}k`} /><Tooltip contentStyle={{ background:'#111', border:'1px solid #2A2A2A', borderRadius:8 }} formatter={v=>[formatINR(v),'Withdrawn']} labelStyle={{ color:'#fff' }} /><Bar dataKey='amount' fill='#EF4444' radius={[4,4,0,0]} /></BarChart></ResponsiveContainer></div>\n"
-        "      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12 }}>{[{label:'Total Withdrawn',value:formatINR(summary.totalWithdrawn),color:'#EF4444'},{label:'Remaining Principal',value:formatINR(summary.remainingPrincipal),color:'#10B981'},{label:'Monthly Rate',value:formatINR(summary.monthlyWithdrawalRate),color:'#9CA3AF'},{label:'Run Rate',value:`${summary.estimatedRunRateMonths} mo`,color:'#3B82F6'}].map(s=>(<div key={s.label} style={{ ...card, padding:14 }}><p style={{ ...muted, fontSize:11, marginBottom:4 }}>{s.label}</p><p style={{ color:s.color, fontWeight:700, fontSize:16 }}>{s.value}</p></div>))}</div>\n"
-        "    </div>\n"
-        "    <div style={card}><h3 style={{ color:'#fff', fontWeight:700, marginBottom:16 }}>Fund Switch Log</h3>\n"
-        "      <div style={{ display:'flex', flexDirection:'column' }}>{switchLog.map((sw,i)=>(<div key={i} style={{ borderLeft:'2px dashed #2A2A2A', paddingLeft:16, paddingBottom:i<switchLog.length-1?24:0, position:'relative' }}><div style={{ width:8, height:8, background:'#3B82F6', borderRadius:'50%', position:'absolute', left:-5, top:2 }} /><p style={{ ...muted, fontSize:11, marginBottom:4 }}>{sw.date}</p><p style={{ color:'#fff', fontWeight:600, fontSize:13, marginBottom:4 }}><span style={secondary}>{sw.sourceScheme}</span><span style={{ color:'#6B7280', margin:'0 8px' }}>&rarr;</span><span style={{ color:'#10B981' }}>{sw.destinationScheme}</span></p><div style={{ display:'flex', flexWrap:'wrap', gap:8, alignItems:'center', fontSize:12 }}><span style={secondary}>{sw.unitsTransferred.toFixed(2)} units</span><span style={secondary}>&middot; {formatINR(sw.switchValue)}</span>{taxBadge(sw.taxType)}<span style={{ color:sw.taxAmount>0?'#EF4444':'#10B981' }}>{sw.taxAmount>0?`Tax: ${formatINR(sw.taxAmount)}`:'No tax'}</span></div></div>))}</div>\n"
-        "    </div>\n"
-        "  </div>);\n"
-        "}\n\n"
-        # ── RedemptionsTab ──
-        "function RedemptionsTab() {\n"
-        "  const { chartData, transactions } = REDEMPTION_DATA;\n"
-        "  const totals = { invested:transactions.reduce((s,t)=>s+t.investedAmount,0), redeemed:transactions.reduce((s,t)=>s+t.redemptionValue,0), gainLoss:transactions.reduce((s,t)=>s+(t.redemptionValue-t.investedAmount),0) };\n"
-        "  const CT = ({ active, payload, label }) => { if (!active||!payload?.length) return null; const hasLock=payload.find(p=>p.dataKey==='lockInRemaining')?.value>0; return <div style={{ ...card, padding:10, fontSize:12 }}><p style={{ color:'#fff', fontWeight:600 }}>{label}</p>{payload.map(p=>(<p key={p.dataKey} style={{ color:p.fill }}>{p.name}: {formatINR(p.value)}</p>))}{hasLock&&<p style={{ color:'#F59E0B' }}>&#9888;&#65039; ELSS Lock-in Active</p>}</div>; };\n"
-        "  return (<div style={{ display:'flex', flexDirection:'column', gap:20 }}>\n"
-        "    <div style={card}><h3 style={{ color:'#fff', fontWeight:700, marginBottom:16 }}>Redemptions Overview</h3>\n"
-        "      <ResponsiveContainer width='100%' height={280}><BarChart data={chartData} margin={{ top:8, right:8, left:8, bottom:8 }}><CartesianGrid strokeDasharray='3 3' stroke='#1A1A1A' /><XAxis dataKey='schemeName' tick={{ fill:'#6B7280', fontSize:11 }} tickLine={false} /><YAxis tick={{ fill:'#6B7280', fontSize:11 }} tickLine={false} axisLine={false} tickFormatter={v=>`\\u20b9${(v/1000).toFixed(0)}k`} /><Tooltip content={<CT />} /><Legend iconType='square' iconSize={10} wrapperStyle={{ color:'#9CA3AF', fontSize:12 }} /><Bar dataKey='redeemedAmount' name='Redeemed' fill='#10B981' stackId='a' /><Bar dataKey='lockInRemaining' name='Lock-in' fill='#F59E0B' stackId='a' radius={[4,4,0,0]} /></BarChart></ResponsiveContainer></div>\n"
-        "    <div style={card}><h3 style={{ color:'#fff', fontWeight:700, marginBottom:16 }}>Redemption Transactions</h3>\n"
-        "      <div style={{ overflowX:'auto' }}><table style={{ width:'100%', borderCollapse:'collapse', fontSize:12, minWidth:900 }}>\n"
-        "        <thead><tr style={{ borderBottom:'1px solid #2A2A2A' }}>{['Scheme','Date','Units','NAV','Invested','Redeemed','Gain/Loss','Exit Load','Tax','Bank','Status'].map(h=>(<th key={h} style={{ ...muted, textAlign:'left', padding:'8px 10px', fontSize:11, textTransform:'uppercase', whiteSpace:'nowrap' }}>{h}</th>))}</tr></thead>\n"
-        "        <tbody>{transactions.map((t,i)=>{ const gl=t.redemptionValue-t.investedAmount; const ss=t.status==='COMPLETED'?{background:'rgba(16,185,129,0.15)',color:'#10B981'}:{background:'rgba(245,158,11,0.15)',color:'#F59E0B'}; return (<tr key={i} style={{ borderBottom:'1px solid #1A1A1A' }}><td style={{ color:'#fff', padding:'10px', fontWeight:500, whiteSpace:'nowrap' }}>{t.schemeName}</td><td style={{ ...secondary, padding:'10px', whiteSpace:'nowrap' }}>{t.redemptionDate}</td><td style={{ ...secondary, padding:'10px' }}>{t.units}</td><td style={{ ...secondary, padding:'10px' }}>\\u20b9{t.navAtRedemption.toFixed(2)}</td><td style={{ ...secondary, padding:'10px' }}>{formatINR(t.investedAmount)}</td><td style={{ color:'#10B981', padding:'10px', fontWeight:600 }}>{formatINR(t.redemptionValue)}</td><td style={{ padding:'10px', fontWeight:700, color:gl>=0?'#10B981':'#EF4444' }}>{formatINR(gl)}</td><td style={{ ...secondary, padding:'10px' }}>{t.exitLoad>0?formatINR(t.exitLoad):'\\u2014'}</td><td style={{ padding:'10px' }}><span style={{ background:t.taxType==='STCG'?'rgba(245,158,11,0.15)':'rgba(59,130,246,0.15)', color:t.taxType==='STCG'?'#F59E0B':'#3B82F6', borderRadius:4, padding:'2px 6px', fontSize:11, fontWeight:700 }}>{t.taxType}</span></td><td style={{ ...muted, padding:'10px', whiteSpace:'nowrap', fontSize:11 }}>{t.bankAccount}</td><td style={{ padding:'10px' }}><span style={{ ...ss, borderRadius:4, padding:'2px 8px', fontSize:11, fontWeight:700 }}>{t.status}</span></td></tr>); })}</tbody>\n"
-        "        <tfoot><tr style={{ borderTop:'1px solid #2A2A2A', background:'#1A1A1A' }}><td colSpan={4} style={{ color:'#9CA3AF', padding:'10px', fontWeight:700 }}>Totals</td><td style={{ ...secondary, padding:'10px', fontWeight:700 }}>{formatINR(totals.invested)}</td><td style={{ color:'#10B981', padding:'10px', fontWeight:700 }}>{formatINR(totals.redeemed)}</td><td style={{ padding:'10px', fontWeight:700, color:totals.gainLoss>=0?'#10B981':'#EF4444' }}>{formatINR(totals.gainLoss)}</td><td colSpan={4} /></tr></tfoot>\n"
-        "      </table></div></div>\n"
-        "  </div>);\n"
-        "}\n\n"
-        # ── Main dashboard component ──
-        "const TABS = [{id:'allocation',label:'Asset Allocation'},{id:'lumpsum',label:'Lumpsum Summary'},{id:'sip',label:'SIP Health'},{id:'swp',label:'SWP & Switch'},{id:'redemptions',label:'Redemptions'}];\n\n"
-        "function MutualFundDashboard() {\n"
-        "  const [activeTab, setActiveTab] = React.useState('allocation');\n"
-        "  const views = { allocation:<AllocationTab />, lumpsum:<LumpsumTab />, sip:<SipTab />, swp:<SwpTab />, redemptions:<RedemptionsTab /> };\n"
-        "  return (<div style={{ background:'#0A0A0A', minHeight:'100vh', color:'#fff', fontFamily:\"'Inter','Segoe UI',sans-serif\" }}>\n"
-        "    <div style={{ position:'sticky', top:0, zIndex:50, background:'#111111', borderBottom:'1px solid #2A2A2A', display:'flex', overflowX:'auto', WebkitOverflowScrolling:'touch' }}>\n"
-        "      {TABS.map(t=>(<button key={t.id} onClick={()=>setActiveTab(t.id)} style={{ background:'none', border:'none', cursor:'pointer', padding:'14px 20px', fontSize:13, fontWeight:600, color:activeTab===t.id?'#fff':'#6B7280', borderBottom:activeTab===t.id?'2px solid #10B981':'2px solid transparent', whiteSpace:'nowrap' }}>{t.label}</button>))}\n"
-        "    </div>\n"
-        "    <div style={{ padding:'24px', maxWidth:1280, margin:'0 auto' }}>{views[activeTab]}</div>\n"
-        "  </div>);\n"
-        "}\n\n"
-        "ReactDOM.createRoot(document.getElementById('root')).render(React.createElement(MutualFundDashboard));\n"
-    )
+    _html = """<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0A0A0A;color:#fff;font-family:'Inter','Segoe UI',sans-serif;font-size:14px}
+.tab-bar{position:sticky;top:0;z-index:50;background:#111111;border-bottom:1px solid #2A2A2A;display:flex;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.tab-btn{background:none;border:none;cursor:pointer;padding:14px 20px;font-size:13px;font-weight:600;color:#6B7280;border-bottom:2px solid transparent;white-space:nowrap;font-family:inherit;transition:color .2s,border-color .2s}
+.tab-btn.active{color:#fff;border-bottom-color:#10B981}
+.tab-content{display:none;padding:20px;max-width:1280px;margin:0 auto}
+.tab-content.active{display:block}
+.card{background:#111111;border:1px solid #2A2A2A;border-radius:12px;padding:20px}
+.grid-2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.grid-4{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.flex-col{display:flex;flex-direction:column;gap:20px}
+.card-title{color:#fff;font-weight:700;font-size:15px;margin-bottom:16px}
+.muted{color:#6B7280}.secondary{color:#9CA3AF}.positive{color:#10B981}.negative{color:#EF4444}
+.data-table{width:100%;border-collapse:collapse;font-size:12px;min-width:700px}
+.data-table th{color:#6B7280;text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;border-bottom:1px solid #2A2A2A;white-space:nowrap}
+.data-table td{padding:10px;border-bottom:1px solid #1A1A1A;color:#9CA3AF}
+.table-wrap{overflow-x:auto}
+.badge{border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700}
+.alloc-item{background:#1A1A1A;border-radius:8px;padding:10px 14px;margin-bottom:10px}
+.pb{background:#2A2A2A;border-radius:4px;height:4px;margin-top:6px}
+.pf{height:4px;border-radius:4px}
+.row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
+.missed-item{background:#1A1A1A;border-radius:8px;padding:12px 16px;margin-bottom:10px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.health-metric{background:#1A1A1A;border-radius:8px;padding:10px 16px;text-align:center;min-width:100px}
+.timeline-item{border-left:2px dashed #2A2A2A;padding-left:16px;padding-bottom:24px;position:relative}
+.timeline-dot{width:8px;height:8px;background:#3B82F6;border-radius:50%;position:absolute;left:-5px;top:2px}
+.chip{background:#2A2A2A;color:#e2e8f0;border-radius:4px;padding:2px 8px;font-size:12px;display:inline-block;margin:2px}
+.ch-wrap{position:relative}
+</style>
+</head>
+<body>
 
-    _html = (
-        "<!DOCTYPE html><html><head><meta charset='UTF-8'>"
-        "<meta name='viewport' content='width=device-width,initial-scale=1'>"
-        "<script crossorigin src='https://unpkg.com/react@18/umd/react.production.min.js'></script>"
-        "<script crossorigin src='https://unpkg.com/react-dom@18/umd/react-dom.production.min.js'></script>"
-        "<script src='https://unpkg.com/recharts@2/umd/Recharts.js'></script>"
-        "<script src='https://unpkg.com/@babel/standalone/babel.min.js'></script>"
-        "<style>*{box-sizing:border-box;margin:0;padding:0}"
-        "body{background:#0A0A0A;color:#fff;font-family:'Inter','Segoe UI',sans-serif}"
-        "button{font-family:inherit}p,h1,h2,h3,h4,span,td,th{font-family:inherit}"
-        "</style></head><body>"
-        "<div id='root'><div style='color:#9CA3AF;padding:40px;text-align:center'>Loading analytics...</div></div>"
-        "<script type='text/babel'>"
-        + _jsx +
-        "</script></body></html>"
-    )
+<div class="tab-bar">
+  <button class="tab-btn active" onclick="showTab('allocation',this)">Asset Allocation</button>
+  <button class="tab-btn" onclick="showTab('lumpsum',this)">Lumpsum Summary</button>
+  <button class="tab-btn" onclick="showTab('sip',this)">SIP Health</button>
+  <button class="tab-btn" onclick="showTab('swp',this)">SWP &amp; Switch</button>
+  <button class="tab-btn" onclick="showTab('redemptions',this)">Redemptions</button>
+</div>
+
+<div id="tab-allocation" class="tab-content active">
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title">Portfolio Allocation</div>
+      <div class="ch-wrap" style="height:300px"><canvas id="alloc-donut"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Breakdown</div>
+      <div id="alloc-breakdown"></div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-lumpsum" class="tab-content">
+  <div class="flex-col">
+    <div class="grid-3" id="lumpsum-kpis"></div>
+    <div class="card">
+      <div class="card-title">Growth Trajectory</div>
+      <div class="ch-wrap" style="height:260px"><canvas id="lumpsum-area"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Scheme Breakdown</div>
+      <div class="table-wrap"><table id="lumpsum-table" class="data-table"></table></div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-sip" class="tab-content">
+  <div class="flex-col">
+    <div class="card">
+      <div class="card-title">SIP Health Score</div>
+      <div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+        <div style="position:relative;width:200px;height:130px">
+          <canvas id="sip-gauge" width="200" height="130"></canvas>
+          <div id="sip-gauge-label" style="position:absolute;bottom:6px;left:0;width:100%;text-align:center"></div>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap" id="sip-metrics"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">SIP Mandates</div>
+      <div class="ch-wrap" style="height:240px"><canvas id="sip-bar"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">&#9888;&#65039; Missed SIP Opportunities</div>
+      <div id="missed-list"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Overlap &amp; Duplicate Alerts</div>
+      <div id="overlap-list"></div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-swp" class="tab-content">
+  <div class="grid-2">
+    <div class="flex-col">
+      <div class="card">
+        <div class="card-title">Monthly Withdrawals</div>
+        <div class="ch-wrap" style="height:220px"><canvas id="swp-bar"></canvas></div>
+      </div>
+      <div class="grid-4" id="swp-kpis"></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Fund Switch Log</div>
+      <div id="switch-log"></div>
+    </div>
+  </div>
+</div>
+
+<div id="tab-redemptions" class="tab-content">
+  <div class="flex-col">
+    <div class="card">
+      <div class="card-title">Redemptions Overview</div>
+      <div class="ch-wrap" style="height:280px"><canvas id="redemp-bar"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Redemption Transactions</div>
+      <div class="table-wrap"><table id="redemp-table" class="data-table"></table></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script>
+// ── Data ──
+const ALLOC=[
+  {category:'Large Cap', invested:450000, value:558000, color:'#10B981'},
+  {category:'Mid Cap',   invested:300000, value:384000, color:'#3B82F6'},
+  {category:'Small Cap', invested:200000, value:268000, color:'#8B5CF6'},
+  {category:'Sectoral',  invested:250000, value:307500, color:'#F59E0B'},
+  {category:'Debt',      invested:180000, value:198000, color:'#06B6D4'},
+  {category:'Gold',      invested:120000, value:148800, color:'#EC4899'},
+];
+const MOS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+let _gv=1500000;
+const GROWTH=[2023,2024].flatMap(y=>MOS.map(m=>{
+  _gv=_gv*(1+(Math.sin(_gv)*0.012+0.008));
+  return {month:m+" '"+String(y).slice(2), value:Math.round(_gv)};
+}));
+const LSCHEMES=[
+  {name:'Mirae Asset Large Cap', date:'12 Jan 2023', nb:82.45, nn:104.32, units:1820.5, inv:150000, val:189918},
+  {name:'Parag Parikh Flexi Cap',date:'05 Mar 2023', nb:54.78, nn:74.91,  units:5476.46,inv:300000, val:410264},
+  {name:'Axis Bluechip Fund',    date:'20 Jun 2022', nb:41.20, nn:51.60,  units:7281.55,inv:300000, val:375728},
+  {name:'ICICI Pru Technology',  date:'14 Sep 2022', nb:120.10,nn:145.80, units:2081.60,inv:250000, val:303497},
+  {name:'SBI Gold Fund',         date:'02 Nov 2023', nb:18.24, nn:22.41,  units:6578.95,inv:120000, val:147445},
+];
+const SIP={
+  score:74,
+  bd:{reg:82,ot:91,skip:8},
+  missed:[
+    {scheme:'Mirae Asset Large Cap',date:'Mar 2024',amt:5000, now:5543, cost:543},
+    {scheme:'Parag Parikh Flexi Cap',date:'Jun 2024',amt:10000,now:11097,cost:1097},
+    {scheme:'Axis Bluechip Fund',    date:'Aug 2024',amt:7500, now:8096, cost:596},
+  ],
+  overlaps:[
+    {type:'DUPLICATE_SIP',   sev:'HIGH',  funds:['Mirae Asset Large Cap','Axis Bluechip'], pct:78, desc:'Both funds hold >75% overlap in top-10 holdings.',rec:'Consolidate into one large-cap fund.'},
+    {type:'PORTFOLIO_OVERLAP',sev:'MEDIUM',funds:['Parag Parikh Flexi Cap','ICICI Nifty 50'],pct:42,desc:'42% portfolio overlap by stock holdings.',rec:'Monitor — rebalance if it exceeds 60%.'},
+  ],
+  mandates:[
+    {name:'Mirae Large Cap', amt:5000, done:21,skip:3},
+    {name:'Parag Parikh',    amt:10000,done:23,skip:1},
+    {name:'Axis Bluechip',   amt:7500, done:20,skip:4},
+    {name:'HDFC Mid Cap',    amt:6000, done:18,skip:0},
+    {name:'Nippon Small',    amt:4000, done:9, skip:3},
+    {name:'SBI Gold Fund',   amt:2000, done:12,skip:0},
+  ],
+};
+const SWP={
+  wd:[
+    {m:'Jan',a:15000},{m:'Feb',a:15000},{m:'Mar',a:15000},{m:'Apr',a:18000},
+    {m:'May',a:15000},{m:'Jun',a:15000},{m:'Jul',a:20000},{m:'Aug',a:15000},
+    {m:'Sep',a:15000},{m:'Oct',a:15000},{m:'Nov',a:22000},{m:'Dec',a:15000},
+  ],
+  sum:{tw:195000,rp:1305000,mr:15000,rrm:87},
+  sw:[
+    {date:'15 Jan 2024',from:'HDFC Balanced Adv.',to:'ICICI Pru Liquid',  units:842.50,  nav:284.60,  val:239880, tax:'LTCG',ta:4200},
+    {date:'08 Apr 2024',from:'Axis Bluechip',     to:'Parag Parikh Flexi',units:1200.00, nav:49.20,   val:59040,  tax:'STCG',ta:1180},
+    {date:'22 Jul 2024',from:'SBI Liquid Fund',   to:'Mirae Large Cap',   units:450.75,  nav:3421.80, val:1542797,tax:'NIL', ta:0},
+    {date:'10 Nov 2024',from:'Nippon Small Cap',  to:'HDFC Mid Cap',      units:600.00,  nav:132.40,  val:79440,  tax:'STCG',ta:2380},
+  ],
+};
+const REDEMP={
+  chart:[
+    {n:'Axis Bluechip',  r:85000, l:0},    {n:'SBI ELSS',       r:50000, l:18000},
+    {n:'Mirae Large Cap',r:120000,l:0},    {n:'Parag Parikh',   r:40000, l:0},
+    {n:'HDFC ELSS',      r:60000, l:32000},{n:'ICICI Tech',     r:95000, l:0},
+    {n:'Nippon Small',   r:30000, l:0},    {n:'DSP Midcap',     r:70000, l:0},
+  ],
+  txns:[
+    {s:'Axis Bluechip Fund',       d:'12 Mar 2024',u:1650,nav:51.52, inv:68000, val:85008, el:0,   tax:'LTCG',bank:'HDFC ****4521',st:'COMPLETED'},
+    {s:'SBI Long Term Equity',     d:'18 Apr 2024',u:820, nav:61.00, inv:40000, val:50020, el:0,   tax:'LTCG',bank:'SBI ****8834', st:'COMPLETED'},
+    {s:'Mirae Asset Large Cap',    d:'02 May 2024',u:1150,nav:104.32,inv:100000,val:119968,el:0,   tax:'LTCG',bank:'HDFC ****4521',st:'COMPLETED'},
+    {s:'Parag Parikh Flexi Cap',   d:'28 Jun 2024',u:534, nav:74.91, inv:32000, val:40002, el:0,   tax:'LTCG',bank:'ICICI ****2290',st:'PARTIAL'},
+    {s:'ICICI Pru Technology',     d:'15 Aug 2024',u:651, nav:145.80,inv:80000, val:94937, el:500, tax:'STCG',bank:'SBI ****8834', st:'COMPLETED'},
+    {s:'Nippon India Small Cap',   d:'05 Oct 2024',u:220, nav:136.40,inv:25000, val:30008, el:0,   tax:'STCG',bank:'HDFC ****4521',st:'COMPLETED'},
+  ],
+};
+
+// ── Helpers ──
+const fmtINR=v=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(v??0);
+const fmtPct=v=>`${(v??0)>=0?'+':''}${(v??0).toFixed(2)}%`;
+const taxBadge=t=>{
+  const s=t==='STCG'?'background:rgba(245,158,11,.15);color:#F59E0B':t==='LTCG'?'background:rgba(59,130,246,.15);color:#3B82F6':'background:rgba(16,185,129,.15);color:#10B981';
+  return `<span class="badge" style="${s}">${t}</span>`;
+};
+
+// ── Chart registry ──
+const CR={};
+function nc(id,cfg){if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),cfg);}
+
+// ── Chart.js defaults ──
+Chart.defaults.color='#6B7280';
+Chart.defaults.borderColor='#1A1A1A';
+Chart.defaults.font.family="'Inter','Segoe UI',sans-serif";
+
+// ── Tab switching ──
+function showTab(id,btn){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('tab-'+id).classList.add('active');
+  TABS[id]();
+}
+
+const TABS={};
+
+TABS.allocation=function(){
+  const tot=ALLOC.reduce((s,d)=>s+d.value,0);
+  const totI=ALLOC.reduce((s,d)=>s+d.invested,0);
+  nc('alloc-donut',{
+    type:'doughnut',
+    data:{
+      labels:ALLOC.map(d=>d.category),
+      datasets:[{data:ALLOC.map(d=>d.value),backgroundColor:ALLOC.map(d=>d.color),borderWidth:2,borderColor:'#111111',hoverOffset:8}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,cutout:'62%',
+      plugins:{
+        legend:{position:'bottom',labels:{color:'#9CA3AF',font:{size:12},padding:14,boxWidth:12}},
+        tooltip:{callbacks:{label:ctx=>`  ${ctx.label}: ${fmtINR(ctx.parsed)}`}}
+      }
+    }
+  });
+  document.getElementById('alloc-breakdown').innerHTML=
+    ALLOC.map(d=>{
+      const g=d.value-d.invested,pct=(d.value/tot*100).toFixed(1);
+      return `<div class="alloc-item">
+        <div class="row" style="margin-bottom:6px">
+          <div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:50%;background:${d.color}"></div><span style="color:#fff;font-weight:600">${d.category}</span></div>
+          <span style="color:#fff;font-weight:700">${pct}%</span>
+        </div>
+        <div class="row" style="font-size:12px;margin-bottom:6px">
+          <span class="secondary">${fmtINR(d.invested)}</span><span class="secondary">${fmtINR(d.value)}</span>
+          <span style="color:${g>=0?'#10B981':'#EF4444'}">${fmtINR(g)}</span>
+        </div>
+        <div class="pb"><div class="pf" style="width:${pct}%;background:${d.color}"></div></div>
+      </div>`;
+    }).join('')
+    +`<div style="background:#1E1E1E;border:1px solid #3A3A3A;border-radius:8px;padding:10px 14px">
+      <div class="row"><span style="color:#fff;font-weight:700">Total</span>
+      <div style="display:flex;gap:16px;font-size:13px">
+        <span class="secondary">${fmtINR(totI)}</span>
+        <span style="color:#10B981;font-weight:700">${fmtINR(tot)}</span>
+        <span class="positive">${fmtINR(tot-totI)}</span>
+      </div></div></div>`;
+};
+
+TABS.lumpsum=function(){
+  const totI=LSCHEMES.reduce((s,d)=>s+d.inv,0);
+  const totV=LSCHEMES.reduce((s,d)=>s+d.val,0);
+  const roi=((totV-totI)/totI*100);
+  document.getElementById('lumpsum-kpis').innerHTML=[
+    {l:'Total Invested',v:fmtINR(totI),c:'#9CA3AF'},
+    {l:'Current Value', v:fmtINR(totV),c:'#10B981'},
+    {l:'Absolute ROI',  v:fmtPct(roi), c:'#10B981'},
+  ].map(k=>`<div class="card"><p class="muted" style="font-size:12px;margin-bottom:8px">${k.l}</p><p style="color:${k.c};font-size:22px;font-weight:700">${k.v}</p></div>`).join('');
+  nc('lumpsum-area',{
+    type:'line',
+    data:{
+      labels:GROWTH.map(d=>d.month),
+      datasets:[{data:GROWTH.map(d=>d.value),borderColor:'#10B981',borderWidth:2,fill:true,backgroundColor:'rgba(16,185,129,0.1)',pointRadius:0,tension:0.4}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`  ${fmtINR(ctx.parsed.y)}`}}},
+      scales:{
+        x:{ticks:{color:'#6B7280',font:{size:11},maxTicksLimit:10},grid:{display:false}},
+        y:{ticks:{color:'#6B7280',font:{size:11},callback:v=>`₹${(v/100000).toFixed(1)}L`},grid:{color:'#1A1A1A'}}
+      }
+    }
+  });
+  const ths=['Scheme','Date','NAV @ Buy','Current NAV','Units','Invested','Value','Return %'].map(h=>`<th>${h}</th>`).join('');
+  const rows=LSCHEMES.map(s=>{
+    const ret=((s.val-s.inv)/s.inv*100);
+    return `<tr>
+      <td style="color:#fff;font-weight:500">${s.name}</td><td>${s.date}</td>
+      <td style="font-family:monospace">₹${s.nb.toFixed(4)}</td><td style="font-family:monospace">₹${s.nn.toFixed(4)}</td>
+      <td>${s.units.toFixed(2)}</td><td>${fmtINR(s.inv)}</td>
+      <td style="color:#10B981;font-weight:600">${fmtINR(s.val)}</td>
+      <td style="font-weight:700;color:${ret>=0?'#10B981':'#EF4444'}">${fmtPct(ret)}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('lumpsum-table').innerHTML=`<thead><tr>${ths}</tr></thead><tbody>${rows}</tbody>`;
+};
+
+TABS.sip=function(){
+  const sc=SIP.score;
+  const col=sc>=75?'#10B981':sc>=50?'#F59E0B':'#EF4444';
+  nc('sip-gauge',{
+    type:'doughnut',
+    data:{datasets:[{data:[sc,100-sc],backgroundColor:[col,'#1A1A1A'],borderWidth:0,circumference:180,rotation:-90}]},
+    options:{responsive:false,cutout:'70%',plugins:{legend:{display:false},tooltip:{enabled:false}}}
+  });
+  document.getElementById('sip-gauge-label').innerHTML=`<span style="font-size:30px;font-weight:800;color:${col}">${sc}</span><span class="muted"> /100</span>`;
+  document.getElementById('sip-metrics').innerHTML=[
+    {l:'Regularity',v:SIP.bd.reg+'%',c:'#10B981'},
+    {l:'On-Time',   v:SIP.bd.ot+'%', c:'#3B82F6'},
+    {l:'Skip Rate', v:SIP.bd.skip+'%',c:'#EF4444'},
+  ].map(m=>`<div class="health-metric"><p style="color:${m.c};font-size:22px;font-weight:700">${m.v}</p><p class="muted" style="font-size:11px">${m.l}</p></div>`).join('');
+  nc('sip-bar',{
+    type:'bar',
+    data:{
+      labels:SIP.mandates.map(m=>m.name),
+      datasets:[
+        {label:'Completed',data:SIP.mandates.map(m=>m.done),backgroundColor:'#10B981',borderRadius:4},
+        {label:'Skipped',  data:SIP.mandates.map(m=>m.skip),backgroundColor:'#EF4444',borderRadius:4},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#9CA3AF',font:{size:12}}},tooltip:{mode:'index'}},
+      scales:{
+        x:{ticks:{color:'#6B7280',font:{size:11}},grid:{display:false}},
+        y:{ticks:{color:'#6B7280',font:{size:11}},grid:{color:'#1A1A1A'}}
+      }
+    }
+  });
+  const tc=SIP.missed.reduce((s,m)=>s+m.cost,0);
+  document.getElementById('missed-list').innerHTML=
+    SIP.missed.map(m=>`<div class="missed-item">
+      <div><p style="color:#fff;font-weight:600">${m.scheme}</p><p class="muted" style="font-size:12px">Missed: ${m.date} &middot; ${fmtINR(m.amt)}</p></div>
+      <div style="text-align:right"><p class="positive">Worth ${fmtINR(m.now)} today</p><p class="negative" style="font-size:13px">Cost: ${fmtINR(m.cost)}</p></div>
+    </div>`).join('')
+    +`<div style="text-align:right;margin-top:8px"><span class="muted" style="font-size:13px">Total Cost: </span><span style="color:#EF4444;font-weight:800;font-size:20px">${fmtINR(tc)}</span></div>`;
+  document.getElementById('overlap-list').innerHTML=SIP.overlaps.map(a=>{
+    const h=a.sev==='HIGH',bc=h?'#EF4444':'#F59E0B';
+    const bs=h?'background:rgba(239,68,68,.15);color:#EF4444':'background:rgba(245,158,11,.15);color:#F59E0B';
+    return `<div style="border-left:4px solid ${bc};background:#1A1A1A;border-radius:0 8px 8px 0;padding:14px 16px;margin-bottom:12px">
+      <div class="row" style="margin-bottom:8px">
+        <span class="badge" style="${bs}">${a.sev}</span>
+        <span class="secondary" style="font-size:12px">${a.type.replace(/_/g,' ')}</span>
+        <span style="color:${bc};font-size:22px;font-weight:800">${a.pct}%</span>
+      </div>
+      <div style="margin-bottom:8px">${a.funds.map(f=>`<span class="chip">${f}</span>`).join('')}</div>
+      <p class="secondary" style="font-size:13px;margin-bottom:4px">${a.desc}</p>
+      <p class="muted" style="font-size:12px">&#128161; ${a.rec}</p>
+    </div>`;
+  }).join('');
+};
+
+TABS.swp=function(){
+  nc('swp-bar',{
+    type:'bar',
+    data:{
+      labels:SWP.wd.map(d=>d.m),
+      datasets:[{label:'Withdrawn',data:SWP.wd.map(d=>d.a),backgroundColor:'#EF4444',borderRadius:4}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`  ${fmtINR(ctx.parsed.y)}`}}},
+      scales:{
+        x:{ticks:{color:'#6B7280',font:{size:10}},grid:{display:false}},
+        y:{ticks:{color:'#6B7280',font:{size:10},callback:v=>`₹${(v/1000).toFixed(0)}k`},grid:{color:'#1A1A1A'}}
+      }
+    }
+  });
+  const s=SWP.sum;
+  document.getElementById('swp-kpis').innerHTML=[
+    {l:'Total Withdrawn',    v:fmtINR(s.tw), c:'#EF4444'},
+    {l:'Remaining Principal',v:fmtINR(s.rp), c:'#10B981'},
+    {l:'Monthly Rate',       v:fmtINR(s.mr), c:'#9CA3AF'},
+    {l:'Run Rate',           v:s.rrm+' mo',  c:'#3B82F6'},
+  ].map(k=>`<div class="card"><p class="muted" style="font-size:11px;margin-bottom:4px">${k.l}</p><p style="color:${k.c};font-weight:700;font-size:16px">${k.v}</p></div>`).join('');
+  document.getElementById('switch-log').innerHTML=SWP.sw.map((sw,i)=>`
+    <div class="timeline-item" ${i===SWP.sw.length-1?'style="padding-bottom:0"':''}>
+      <div class="timeline-dot"></div>
+      <p class="muted" style="font-size:11px;margin-bottom:4px">${sw.date}</p>
+      <p style="color:#fff;font-weight:600;font-size:13px;margin-bottom:6px">
+        <span class="secondary">${sw.from}</span><span class="muted" style="margin:0 8px">&#8594;</span><span class="positive">${sw.to}</span>
+      </p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12px">
+        <span class="secondary">${sw.units.toFixed(2)} units</span>
+        <span class="secondary">&middot; ${fmtINR(sw.val)}</span>
+        ${taxBadge(sw.tax)}
+        <span style="color:${sw.ta>0?'#EF4444':'#10B981'}">${sw.ta>0?'Tax: '+fmtINR(sw.ta):'No tax'}</span>
+      </div>
+    </div>`).join('');
+};
+
+TABS.redemptions=function(){
+  nc('redemp-bar',{
+    type:'bar',
+    data:{
+      labels:REDEMP.chart.map(d=>d.n),
+      datasets:[
+        {label:'Redeemed',data:REDEMP.chart.map(d=>d.r),backgroundColor:'#10B981',borderRadius:4,stack:'a'},
+        {label:'Lock-in', data:REDEMP.chart.map(d=>d.l),backgroundColor:'#F59E0B',borderRadius:4,stack:'a'},
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#9CA3AF',font:{size:12}}},tooltip:{mode:'index'}},
+      scales:{
+        x:{ticks:{color:'#6B7280',font:{size:11}},grid:{display:false}},
+        y:{ticks:{color:'#6B7280',font:{size:11},callback:v=>`₹${(v/1000).toFixed(0)}k`},grid:{color:'#1A1A1A'}}
+      }
+    }
+  });
+  const ths=['Scheme','Date','Units','NAV','Invested','Redeemed','Gain/Loss','Exit Load','Tax','Bank','Status'].map(h=>`<th>${h}</th>`).join('');
+  const tI=REDEMP.txns.reduce((s,t)=>s+t.inv,0);
+  const tV=REDEMP.txns.reduce((s,t)=>s+t.val,0);
+  const tG=tV-tI;
+  const rows=REDEMP.txns.map(t=>{
+    const gl=t.val-t.inv;
+    const ss=t.st==='COMPLETED'?'background:rgba(16,185,129,.15);color:#10B981':'background:rgba(245,158,11,.15);color:#F59E0B';
+    return `<tr>
+      <td style="color:#fff;font-weight:500;white-space:nowrap">${t.s}</td>
+      <td style="white-space:nowrap">${t.d}</td><td>${t.u}</td>
+      <td style="font-family:monospace">₹${t.nav.toFixed(2)}</td>
+      <td>${fmtINR(t.inv)}</td><td style="color:#10B981;font-weight:600">${fmtINR(t.val)}</td>
+      <td style="font-weight:700;color:${gl>=0?'#10B981':'#EF4444'}">${fmtINR(gl)}</td>
+      <td>${t.el>0?fmtINR(t.el):'&#8212;'}</td><td>${taxBadge(t.tax)}</td>
+      <td class="muted" style="font-size:11px;white-space:nowrap">${t.bank}</td>
+      <td><span class="badge" style="${ss}">${t.st}</span></td>
+    </tr>`;
+  }).join('');
+  const foot=`<tr style="border-top:1px solid #2A2A2A;background:#1A1A1A"><td colspan="4" style="color:#9CA3AF;padding:10px;font-weight:700">Totals</td><td style="color:#9CA3AF;padding:10px;font-weight:700">${fmtINR(tI)}</td><td style="color:#10B981;padding:10px;font-weight:700">${fmtINR(tV)}</td><td style="padding:10px;font-weight:700;color:${tG>=0?'#10B981':'#EF4444'}">${fmtINR(tG)}</td><td colspan="4"></td></tr>`;
+  document.getElementById('redemp-table').innerHTML=`<thead><tr>${ths}</tr></thead><tbody>${rows}</tbody><tfoot>${foot}</tfoot>`;
+};
+
+TABS.allocation();
+</script>
+</body>
+</html>"""
 
     components.html(_html, height=980, scrolling=True)
 
