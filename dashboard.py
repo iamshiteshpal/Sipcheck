@@ -5,11 +5,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 import os
 import io
+import json
 import tempfile
 import datetime
 import requests
 from datetime import date
-from collections import Counter
+from collections import Counter, defaultdict
 from pyxirr import xirr
 import casparser
 
@@ -1969,14 +1970,207 @@ def render_alerts(data):
 # MF ANALYTICS (React component via CDN)
 # ─────────────────────────────────────────────
 
-def render_mf_analytics():
+
+def render_mf_analytics(data):
     st.markdown('<div class="page-title">MF Analytics</div>', unsafe_allow_html=True)
     st.markdown(
         '<div class="page-sub">Asset allocation · Lumpsum · SIP health · SWP · Redemptions</div>',
         unsafe_allow_html=True,
     )
 
-    _html = """<!DOCTYPE html>
+    # ── 1. Allocation ──────────────────────────────────────────────────────
+    CAT_COLORS = {
+        "Equity Funds":      "#10B981",
+        "Debt Funds":        "#3B82F6",
+        "Gold & Commodities":"#F59E0B",
+        "International":     "#8B5CF6",
+    }
+    cat_invested = defaultdict(float)
+    for h in data.get("holdings", []):
+        cat_invested[h["category"]] += h.get("invested", 0)
+
+    alloc = [
+        {
+            "category": cat,
+            "invested": round(cat_invested.get(cat, 0), 2),
+            "value":    round(val, 2),
+            "color":    CAT_COLORS.get(cat, "#06B6D4"),
+        }
+        for cat, val in data.get("alloc_values", {}).items()
+        if val > 0
+    ]
+
+    # ── 2. Lumpsum + Investment Timeline ───────────────────────────────────
+    BUY_CLS = {"SIP", "Lumpsum Purchase", "STP In", "Switch In"}
+    month_totals = defaultdict(float)
+    for txs in data.get("tx_map", {}).values():
+        for tx in txs:
+            cls = classify_transaction(tx)
+            if cls in BUY_CLS:
+                amt = abs(float(tx.get("amount") or 0))
+                dt  = to_date(tx.get("date"))
+                if amt > 0:
+                    month_totals[(dt.year, dt.month)] += amt
+
+    growth = []
+    cumul  = 0.0
+    for (yr, mo) in sorted(month_totals.keys()):
+        cumul += month_totals[(yr, mo)]
+        growth.append({"month": datetime.date(yr, mo, 1).strftime("%b '%y"), "value": round(cumul, 2)})
+
+    total_inv      = data.get("total_invested", 0) or 1
+    total_val      = data.get("total_value", 0)
+    total_lump_inv = data.get("total_lumpsum_invested", 0)
+    lump_frac      = total_lump_inv / total_inv if total_inv > 0 else 0
+    lump_val       = round(total_val * lump_frac, 2)
+    lsummary = {
+        "inv": round(total_lump_inv, 2),
+        "val": lump_val,
+        "roi": round((lump_val - total_lump_inv) / total_lump_inv * 100, 2) if total_lump_inv > 0 else 0,
+    }
+
+    lschemes = []
+    for h in sorted(data.get("holdings", []), key=lambda x: x.get("lumpsum_invested", 0), reverse=True):
+        li = h.get("lumpsum_invested", 0)
+        if li < 1:
+            continue
+        inv  = h.get("invested", 0) or 1
+        frac = min(li / inv, 1.0)
+        lschemes.append({
+            "name": clean_name(h["scheme"])[:40],
+            "inv":  round(li, 2),
+            "val":  round(h.get("value", 0) * frac, 2),
+            "nav":  round(h.get("cas_nav", 0), 4),
+            "date": h.get("cas_date", ""),
+        })
+    lschemes = lschemes[:10]
+
+    # ── 3. SIP Health ──────────────────────────────────────────────────────
+    live_sips  = data.get("live_sips", [])
+    dead_sips  = data.get("dead_sips", [])
+    all_sips   = live_sips + dead_sips
+    n_total    = len(all_sips)
+    n_live     = len(live_sips)
+    score      = round((n_live / n_total) * 100) if n_total > 0 else 0
+
+    mandates = [
+        {
+            "name":   clean_name(s["scheme"])[:22],
+            "amt":    s["amount"],
+            "done":   s["installments"],
+            "status": s["status"],
+        }
+        for s in all_sips[:8]
+    ]
+    missed_sips = [
+        {"scheme": clean_name(s["scheme"])[:35], "date": s["last_date"], "amt": s["amount"]}
+        for s in live_sips if s.get("missed_last_month")
+    ][:5]
+
+    sip_full = [
+        {
+            "scheme":       clean_name(s["scheme"])[:40],
+            "amount":       s["amount"],
+            "installments": s["installments"],
+            "status":       s["status"],
+            "lastDate":     s["last_date"],
+            "nextDate":     s["next_date"],
+        }
+        for s in all_sips
+    ]
+
+    sip_data = {
+        "score":        score,
+        "liveCount":    n_live,
+        "totalCount":   n_total,
+        "totalInvested": round(data.get("total_sip_invested", 0), 2),
+        "mandates":     mandates,
+        "missed":       missed_sips,
+        "bd": {
+            "live":  n_live,
+            "total": n_total,
+            "missed": len(missed_sips),
+        },
+    }
+
+    # ── 4. SWP & Switch ────────────────────────────────────────────────────
+    special_txs   = data.get("special_transactions", [])
+    swp_txs       = [t for t in special_txs if t["Type"] == "SWP"]
+    switch_txs    = [t for t in special_txs if t["Type"] in ("Switch Out", "Switch In")]
+
+    monthly_wd = defaultdict(float)
+    for t in swp_txs:
+        mk = t["date_obj"].strftime("%b '%y")
+        monthly_wd[mk] += t["Amount"]
+    wd_list = [{"m": k, "a": round(v, 2)} for k, v in sorted(monthly_wd.items())]
+
+    switch_log = [
+        {
+            "date":   t["Date"],
+            "scheme": t["Scheme"][:32],
+            "type":   t["Type"],
+            "val":    round(t["Amount"], 2),
+            "units":  round(abs(t.get("Units", 0)), 3),
+        }
+        for t in sorted(switch_txs, key=lambda x: x["date_obj"], reverse=True)[:10]
+    ]
+
+    swp_data = {
+        "wd":            wd_list,
+        "totalWithdrawn": round(sum(t["Amount"] for t in swp_txs), 2),
+        "switchLog":     switch_log,
+    }
+
+    # ── 5. Redemptions ─────────────────────────────────────────────────────
+    redemp_txs  = [t for t in special_txs if t["Type"] == "Redemption"]
+    by_scheme   = defaultdict(float)
+    for t in redemp_txs:
+        by_scheme[t["Scheme"]] += t["Amount"]
+
+    chart_data = [
+        {"n": k[:22], "r": round(v, 2)}
+        for k, v in sorted(by_scheme.items(), key=lambda x: x[1], reverse=True)[:8]
+    ]
+    recent_txns = [
+        {
+            "s": t["Scheme"][:32],
+            "d": t["Date"],
+            "u": round(abs(t.get("Units", 0)), 3),
+            "amt": round(t["Amount"], 2),
+        }
+        for t in sorted(redemp_txs, key=lambda x: x["date_obj"], reverse=True)[:10]
+    ]
+    redeemed_full = [
+        {
+            "s":      r["scheme"][:32],
+            "inv":    round(r["invested"], 2),
+            "red":    round(r["redeemed"], 2),
+            "profit": round(r["profit"], 2),
+        }
+        for r in sorted(data.get("redeemed", []), key=lambda x: x["redeemed"], reverse=True)[:8]
+    ]
+
+    redemp_data = {
+        "chart":        chart_data,
+        "txns":         recent_txns,
+        "full":         redeemed_full,
+        "totalRedeemed": round(sum(t["Amount"] for t in redemp_txs), 2),
+    }
+
+    # ── Serialize all data to JSON ──────────────────────────────────────────
+    _data_json = json.dumps({
+        "alloc":    alloc,
+        "growth":   growth,
+        "lschemes": lschemes,
+        "lsummary": lsummary,
+        "sip":      sip_data,
+        "sipFull":  sip_full,
+        "swp":      swp_data,
+        "redemp":   redemp_data,
+    }, ensure_ascii=False, default=str)
+
+    # ── HTML: pre-data section (HTML + CSS + tab structure) ────────────────
+    _pre = """<!DOCTYPE html>
 <html>
 <head>
 <meta charset="UTF-8">
@@ -1996,7 +2190,7 @@ body{background:#0A0A0A;color:#fff;font-family:'Inter','Segoe UI',sans-serif;fon
 .flex-col{display:flex;flex-direction:column;gap:20px}
 .card-title{color:#fff;font-weight:700;font-size:15px;margin-bottom:16px}
 .muted{color:#6B7280}.secondary{color:#9CA3AF}.positive{color:#10B981}.negative{color:#EF4444}
-.data-table{width:100%;border-collapse:collapse;font-size:12px;min-width:700px}
+.data-table{width:100%;border-collapse:collapse;font-size:12px;min-width:580px}
 .data-table th{color:#6B7280;text-align:left;padding:8px 10px;font-size:11px;text-transform:uppercase;border-bottom:1px solid #2A2A2A;white-space:nowrap}
 .data-table td{padding:10px;border-bottom:1px solid #1A1A1A;color:#9CA3AF}
 .table-wrap{overflow-x:auto}
@@ -2005,12 +2199,12 @@ body{background:#0A0A0A;color:#fff;font-family:'Inter','Segoe UI',sans-serif;fon
 .pb{background:#2A2A2A;border-radius:4px;height:4px;margin-top:6px}
 .pf{height:4px;border-radius:4px}
 .row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px}
-.missed-item{background:#1A1A1A;border-radius:8px;padding:12px 16px;margin-bottom:10px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px}
+.missed-item{background:#1A1A1A;border-radius:8px;padding:12px 16px;margin-bottom:10px}
 .health-metric{background:#1A1A1A;border-radius:8px;padding:10px 16px;text-align:center;min-width:100px}
-.timeline-item{border-left:2px dashed #2A2A2A;padding-left:16px;padding-bottom:24px;position:relative}
-.timeline-dot{width:8px;height:8px;background:#3B82F6;border-radius:50%;position:absolute;left:-5px;top:2px}
-.chip{background:#2A2A2A;color:#e2e8f0;border-radius:4px;padding:2px 8px;font-size:12px;display:inline-block;margin:2px}
+.timeline-item{border-left:2px dashed #2A2A2A;padding-left:16px;padding-bottom:20px;position:relative}
+.timeline-dot{width:8px;height:8px;border-radius:50%;position:absolute;left:-5px;top:2px}
 .ch-wrap{position:relative}
+.empty-state{color:#6B7280;text-align:center;padding:32px;font-size:13px}
 </style>
 </head>
 <body>
@@ -2040,11 +2234,11 @@ body{background:#0A0A0A;color:#fff;font-family:'Inter','Segoe UI',sans-serif;fon
   <div class="flex-col">
     <div class="grid-3" id="lumpsum-kpis"></div>
     <div class="card">
-      <div class="card-title">Growth Trajectory</div>
+      <div class="card-title">Cumulative Investment Over Time</div>
       <div class="ch-wrap" style="height:260px"><canvas id="lumpsum-area"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title">Scheme Breakdown</div>
+      <div class="card-title">Lumpsum Scheme Breakdown</div>
       <div class="table-wrap"><table id="lumpsum-table" class="data-table"></table></div>
     </div>
   </div>
@@ -2067,12 +2261,12 @@ body{background:#0A0A0A;color:#fff;font-family:'Inter','Segoe UI',sans-serif;fon
       <div class="ch-wrap" style="height:240px"><canvas id="sip-bar"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title">&#9888;&#65039; Missed SIP Opportunities</div>
+      <div class="card-title">&#9888;&#65039; Missed Last Month</div>
       <div id="missed-list"></div>
     </div>
     <div class="card">
-      <div class="card-title">Overlap &amp; Duplicate Alerts</div>
-      <div id="overlap-list"></div>
+      <div class="card-title">All SIP Mandates</div>
+      <div class="table-wrap"><table id="sip-table" class="data-table"></table></div>
     </div>
   </div>
 </div>
@@ -2081,13 +2275,13 @@ body{background:#0A0A0A;color:#fff;font-family:'Inter','Segoe UI',sans-serif;fon
   <div class="grid-2">
     <div class="flex-col">
       <div class="card">
-        <div class="card-title">Monthly Withdrawals</div>
+        <div class="card-title">Monthly Withdrawals (SWP)</div>
         <div class="ch-wrap" style="height:220px"><canvas id="swp-bar"></canvas></div>
       </div>
       <div class="grid-4" id="swp-kpis"></div>
     </div>
     <div class="card">
-      <div class="card-title">Fund Switch Log</div>
+      <div class="card-title">Switch Transactions</div>
       <div id="switch-log"></div>
     </div>
   </div>
@@ -2096,110 +2290,41 @@ body{background:#0A0A0A;color:#fff;font-family:'Inter','Segoe UI',sans-serif;fon
 <div id="tab-redemptions" class="tab-content">
   <div class="flex-col">
     <div class="card">
-      <div class="card-title">Redemptions Overview</div>
-      <div class="ch-wrap" style="height:280px"><canvas id="redemp-bar"></canvas></div>
+      <div class="card-title">Redemptions by Scheme</div>
+      <div class="ch-wrap" style="height:260px"><canvas id="redemp-bar"></canvas></div>
     </div>
     <div class="card">
-      <div class="card-title">Redemption Transactions</div>
+      <div class="card-title">Recent Redemption Transactions</div>
       <div class="table-wrap"><table id="redemp-table" class="data-table"></table></div>
+    </div>
+    <div class="card" id="redeemed-full-card">
+      <div class="card-title">Fully Exited Positions</div>
+      <div class="table-wrap"><table id="redemp-full-table" class="data-table"></table></div>
     </div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script>
-// ── Data ──
-const ALLOC=[
-  {category:'Large Cap', invested:450000, value:558000, color:'#10B981'},
-  {category:'Mid Cap',   invested:300000, value:384000, color:'#3B82F6'},
-  {category:'Small Cap', invested:200000, value:268000, color:'#8B5CF6'},
-  {category:'Sectoral',  invested:250000, value:307500, color:'#F59E0B'},
-  {category:'Debt',      invested:180000, value:198000, color:'#06B6D4'},
-  {category:'Gold',      invested:120000, value:148800, color:'#EC4899'},
-];
-const MOS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-let _gv=1500000;
-const GROWTH=[2023,2024].flatMap(y=>MOS.map(m=>{
-  _gv=_gv*(1+(Math.sin(_gv)*0.012+0.008));
-  return {month:m+" '"+String(y).slice(2), value:Math.round(_gv)};
-}));
-const LSCHEMES=[
-  {name:'Mirae Asset Large Cap', date:'12 Jan 2023', nb:82.45, nn:104.32, units:1820.5, inv:150000, val:189918},
-  {name:'Parag Parikh Flexi Cap',date:'05 Mar 2023', nb:54.78, nn:74.91,  units:5476.46,inv:300000, val:410264},
-  {name:'Axis Bluechip Fund',    date:'20 Jun 2022', nb:41.20, nn:51.60,  units:7281.55,inv:300000, val:375728},
-  {name:'ICICI Pru Technology',  date:'14 Sep 2022', nb:120.10,nn:145.80, units:2081.60,inv:250000, val:303497},
-  {name:'SBI Gold Fund',         date:'02 Nov 2023', nb:18.24, nn:22.41,  units:6578.95,inv:120000, val:147445},
-];
-const SIP={
-  score:74,
-  bd:{reg:82,ot:91,skip:8},
-  missed:[
-    {scheme:'Mirae Asset Large Cap',date:'Mar 2024',amt:5000, now:5543, cost:543},
-    {scheme:'Parag Parikh Flexi Cap',date:'Jun 2024',amt:10000,now:11097,cost:1097},
-    {scheme:'Axis Bluechip Fund',    date:'Aug 2024',amt:7500, now:8096, cost:596},
-  ],
-  overlaps:[
-    {type:'DUPLICATE_SIP',   sev:'HIGH',  funds:['Mirae Asset Large Cap','Axis Bluechip'], pct:78, desc:'Both funds hold >75% overlap in top-10 holdings.',rec:'Consolidate into one large-cap fund.'},
-    {type:'PORTFOLIO_OVERLAP',sev:'MEDIUM',funds:['Parag Parikh Flexi Cap','ICICI Nifty 50'],pct:42,desc:'42% portfolio overlap by stock holdings.',rec:'Monitor — rebalance if it exceeds 60%.'},
-  ],
-  mandates:[
-    {name:'Mirae Large Cap', amt:5000, done:21,skip:3},
-    {name:'Parag Parikh',    amt:10000,done:23,skip:1},
-    {name:'Axis Bluechip',   amt:7500, done:20,skip:4},
-    {name:'HDFC Mid Cap',    amt:6000, done:18,skip:0},
-    {name:'Nippon Small',    amt:4000, done:9, skip:3},
-    {name:'SBI Gold Fund',   amt:2000, done:12,skip:0},
-  ],
-};
-const SWP={
-  wd:[
-    {m:'Jan',a:15000},{m:'Feb',a:15000},{m:'Mar',a:15000},{m:'Apr',a:18000},
-    {m:'May',a:15000},{m:'Jun',a:15000},{m:'Jul',a:20000},{m:'Aug',a:15000},
-    {m:'Sep',a:15000},{m:'Oct',a:15000},{m:'Nov',a:22000},{m:'Dec',a:15000},
-  ],
-  sum:{tw:195000,rp:1305000,mr:15000,rrm:87},
-  sw:[
-    {date:'15 Jan 2024',from:'HDFC Balanced Adv.',to:'ICICI Pru Liquid',  units:842.50,  nav:284.60,  val:239880, tax:'LTCG',ta:4200},
-    {date:'08 Apr 2024',from:'Axis Bluechip',     to:'Parag Parikh Flexi',units:1200.00, nav:49.20,   val:59040,  tax:'STCG',ta:1180},
-    {date:'22 Jul 2024',from:'SBI Liquid Fund',   to:'Mirae Large Cap',   units:450.75,  nav:3421.80, val:1542797,tax:'NIL', ta:0},
-    {date:'10 Nov 2024',from:'Nippon Small Cap',  to:'HDFC Mid Cap',      units:600.00,  nav:132.40,  val:79440,  tax:'STCG',ta:2380},
-  ],
-};
-const REDEMP={
-  chart:[
-    {n:'Axis Bluechip',  r:85000, l:0},    {n:'SBI ELSS',       r:50000, l:18000},
-    {n:'Mirae Large Cap',r:120000,l:0},    {n:'Parag Parikh',   r:40000, l:0},
-    {n:'HDFC ELSS',      r:60000, l:32000},{n:'ICICI Tech',     r:95000, l:0},
-    {n:'Nippon Small',   r:30000, l:0},    {n:'DSP Midcap',     r:70000, l:0},
-  ],
-  txns:[
-    {s:'Axis Bluechip Fund',       d:'12 Mar 2024',u:1650,nav:51.52, inv:68000, val:85008, el:0,   tax:'LTCG',bank:'HDFC ****4521',st:'COMPLETED'},
-    {s:'SBI Long Term Equity',     d:'18 Apr 2024',u:820, nav:61.00, inv:40000, val:50020, el:0,   tax:'LTCG',bank:'SBI ****8834', st:'COMPLETED'},
-    {s:'Mirae Asset Large Cap',    d:'02 May 2024',u:1150,nav:104.32,inv:100000,val:119968,el:0,   tax:'LTCG',bank:'HDFC ****4521',st:'COMPLETED'},
-    {s:'Parag Parikh Flexi Cap',   d:'28 Jun 2024',u:534, nav:74.91, inv:32000, val:40002, el:0,   tax:'LTCG',bank:'ICICI ****2290',st:'PARTIAL'},
-    {s:'ICICI Pru Technology',     d:'15 Aug 2024',u:651, nav:145.80,inv:80000, val:94937, el:500, tax:'STCG',bank:'SBI ****8834', st:'COMPLETED'},
-    {s:'Nippon India Small Cap',   d:'05 Oct 2024',u:220, nav:136.40,inv:25000, val:30008, el:0,   tax:'STCG',bank:'HDFC ****4521',st:'COMPLETED'},
-  ],
-};
+"""
+
+    # ── HTML: post-data section (JS TABS functions) ────────────────────────
+    _post = """
+const ALLOC=DATA.alloc,GROWTH=DATA.growth,LSCHEMES=DATA.lschemes,LSUMMARY=DATA.lsummary,SIP=DATA.sip,SWP=DATA.swp,REDEMP=DATA.redemp;
 
 // ── Helpers ──
 const fmtINR=v=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:0}).format(v??0);
 const fmtPct=v=>`${(v??0)>=0?'+':''}${(v??0).toFixed(2)}%`;
-const taxBadge=t=>{
-  const s=t==='STCG'?'background:rgba(245,158,11,.15);color:#F59E0B':t==='LTCG'?'background:rgba(59,130,246,.15);color:#3B82F6':'background:rgba(16,185,129,.15);color:#10B981';
-  return `<span class="badge" style="${s}">${t}</span>`;
-};
+const empty=msg=>`<div class="empty-state">${msg}</div>`;
 
 // ── Chart registry ──
 const CR={};
 function nc(id,cfg){if(CR[id])CR[id].destroy();CR[id]=new Chart(document.getElementById(id),cfg);}
 
-// ── Chart.js defaults ──
 Chart.defaults.color='#6B7280';
 Chart.defaults.borderColor='#1A1A1A';
 Chart.defaults.font.family="'Inter','Segoe UI',sans-serif";
 
-// ── Tab switching ──
 function showTab(id,btn){
   document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active'));
@@ -2210,7 +2335,9 @@ function showTab(id,btn){
 
 const TABS={};
 
+// ── Allocation ──────────────────────────────────────────────────────────────
 TABS.allocation=function(){
+  if(!ALLOC.length){document.getElementById('alloc-breakdown').innerHTML=empty('No holdings found.');return;}
   const tot=ALLOC.reduce((s,d)=>s+d.value,0);
   const totI=ALLOC.reduce((s,d)=>s+d.invested,0);
   nc('alloc-donut',{
@@ -2251,46 +2378,53 @@ TABS.allocation=function(){
       </div></div></div>`;
 };
 
+// ── Lumpsum ─────────────────────────────────────────────────────────────────
 TABS.lumpsum=function(){
-  const totI=LSCHEMES.reduce((s,d)=>s+d.inv,0);
-  const totV=LSCHEMES.reduce((s,d)=>s+d.val,0);
-  const roi=((totV-totI)/totI*100);
+  const ls=LSUMMARY;
   document.getElementById('lumpsum-kpis').innerHTML=[
-    {l:'Total Invested',v:fmtINR(totI),c:'#9CA3AF'},
-    {l:'Current Value', v:fmtINR(totV),c:'#10B981'},
-    {l:'Absolute ROI',  v:fmtPct(roi), c:'#10B981'},
+    {l:'Lumpsum Invested', v:fmtINR(ls.inv), c:'#9CA3AF'},
+    {l:'Current Value',    v:fmtINR(ls.val), c:'#10B981'},
+    {l:'Estimated ROI',    v:fmtPct(ls.roi), c:ls.roi>=0?'#10B981':'#EF4444'},
   ].map(k=>`<div class="card"><p class="muted" style="font-size:12px;margin-bottom:8px">${k.l}</p><p style="color:${k.c};font-size:22px;font-weight:700">${k.v}</p></div>`).join('');
-  nc('lumpsum-area',{
-    type:'line',
-    data:{
-      labels:GROWTH.map(d=>d.month),
-      datasets:[{data:GROWTH.map(d=>d.value),borderColor:'#10B981',borderWidth:2,fill:true,backgroundColor:'rgba(16,185,129,0.1)',pointRadius:0,tension:0.4}]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`  ${fmtINR(ctx.parsed.y)}`}}},
-      scales:{
-        x:{ticks:{color:'#6B7280',font:{size:11},maxTicksLimit:10},grid:{display:false}},
-        y:{ticks:{color:'#6B7280',font:{size:11},callback:v=>`₹${(v/100000).toFixed(1)}L`},grid:{color:'#1A1A1A'}}
+
+  if(GROWTH.length){
+    nc('lumpsum-area',{
+      type:'line',
+      data:{
+        labels:GROWTH.map(d=>d.month),
+        datasets:[{data:GROWTH.map(d=>d.value),borderColor:'#10B981',borderWidth:2,fill:true,backgroundColor:'rgba(16,185,129,0.1)',pointRadius:0,tension:0.4}]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`  ${fmtINR(ctx.parsed.y)}`}}},
+        scales:{
+          x:{ticks:{color:'#6B7280',font:{size:11},maxTicksLimit:10},grid:{display:false}},
+          y:{ticks:{color:'#6B7280',font:{size:11},callback:v=>`₹${(v/100000).toFixed(1)}L`},grid:{color:'#1A1A1A'}}
+        }
       }
-    }
-  });
-  const ths=['Scheme','Date','NAV @ Buy','Current NAV','Units','Invested','Value','Return %'].map(h=>`<th>${h}</th>`).join('');
+    });
+  }
+
+  if(!LSCHEMES.length){
+    document.getElementById('lumpsum-table').parentElement.innerHTML=empty('No lumpsum investments found.');return;
+  }
+  const ths=['Scheme','Invested','Current Value','NAV','Return %'].map(h=>`<th>${h}</th>`).join('');
   const rows=LSCHEMES.map(s=>{
-    const ret=((s.val-s.inv)/s.inv*100);
+    const ret=s.inv>0?((s.val-s.inv)/s.inv*100):0;
     return `<tr>
-      <td style="color:#fff;font-weight:500">${s.name}</td><td>${s.date}</td>
-      <td style="font-family:monospace">₹${s.nb.toFixed(4)}</td><td style="font-family:monospace">₹${s.nn.toFixed(4)}</td>
-      <td>${s.units.toFixed(2)}</td><td>${fmtINR(s.inv)}</td>
+      <td style="color:#fff;font-weight:500">${s.name}</td>
+      <td>${fmtINR(s.inv)}</td>
       <td style="color:#10B981;font-weight:600">${fmtINR(s.val)}</td>
+      <td style="font-family:monospace">₹${s.nav.toFixed(4)}</td>
       <td style="font-weight:700;color:${ret>=0?'#10B981':'#EF4444'}">${fmtPct(ret)}</td>
     </tr>`;
   }).join('');
   document.getElementById('lumpsum-table').innerHTML=`<thead><tr>${ths}</tr></thead><tbody>${rows}</tbody>`;
 };
 
+// ── SIP Health ──────────────────────────────────────────────────────────────
 TABS.sip=function(){
-  const sc=SIP.score;
+  const sc=SIP.score,n=SIP.totalCount,nl=SIP.liveCount;
   const col=sc>=75?'#10B981':sc>=50?'#F59E0B':'#EF4444';
   nc('sip-gauge',{
     type:'doughnut',
@@ -2299,129 +2433,157 @@ TABS.sip=function(){
   });
   document.getElementById('sip-gauge-label').innerHTML=`<span style="font-size:30px;font-weight:800;color:${col}">${sc}</span><span class="muted"> /100</span>`;
   document.getElementById('sip-metrics').innerHTML=[
-    {l:'Regularity',v:SIP.bd.reg+'%',c:'#10B981'},
-    {l:'On-Time',   v:SIP.bd.ot+'%', c:'#3B82F6'},
-    {l:'Skip Rate', v:SIP.bd.skip+'%',c:'#EF4444'},
-  ].map(m=>`<div class="health-metric"><p style="color:${m.c};font-size:22px;font-weight:700">${m.v}</p><p class="muted" style="font-size:11px">${m.l}</p></div>`).join('');
-  nc('sip-bar',{
-    type:'bar',
-    data:{
-      labels:SIP.mandates.map(m=>m.name),
-      datasets:[
-        {label:'Completed',data:SIP.mandates.map(m=>m.done),backgroundColor:'#10B981',borderRadius:4},
-        {label:'Skipped',  data:SIP.mandates.map(m=>m.skip),backgroundColor:'#EF4444',borderRadius:4},
-      ]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{labels:{color:'#9CA3AF',font:{size:12}}},tooltip:{mode:'index'}},
-      scales:{
-        x:{ticks:{color:'#6B7280',font:{size:11}},grid:{display:false}},
-        y:{ticks:{color:'#6B7280',font:{size:11}},grid:{color:'#1A1A1A'}}
-      }
-    }
-  });
-  const tc=SIP.missed.reduce((s,m)=>s+m.cost,0);
-  document.getElementById('missed-list').innerHTML=
-    SIP.missed.map(m=>`<div class="missed-item">
-      <div><p style="color:#fff;font-weight:600">${m.scheme}</p><p class="muted" style="font-size:12px">Missed: ${m.date} &middot; ${fmtINR(m.amt)}</p></div>
-      <div style="text-align:right"><p class="positive">Worth ${fmtINR(m.now)} today</p><p class="negative" style="font-size:13px">Cost: ${fmtINR(m.cost)}</p></div>
-    </div>`).join('')
-    +`<div style="text-align:right;margin-top:8px"><span class="muted" style="font-size:13px">Total Cost: </span><span style="color:#EF4444;font-weight:800;font-size:20px">${fmtINR(tc)}</span></div>`;
-  document.getElementById('overlap-list').innerHTML=SIP.overlaps.map(a=>{
-    const h=a.sev==='HIGH',bc=h?'#EF4444':'#F59E0B';
-    const bs=h?'background:rgba(239,68,68,.15);color:#EF4444':'background:rgba(245,158,11,.15);color:#F59E0B';
-    return `<div style="border-left:4px solid ${bc};background:#1A1A1A;border-radius:0 8px 8px 0;padding:14px 16px;margin-bottom:12px">
-      <div class="row" style="margin-bottom:8px">
-        <span class="badge" style="${bs}">${a.sev}</span>
-        <span class="secondary" style="font-size:12px">${a.type.replace(/_/g,' ')}</span>
-        <span style="color:${bc};font-size:22px;font-weight:800">${a.pct}%</span>
-      </div>
-      <div style="margin-bottom:8px">${a.funds.map(f=>`<span class="chip">${f}</span>`).join('')}</div>
-      <p class="secondary" style="font-size:13px;margin-bottom:4px">${a.desc}</p>
-      <p class="muted" style="font-size:12px">&#128161; ${a.rec}</p>
-    </div>`;
-  }).join('');
-};
+    {l:'Active SIPs',   v:nl,               c:'#10B981'},
+    {l:'Total SIPs',    v:n,                c:'#3B82F6'},
+    {l:'Missed',        v:SIP.missed.length, c:'#EF4444'},
+    {l:'SIP Invested',  v:fmtINR(SIP.totalInvested), c:'#9CA3AF'},
+  ].map(m=>`<div class="health-metric"><p style="color:${m.c};font-size:20px;font-weight:700">${m.v}</p><p class="muted" style="font-size:11px">${m.l}</p></div>`).join('');
 
-TABS.swp=function(){
-  nc('swp-bar',{
-    type:'bar',
-    data:{
-      labels:SWP.wd.map(d=>d.m),
-      datasets:[{label:'Withdrawn',data:SWP.wd.map(d=>d.a),backgroundColor:'#EF4444',borderRadius:4}]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`  ${fmtINR(ctx.parsed.y)}`}}},
-      scales:{
-        x:{ticks:{color:'#6B7280',font:{size:10}},grid:{display:false}},
-        y:{ticks:{color:'#6B7280',font:{size:10},callback:v=>`₹${(v/1000).toFixed(0)}k`},grid:{color:'#1A1A1A'}}
+  if(SIP.mandates.length){
+    nc('sip-bar',{
+      type:'bar',
+      data:{
+        labels:SIP.mandates.map(m=>m.name),
+        datasets:[
+          {label:'Installments',data:SIP.mandates.map(m=>m.done),backgroundColor:'#10B981',borderRadius:4},
+        ]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{labels:{color:'#9CA3AF',font:{size:12}}},tooltip:{mode:'index'}},
+        scales:{
+          x:{ticks:{color:'#6B7280',font:{size:11}},grid:{display:false}},
+          y:{ticks:{color:'#6B7280',font:{size:11}},grid:{color:'#1A1A1A'}}
+        }
       }
-    }
-  });
-  const s=SWP.sum;
-  document.getElementById('swp-kpis').innerHTML=[
-    {l:'Total Withdrawn',    v:fmtINR(s.tw), c:'#EF4444'},
-    {l:'Remaining Principal',v:fmtINR(s.rp), c:'#10B981'},
-    {l:'Monthly Rate',       v:fmtINR(s.mr), c:'#9CA3AF'},
-    {l:'Run Rate',           v:s.rrm+' mo',  c:'#3B82F6'},
-  ].map(k=>`<div class="card"><p class="muted" style="font-size:11px;margin-bottom:4px">${k.l}</p><p style="color:${k.c};font-weight:700;font-size:16px">${k.v}</p></div>`).join('');
-  document.getElementById('switch-log').innerHTML=SWP.sw.map((sw,i)=>`
-    <div class="timeline-item" ${i===SWP.sw.length-1?'style="padding-bottom:0"':''}>
-      <div class="timeline-dot"></div>
-      <p class="muted" style="font-size:11px;margin-bottom:4px">${sw.date}</p>
-      <p style="color:#fff;font-weight:600;font-size:13px;margin-bottom:6px">
-        <span class="secondary">${sw.from}</span><span class="muted" style="margin:0 8px">&#8594;</span><span class="positive">${sw.to}</span>
-      </p>
-      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12px">
-        <span class="secondary">${sw.units.toFixed(2)} units</span>
-        <span class="secondary">&middot; ${fmtINR(sw.val)}</span>
-        ${taxBadge(sw.tax)}
-        <span style="color:${sw.ta>0?'#EF4444':'#10B981'}">${sw.ta>0?'Tax: '+fmtINR(sw.ta):'No tax'}</span>
-      </div>
-    </div>`).join('');
-};
+    });
+  }
 
-TABS.redemptions=function(){
-  nc('redemp-bar',{
-    type:'bar',
-    data:{
-      labels:REDEMP.chart.map(d=>d.n),
-      datasets:[
-        {label:'Redeemed',data:REDEMP.chart.map(d=>d.r),backgroundColor:'#10B981',borderRadius:4,stack:'a'},
-        {label:'Lock-in', data:REDEMP.chart.map(d=>d.l),backgroundColor:'#F59E0B',borderRadius:4,stack:'a'},
-      ]
-    },
-    options:{
-      responsive:true,maintainAspectRatio:false,
-      plugins:{legend:{labels:{color:'#9CA3AF',font:{size:12}}},tooltip:{mode:'index'}},
-      scales:{
-        x:{ticks:{color:'#6B7280',font:{size:11}},grid:{display:false}},
-        y:{ticks:{color:'#6B7280',font:{size:11},callback:v=>`₹${(v/1000).toFixed(0)}k`},grid:{color:'#1A1A1A'}}
-      }
-    }
-  });
-  const ths=['Scheme','Date','Units','NAV','Invested','Redeemed','Gain/Loss','Exit Load','Tax','Bank','Status'].map(h=>`<th>${h}</th>`).join('');
-  const tI=REDEMP.txns.reduce((s,t)=>s+t.inv,0);
-  const tV=REDEMP.txns.reduce((s,t)=>s+t.val,0);
-  const tG=tV-tI;
-  const rows=REDEMP.txns.map(t=>{
-    const gl=t.val-t.inv;
-    const ss=t.st==='COMPLETED'?'background:rgba(16,185,129,.15);color:#10B981':'background:rgba(245,158,11,.15);color:#F59E0B';
+  document.getElementById('missed-list').innerHTML = SIP.missed.length
+    ? SIP.missed.map(m=>`<div class="missed-item">
+        <p style="color:#fff;font-weight:600">${m.scheme}</p>
+        <p class="muted" style="font-size:12px;margin-top:4px">Last deducted: ${m.date} &middot; ${fmtINR(m.amt)}/month</p>
+        <p class="negative" style="font-size:12px;margin-top:4px">No deduction in last 39 days</p>
+      </div>`).join('')
+    : empty('No missed SIPs detected. All active SIPs are on track.');
+
+  const sths=['Scheme','Amount','Installments','Status','Last Date','Next Date'].map(h=>`<th>${h}</th>`).join('');
+  const allSIPs=(DATA.sip.mandates||[]);
+  const srows=DATA.allSIPs||[];
+  // Render full SIP table from raw DATA
+  const sipFull=DATA.sipFull||[];
+  const sipTrows=sipFull.map(s=>{
+    const sc2=s.status==='Live'?'background:rgba(16,185,129,.15);color:#10B981':'background:rgba(239,68,68,.15);color:#EF4444';
     return `<tr>
-      <td style="color:#fff;font-weight:500;white-space:nowrap">${t.s}</td>
-      <td style="white-space:nowrap">${t.d}</td><td>${t.u}</td>
-      <td style="font-family:monospace">₹${t.nav.toFixed(2)}</td>
-      <td>${fmtINR(t.inv)}</td><td style="color:#10B981;font-weight:600">${fmtINR(t.val)}</td>
-      <td style="font-weight:700;color:${gl>=0?'#10B981':'#EF4444'}">${fmtINR(gl)}</td>
-      <td>${t.el>0?fmtINR(t.el):'&#8212;'}</td><td>${taxBadge(t.tax)}</td>
-      <td class="muted" style="font-size:11px;white-space:nowrap">${t.bank}</td>
-      <td><span class="badge" style="${ss}">${t.st}</span></td>
+      <td style="color:#fff;font-weight:500">${s.scheme}</td>
+      <td>${fmtINR(s.amount)}</td>
+      <td>${s.installments}</td>
+      <td><span class="badge" style="${sc2}">${s.status}</span></td>
+      <td>${s.lastDate}</td>
+      <td>${s.nextDate}</td>
     </tr>`;
   }).join('');
-  const foot=`<tr style="border-top:1px solid #2A2A2A;background:#1A1A1A"><td colspan="4" style="color:#9CA3AF;padding:10px;font-weight:700">Totals</td><td style="color:#9CA3AF;padding:10px;font-weight:700">${fmtINR(tI)}</td><td style="color:#10B981;padding:10px;font-weight:700">${fmtINR(tV)}</td><td style="padding:10px;font-weight:700;color:${tG>=0?'#10B981':'#EF4444'}">${fmtINR(tG)}</td><td colspan="4"></td></tr>`;
-  document.getElementById('redemp-table').innerHTML=`<thead><tr>${ths}</tr></thead><tbody>${rows}</tbody><tfoot>${foot}</tfoot>`;
+  document.getElementById('sip-table').innerHTML=sipFull.length
+    ? `<thead><tr>${sths}</tr></thead><tbody>${sipTrows}</tbody>`
+    : `<thead><tr>${sths}</tr></thead><tbody><tr><td colspan="6" style="text-align:center;color:#6B7280;padding:24px">No SIP mandates found</td></tr></tbody>`;
+};
+
+// ── SWP & Switch ─────────────────────────────────────────────────────────────
+TABS.swp=function(){
+  if(SWP.wd.length){
+    nc('swp-bar',{
+      type:'bar',
+      data:{
+        labels:SWP.wd.map(d=>d.m),
+        datasets:[{label:'Withdrawn',data:SWP.wd.map(d=>d.a),backgroundColor:'#EF4444',borderRadius:4}]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`  ${fmtINR(ctx.parsed.y)}`}}},
+        scales:{
+          x:{ticks:{color:'#6B7280',font:{size:10}},grid:{display:false}},
+          y:{ticks:{color:'#6B7280',font:{size:10},callback:v=>`₹${(v/1000).toFixed(0)}k`},grid:{color:'#1A1A1A'}}
+        }
+      }
+    });
+    document.getElementById('swp-kpis').innerHTML=[
+      {l:'Total Withdrawn', v:fmtINR(SWP.totalWithdrawn), c:'#EF4444'},
+      {l:'SWP Count',       v:SWP.wd.length+' months',    c:'#9CA3AF'},
+    ].map(k=>`<div class="card"><p class="muted" style="font-size:11px;margin-bottom:4px">${k.l}</p><p style="color:${k.c};font-weight:700;font-size:16px">${k.v}</p></div>`).join('');
+  } else {
+    document.getElementById('swp-bar').parentElement.innerHTML=empty('No SWP transactions found in this portfolio.');
+    document.getElementById('swp-kpis').innerHTML='';
+  }
+
+  document.getElementById('switch-log').innerHTML = SWP.switchLog.length
+    ? SWP.switchLog.map((sw,i)=>{
+        const isOut=sw.type==='Switch Out';
+        const dot=isOut?'#EF4444':'#10B981';
+        const label=isOut?'OUT':'IN';
+        const ls=isOut?'color:#EF4444':'color:#10B981';
+        return `<div class="timeline-item" ${i===SWP.switchLog.length-1?'style="padding-bottom:0"':''}>
+          <div class="timeline-dot" style="background:${dot}"></div>
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span class="muted" style="font-size:11px">${sw.date}</span>
+            <span class="badge" style="${ls};background:${isOut?'rgba(239,68,68,.12)':'rgba(16,185,129,.12)'}">${label}</span>
+          </div>
+          <p style="color:#fff;font-weight:600;font-size:13px;margin-bottom:4px">${sw.scheme}</p>
+          <p class="secondary" style="font-size:12px">${sw.units>0?sw.units.toFixed(3)+' units &middot; ':''} ${fmtINR(sw.val)}</p>
+        </div>`;
+      }).join('')
+    : empty('No switch transactions found.');
+};
+
+// ── Redemptions ──────────────────────────────────────────────────────────────
+TABS.redemptions=function(){
+  if(REDEMP.chart.length){
+    nc('redemp-bar',{
+      type:'bar',
+      data:{
+        labels:REDEMP.chart.map(d=>d.n),
+        datasets:[{label:'Redeemed',data:REDEMP.chart.map(d=>d.r),backgroundColor:'#10B981',borderRadius:4}]
+      },
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`  ${fmtINR(ctx.parsed.y)}`}}},
+        scales:{
+          x:{ticks:{color:'#6B7280',font:{size:11}},grid:{display:false}},
+          y:{ticks:{color:'#6B7280',font:{size:11},callback:v=>`₹${(v/1000).toFixed(0)}k`},grid:{color:'#1A1A1A'}}
+        }
+      }
+    });
+  } else {
+    document.getElementById('redemp-bar').parentElement.innerHTML=empty('No redemption transactions found.');
+  }
+
+  const rths=['Scheme','Date','Units','Amount'].map(h=>`<th>${h}</th>`).join('');
+  const rrows=REDEMP.txns.map(t=>`<tr>
+    <td style="color:#fff;font-weight:500;white-space:nowrap">${t.s}</td>
+    <td style="white-space:nowrap">${t.d}</td>
+    <td>${t.u}</td>
+    <td style="color:#10B981;font-weight:600">${fmtINR(t.amt)}</td>
+  </tr>`).join('');
+  const rtotal=`<tr style="border-top:1px solid #2A2A2A;background:#1A1A1A"><td colspan="3" style="color:#9CA3AF;padding:10px;font-weight:700">Total Redeemed</td><td style="color:#10B981;padding:10px;font-weight:700">${fmtINR(REDEMP.totalRedeemed)}</td></tr>`;
+  document.getElementById('redemp-table').innerHTML=REDEMP.txns.length
+    ? `<thead><tr>${rths}</tr></thead><tbody>${rrows}</tbody><tfoot>${rtotal}</tfoot>`
+    : `<thead><tr>${rths}</tr></thead><tbody><tr><td colspan="4" style="text-align:center;color:#6B7280;padding:24px">No redemption transactions found</td></tr></tbody>`;
+
+  const fths=['Scheme','Invested','Redeemed','Profit/Loss'].map(h=>`<th>${h}</th>`).join('');
+  const frows=REDEMP.full.map(r=>{
+    const gl=r.profit;
+    return `<tr>
+      <td style="color:#fff;font-weight:500">${r.s}</td>
+      <td>${fmtINR(r.inv)}</td>
+      <td style="color:#10B981;font-weight:600">${fmtINR(r.red)}</td>
+      <td style="font-weight:700;color:${gl>=0?'#10B981':'#EF4444'}">${fmtINR(gl)}</td>
+    </tr>`;
+  }).join('');
+  const fc=document.getElementById('redeemed-full-card');
+  if(REDEMP.full.length){
+    document.getElementById('redemp-full-table').innerHTML=`<thead><tr>${fths}</tr></thead><tbody>${frows}</tbody>`;
+  } else {
+    fc.style.display='none';
+  }
 };
 
 TABS.allocation();
@@ -2429,8 +2591,9 @@ TABS.allocation();
 </body>
 </html>"""
 
-    components.html(_html, height=980, scrolling=True)
+    _html = _pre + "const DATA=" + _data_json + ";\n" + _post
 
+    components.html(_html, height=980, scrolling=True)
 
 # ─────────────────────────────────────────────
 # MAIN
@@ -2456,7 +2619,7 @@ def run_app():
     elif menu == "Alerts":
         render_alerts(active)
     elif menu == "Analytics":
-        render_mf_analytics()
+        render_mf_analytics(active)
 
 
 run_app()
