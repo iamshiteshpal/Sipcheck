@@ -249,11 +249,11 @@ def inject_global_styles():
           transition: border-color .2s, box-shadow .2s;
         }
         .card:hover { border-color: rgba(99,179,237,0.28); box-shadow: 0 4px 24px rgba(99,179,237,0.06); }
-        .card-title { font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 2.5px; margin-bottom: 14px; }
+        .card-title { font-size: 11px; font-weight: 500; color: #718096; letter-spacing: 0.08em; margin-bottom: 14px; }
         .pill-gain { display: inline-flex; align-items: center; gap: 4px; background: rgba(72,187,120,0.1); border: 1px solid rgba(72,187,120,0.28); color: var(--gain); font-family: 'IBM Plex Mono',monospace; font-size: 11px; font-weight: 600; padding: 3px 11px; border-radius: 20px; }
         .pill-loss { display: inline-flex; align-items: center; gap: 4px; background: rgba(252,129,129,0.1); border: 1px solid rgba(252,129,129,0.28); color: var(--loss); font-family: 'IBM Plex Mono',monospace; font-size: 11px; font-weight: 600; padding: 3px 11px; border-radius: 20px; }
         .notice { background: rgba(99,179,237,0.05); border: 1px solid rgba(99,179,237,0.18); border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0; padding: 12px 16px; font-size: 13px; color: var(--muted); margin-bottom: 22px; display: flex; align-items: flex-start; gap: 10px; }
-        .section-sep { font-size: 10px; font-weight: 700; color: rgba(99,179,237,0.45); text-transform: uppercase; letter-spacing: 2px; margin: 24px 0 12px; display: flex; align-items: center; gap: 10px; }
+        .section-sep { font-size: 11px; font-weight: 500; color: #718096; letter-spacing: 0.08em; margin: 24px 0 12px; display: flex; align-items: center; gap: 10px; }
         .section-sep::after { content:''; flex:1; height:1px; background: rgba(99,179,237,0.10); }
         .page-title { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: #f0f6ff; letter-spacing: -0.5px; margin-bottom: 4px; }
         .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 22px; }
@@ -307,7 +307,8 @@ def clean_name(name):
         "Regular Plan", "Growth",
     ]:
         name = name.replace(sfx, "")
-    return name.strip()
+    name = name.strip().rstrip("-").strip()
+    return name
 
 
 def ordinal(n):
@@ -1515,9 +1516,10 @@ def render_dashboard(data):
 
     r1, r2 = st.columns(2)
     with r1:
-        st.markdown('<div class="card-title">Performance Breakdown</div>', unsafe_allow_html=True)
+        st.markdown('<div class="card-title">Performance breakdown</div>', unsafe_allow_html=True)
         profitable = sum(1 for item in data["holdings"] if item["pnl"] >= 0)
         losing = sum(1 for item in data["holdings"] if item["pnl"] < 0)
+        pnl_ann_clr = C_GAIN if display_pnl >= 0 else C_LOSS
         fig_perf = go.Figure(go.Pie(
             labels=["Profitable", "In Loss"],
             values=[profitable, losing],
@@ -1525,102 +1527,118 @@ def render_dashboard(data):
             marker_colors=[C_GAIN, C_LOSS],
             textinfo="none",
         ))
+        fig_perf.add_annotation(
+            text=(
+                f"<b>Total P&L</b><br>"
+                f"<span style='color:{pnl_ann_clr}'>{fmt_inr(display_pnl)}</span><br>"
+                f"<span style='font-size:10px'>{gain_arrow(display_pnl)}{abs(pnl_pct):.2f}% all-time</span>"
+            ),
+            x=0.5, y=0.5, xref="paper", yref="paper",
+            showarrow=False, align="center",
+            font=dict(size=11, color="#e2e8f0"),
+        )
         fig_perf.update_layout(
-            height=120,
+            height=180,
             showlegend=True,
-            legend=dict(font=dict(size=11, color="#718096"), bgcolor="rgba(0,0,0,0)", orientation="h", x=0.5, xanchor="center", y=-0.2),
+            legend=dict(font=dict(size=11, color="#718096"), bgcolor="rgba(0,0,0,0)", orientation="h", x=0.5, xanchor="center", y=-0.15),
             **PLOT_BASE,
         )
         st.plotly_chart(fig_perf, use_container_width=True, config={"displayModeBar": False})
 
-        st.markdown('<div class="section-sep">Top Gainers</div>', unsafe_allow_html=True)
-        top_gainers = sorted([item for item in data["holdings"] if item["pnl"] > 0], key=lambda x: x["pnl"], reverse=True)[:3]
+        st.markdown('<div class="section-sep">Top gainers <span style="color:#3B82F6;font-size:11px;cursor:pointer;margin-left:auto;">See all →</span></div>', unsafe_allow_html=True)
+        top_gainers = sorted([item for item in data["holdings"] if item["pnl"] > 0], key=lambda x: x["pnl"], reverse=True)[:5]
         if top_gainers:
-            st.dataframe(
-                pd.DataFrame([
-                    {
-                        "Scheme": clean_name(item["scheme"]),
-                        "P&L": fmt_inr(item["pnl"]),
-                        "XIRR": f"{item['xirr']:.1f}%",
-                    }
-                    for item in top_gainers
-                ]),
-                use_container_width=True,
-                hide_index=True,
+            rows_g = "".join(
+                f"""<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+                  <td style="color:#e2e8f0;padding:8px 10px;font-size:13px;font-weight:500;">{clean_name(item['scheme'])[:30]}</td>
+                  <td style="color:#48bb78;padding:8px 10px;font-size:13px;font-weight:600;white-space:nowrap;">{fmt_inr(item['pnl'])}</td>
+                  <td style="color:#48bb78;padding:8px 10px;font-size:13px;font-weight:600;white-space:nowrap;">▲ {item['xirr']:.1f}%</td>
+                </tr>"""
+                for item in top_gainers
+            )
+            st.markdown(
+                f"""<table style="width:100%;border-collapse:collapse;">
+                  <thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                    <th style="color:#718096;font-size:11px;font-weight:500;letter-spacing:0.08em;text-align:left;padding:6px 10px;">Fund</th>
+                    <th style="color:#718096;font-size:11px;font-weight:500;letter-spacing:0.08em;text-align:left;padding:6px 10px;">P&amp;L</th>
+                    <th style="color:#718096;font-size:11px;font-weight:500;letter-spacing:0.08em;text-align:left;padding:6px 10px;">XIRR</th>
+                  </tr></thead>
+                  <tbody>{rows_g}</tbody>
+                </table>""",
+                unsafe_allow_html=True,
             )
 
     with r2:
-        st.markdown('<div class="card-title">⏱ SIP Countdown</div>', unsafe_allow_html=True)
+        st.markdown('<div class="card-title">SIP countdown</div>', unsafe_allow_html=True)
         sorted_sips = sorted(data["live_sips"], key=lambda x: x["next_iso"])
         if sorted_sips:
-            ticker_html = '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">'
-            for idx, sip in enumerate(sorted_sips[:4]):
-                scheme_name = clean_name(sip["scheme"])
-                target_iso = sip["next_iso"]
-                dom_id = f"sip_{idx}"
-                ticker_html += f"""
-                    <div style="background:#111627;border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:10px 12px;">
-                      <div style="font-size:11px;color:#718096;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-bottom:4px;" title=\"{scheme_name}\">{scheme_name[:26]}…</div>
-                      <div id=\"{dom_id}\" style="font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:700;color:#63b3ed;">—</div>
+            today = date.today()
+            rows_cd = ""
+            for sip in sorted_sips[:6]:
+                sname = clean_name(sip["scheme"])
+                days_left = max(0, (to_date(sip["next_iso"]) - today).days)
+                next_clr = "#48bb78" if days_left <= 7 else "#f6ad55" if days_left <= 14 else "#e2e8f0"
+                bar_pct = max(4, (30 - days_left) / 30 * 100)
+                rows_cd += f"""<tr style="border-bottom:1px solid rgba(255,255,255,0.04);">
+                  <td style="color:#e2e8f0;padding:8px 10px;font-size:13px;font-weight:500;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{sname}">{sname[:28]}</td>
+                  <td style="color:#9CA3AF;padding:8px 10px;font-size:12px;white-space:nowrap;">{fmt_inr(sip['amount'])}</td>
+                  <td style="color:#9CA3AF;padding:8px 10px;font-size:12px;">{sip['day_label']}</td>
+                  <td style="color:{next_clr};padding:8px 10px;font-size:12px;font-weight:600;white-space:nowrap;">{sip['next_date']}</td>
+                  <td style="padding:8px 10px;">
+                    <div style="display:flex;align-items:center;gap:6px;">
+                      <div style="flex:1;height:5px;background:rgba(255,255,255,0.08);border-radius:3px;min-width:44px;">
+                        <div style="width:{bar_pct:.0f}%;height:5px;border-radius:3px;background:{next_clr};"></div>
+                      </div>
+                      <span style="font-size:11px;color:{next_clr};white-space:nowrap;">{days_left}d</span>
                     </div>
-                    <script>
-                    (function(){{
-                      var target = new Date("{target_iso}T00:00:00").getTime();
-                      function tick(){{
-                        var diff = target - Date.now();
-                        var el = document.getElementById("{dom_id}");
-                        if(!el) return;
-                        if(isNaN(target) || diff <= 0){{ el.textContent = "DUE TODAY"; return; }}
-                        var d = Math.floor(diff/86400000);
-                        var h = Math.floor(diff%86400000/3600000);
-                        var m = Math.floor(diff%3600000/60000);
-                        el.textContent = d + "d " + h + "h " + m + "m";
-                      }}
-                      setInterval(tick, 30000);
-                      tick();
-                    }})();
-                    </script>
-                """
-            ticker_html += "</div>"
-            components.html(ticker_html, height=130, scrolling=False)
-
-            sip_rows = [
-                {
-                    "Scheme": clean_name(sip["scheme"]),
-                    "Amount": fmt_inr(sip["amount"]),
-                    "Day": sip["day_label"],
-                    "Next": sip["next_date"],
-                }
-                for sip in sorted_sips[:4]
-            ]
-            st.dataframe(pd.DataFrame(sip_rows), use_container_width=True, hide_index=True)
+                  </td>
+                </tr>"""
+            st.markdown(
+                f"""<table style="width:100%;border-collapse:collapse;">
+                  <thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                    <th style="color:#718096;font-size:11px;font-weight:500;letter-spacing:0.08em;text-align:left;padding:6px 10px;">Fund</th>
+                    <th style="color:#718096;font-size:11px;font-weight:500;letter-spacing:0.08em;text-align:left;padding:6px 10px;">Amount</th>
+                    <th style="color:#718096;font-size:11px;font-weight:500;letter-spacing:0.08em;text-align:left;padding:6px 10px;">Day</th>
+                    <th style="color:#718096;font-size:11px;font-weight:500;letter-spacing:0.08em;text-align:left;padding:6px 10px;">Next due</th>
+                    <th style="color:#718096;font-size:11px;font-weight:500;letter-spacing:0.08em;text-align:left;padding:6px 10px;">Due in</th>
+                  </tr></thead>
+                  <tbody>{rows_cd}</tbody>
+                </table>""",
+                unsafe_allow_html=True,
+            )
         else:
             st.info("No live SIPs detected.")
 
     r3, r4 = st.columns(2)
     with r3:
-        st.markdown('<div class="card-title">Capital Concentration</div>', unsafe_allow_html=True)
-        top_holdings = sorted(data["holdings"], key=lambda x: x["value"], reverse=True)[:5]
+        st.markdown('<div class="card-title">Capital concentration</div>', unsafe_allow_html=True)
+        top_holdings = sorted(data["holdings"], key=lambda x: x["invested"], reverse=True)[:5]
         if top_holdings:
             total_value_for_bubble = display_wealth or 1.0
             df_concentration = pd.DataFrame([
                 {
-                    "Scheme": clean_name(item["scheme"]),
-                    "Value": item["value"],
-                    "Pct": item["value"] / total_value_for_bubble * 100,
+                    "Scheme": f"{item['invested']/data['total_invested']*100:.0f}%  {clean_name(item['scheme'])[:24]}",
+                    "Invested": item["invested"],
+                    "Pct": item["invested"] / data["total_invested"] * 100,
                 }
                 for item in top_holdings
             ])
             fig_concentration = px.bar(
                 df_concentration,
-                x="Value",
+                x="Invested",
                 y="Scheme",
                 orientation="h",
                 color="Pct",
-                color_continuous_scale=["#1a365d", C_ACCENT, "#bee3f8"],
+                color_continuous_scale=["#1D4ED8", "#3B82F6", "#93C5FD"],
+                text="Invested",
+            )
+            fig_concentration.update_traces(
+                texttemplate="₹%{text:,.0f}",
+                textposition="outside",
+                textfont=dict(size=10, color="#718096"),
             )
             fig_concentration.update_layout(
-                height=180,
+                height=200,
                 xaxis=dict(visible=False),
                 yaxis=dict(tickfont=dict(size=10, color="#718096"), title=""),
                 coloraxis_showscale=False,
@@ -1629,39 +1647,43 @@ def render_dashboard(data):
             st.plotly_chart(fig_concentration, use_container_width=True, config={"displayModeBar": False})
 
     with r4:
-        st.markdown('<div class="card-title">Recent Redemptions</div>', unsafe_allow_html=True)
+        st.markdown('<div class="card-title">Recent redemptions</div>', unsafe_allow_html=True)
         recent_redemptions = data.get("recent_redemptions", [])
         if recent_redemptions:
+            total_red = sum(item["Payout"] for item in recent_redemptions)
+            st.markdown(
+                f"""<div style="background:rgba(252,129,129,0.08);border:1px solid rgba(252,129,129,0.2);
+                    border-radius:8px;padding:8px 14px;margin-bottom:10px;
+                    display:flex;align-items:center;justify-content:space-between;">
+                  <span style="font-size:12px;color:#718096;">Total redeemed</span>
+                  <span style="font-size:15px;font-weight:700;color:#fc8181;">{fmt_inr(total_red)}</span>
+                </div>""",
+                unsafe_allow_html=True,
+            )
             df_redemptions = pd.DataFrame([
                 {"Scheme": item["Scheme"], "Payout": item["Payout"]}
-                for item in recent_redemptions[:4]
+                for item in recent_redemptions[:5]
             ])
             fig_redemptions = px.bar(
                 df_redemptions,
                 x="Payout",
                 y="Scheme",
                 orientation="h",
-                color_discrete_sequence=[C_LOSS],
+                color_discrete_sequence=["#EF4444"],
+                text="Payout",
+            )
+            fig_redemptions.update_traces(
+                texttemplate="₹%{text:,.0f}",
+                textposition="outside",
+                textfont=dict(size=10, color="#718096"),
             )
             fig_redemptions.update_layout(
-                height=140,
+                height=160,
                 xaxis=dict(visible=False),
                 yaxis=dict(tickfont=dict(size=10, color="#718096"), title=""),
                 **PLOT_BASE,
             )
             st.plotly_chart(fig_redemptions, use_container_width=True, config={"displayModeBar": False})
-            st.dataframe(
-                pd.DataFrame([
-                    {
-                        "Date": item["Date"],
-                        "Scheme": item["Scheme"],
-                        "Payout": fmt_inr(item["Payout"]),
-                    }
-                    for item in recent_redemptions[:4]
-                ]),
-                use_container_width=True,
-                hide_index=True,
-            )
         else:
             st.info("No recent redemptions found.")
 
@@ -1675,9 +1697,9 @@ def render_my_portfolio(data):
     st.markdown('<div class="page-sub">Open holdings and fully redeemed positions</div>', unsafe_allow_html=True)
 
     cat_colors = {
-        "Equity Funds":      C_ACCENT,
-        "Debt Funds":        "#f6ad55",
-        "Gold & Commodities":"#ecc94b",
+        "Equity Funds":      "#3B82F6",
+        "Debt Funds":        "#06B6D4",
+        "Gold & Commodities":"#F59E0B",
         "International":     C_ACCENT2,
     }
     seen_cats = []
@@ -1695,7 +1717,7 @@ def render_my_portfolio(data):
             f"""
             <div style="display:flex;align-items:center;gap:8px;margin:22px 0 10px;">
               <div style="width:7px;height:7px;border-radius:50%;background:{color};box-shadow:0 0 5px {color};"></div>
-              <span style="font-size:11px;font-weight:700;color:{color};text-transform:uppercase;letter-spacing:2px;">{label}</span>
+              <span style="font-size:11px;font-weight:500;color:{color};letter-spacing:0.08em;">{label}</span>
               <div style="flex:1;height:1px;background:rgba(255,255,255,0.05);"></div>
             </div>
             """,
@@ -1733,13 +1755,14 @@ def render_my_portfolio(data):
             })
         st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
 
-    st.markdown('<div class="section-sep">Bubble Map — Invested vs XIRR</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sep">Bubble map — invested vs XIRR</div>', unsafe_allow_html=True)
+    max_inv = max((h["invested"] for h in data["holdings"] if h["invested"] > 0), default=1)
     df_bubble = pd.DataFrame([
         {
             "Scheme": clean_name(item["scheme"]),
             "Invested": item["invested"],
             "XIRR": item["xirr"],
-            "Gain": max(item["pnl"], 0),
+            "BubbleSize": max(30, (item["invested"] / max_inv) ** 0.5 * 60),
             "Type": item["category"],
         }
         for item in data["holdings"] if item["invested"] > 0
@@ -1749,10 +1772,12 @@ def render_my_portfolio(data):
             df_bubble,
             x="Invested",
             y="XIRR",
-            size="Gain",
+            size="BubbleSize",
             color="Type",
             hover_name="Scheme",
-            color_discrete_map={"Equity Funds": C_ACCENT, "Debt Funds": "#f6ad55"},
+            size_max=40,
+            color_discrete_map={"Equity Funds": "#3B82F6", "Gold & Commodities": "#F59E0B", "Debt Funds": "#06B6D4"},
+            hover_data={"BubbleSize": False, "Invested": ":,.0f"},
         )
         fig_bubble.update_layout(
             height=340,
@@ -1763,17 +1788,36 @@ def render_my_portfolio(data):
         )
         st.plotly_chart(fig_bubble, use_container_width=True, config={"displayModeBar": False})
 
-    st.markdown('<div class="section-sep" style="margin-top:36px;">Fully Redeemed Positions</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-sep" style="margin-top:36px;">Fully redeemed positions</div>', unsafe_allow_html=True)
     if data.get("redeemed"):
         realized = data["realized_pnl"]
         color = gain_color(realized)
+        redeemed_items = data["redeemed"]
+        gold_pnl = sum(
+            item["profit"] for item in redeemed_items
+            if "gold" in item["scheme"].lower() or "silver" in item["scheme"].lower()
+        )
+        equity_pnl = realized - gold_pnl
         st.markdown(
             f"""
-            <div style="background:rgba({'72,187,120' if realized>=0 else '252,129,129'},0.05);border:1px solid rgba({'72,187,120' if realized>=0 else '252,129,129'},0.2);
-                                border-radius:10px;padding:14px 18px;margin-bottom:14px;">
-              <div style="font-size:10px;color:{color};text-transform:uppercase;letter-spacing:1px;font-weight:600;margin-bottom:4px;">Total Realized P&L</div>
-              <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:{color};">
-                {gain_arrow(realized)} {fmt_inr(realized)}</div>
+            <div style="background:rgba({'72,187,120' if realized>=0 else '252,129,129'},0.05);
+                border:1px solid rgba({'72,187,120' if realized>=0 else '252,129,129'},0.2);
+                border-radius:10px;padding:16px 20px;margin-bottom:14px;display:flex;align-items:flex-start;gap:24px;">
+              <div style="flex:1;">
+                <div style="font-size:11px;color:#718096;letter-spacing:0.08em;margin-bottom:6px;">Total realized P&amp;L</div>
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                  <span style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:700;color:{color};">{gain_arrow(realized)} {fmt_inr(realized)}</span>
+                  <span style="font-size:18px;color:{color};">↑</span>
+                </div>
+                <div style="display:flex;gap:16px;">
+                  <span style="font-size:12px;color:#718096;">Equity: <span style="color:#3B82F6;font-weight:600;">{fmt_inr(equity_pnl)}</span></span>
+                  <span style="font-size:12px;color:#718096;">Gold: <span style="color:#F59E0B;font-weight:600;">{fmt_inr(gold_pnl)}</span></span>
+                </div>
+              </div>
+              <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:10px 14px;text-align:center;min-width:80px;">
+                <div style="font-size:11px;color:#718096;margin-bottom:4px;">Schemes exited</div>
+                <div style="font-size:20px;font-weight:700;color:#e2e8f0;">{len(redeemed_items)}</div>
+              </div>
             </div>
             """,
             unsafe_allow_html=True,
@@ -1811,21 +1855,30 @@ def render_sip_center(data):
         tab = f"🟢 Live ({len(live_sips)})"
     target_list = live_sips if "Live" in tab else dead_sips
     total_outflow = sum(item["amount"] for item in target_list)
-    status_label = "LIVE" if "Live" in tab else "INACTIVE"
+    annual_commit = total_outflow * 12
+    is_live_tab = "Live" in tab
+    status_label = "live" if is_live_tab else "inactive"
+    badge_color = "#48bb78" if is_live_tab else "#fc8181"
+    next_debit = min((item["next_date"] for item in target_list), default="—") if target_list else "—"
 
     st.markdown(
         f"""
         <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;
-    padding:20px 24px;display:flex;justify-content:space-between;
-                    align-items:center;margin-bottom:16px;">
-          <div>
-            <div style="font-size:10px;color:var(--muted);text-transform:uppercase;
-    letter-spacing:1.5px;margin-bottom:4px;">Total Monthly Outflow</div>
-            <div style="font-family:'IBM Plex Mono',monospace;font-size:30px;font-weight:700;
-    color:#f7fafc;letter-spacing:-1px;">{fmt_inr(total_outflow)}</div>
-          </div>
-          <div style="font-size:12px;font-weight:700;color:{'#48bb78' if 'Live' in tab else '#fc8181'};">
-            {len(target_list)} {status_label}
+                    padding:20px 24px;margin-bottom:16px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:20px;align-items:center;">
+            <div>
+              <div style="font-size:11px;color:#718096;letter-spacing:0.08em;margin-bottom:4px;">Monthly</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:26px;font-weight:700;color:#48bb78;letter-spacing:-1px;">{fmt_inr(total_outflow)}</div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:#718096;letter-spacing:0.08em;margin-bottom:4px;">Annual commitment</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:18px;font-weight:600;color:#f7fafc;">{fmt_inr(annual_commit)}</div>
+            </div>
+            <div>
+              <div style="font-size:11px;color:#718096;letter-spacing:0.08em;margin-bottom:4px;">Next debit</div>
+              <div style="font-size:16px;font-weight:600;color:#f6ad55;">{next_debit}</div>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:{badge_color};">{len(target_list)} {status_label}</div>
           </div>
         </div>
         """,
@@ -1833,41 +1886,65 @@ def render_sip_center(data):
     )
 
     if target_list:
-        rows = [
-            {
-                "Scheme": clean_name(item["scheme"]),
-                "Amount": fmt_inr(item["amount"]),
-                "Day": item["day_label"],
-                "Last Date": item["last_date"],
-                "Next Due": item["next_date"],
-                "Status": item["status"],
-            }
+        is_a = is_live_tab
+        badge_bg     = "rgba(72,187,120,0.12)"  if is_a else "rgba(252,129,129,0.12)"
+        badge_clr    = "#48bb78"                if is_a else "#fc8181"
+        badge_border = "rgba(72,187,120,0.3)"   if is_a else "rgba(252,129,129,0.3)"
+        badge_text   = "Live"                   if is_a else "Paused"
+        rows_html = "".join(
+            f"""<tr style="border-bottom:1px solid rgba(255,255,255,0.04);background:{'transparent' if is_a else 'rgba(252,129,129,0.04)'};">
+              <td style="color:#e2e8f0;padding:10px;font-size:13px;font-weight:500;">{clean_name(item['scheme'])}</td>
+              <td style="color:#9CA3AF;padding:10px;font-size:13px;">{fmt_inr(item['amount'])}</td>
+              <td style="color:#9CA3AF;padding:10px;font-size:13px;">{item['day_label']}</td>
+              <td style="color:#9CA3AF;padding:10px;font-size:13px;">{item['last_date']}</td>
+              <td style="color:#9CA3AF;padding:10px;font-size:13px;">{item['next_date']}</td>
+              <td style="padding:10px;"><span style="background:{badge_bg};color:{badge_clr};border:1px solid {badge_border};border-radius:4px;padding:2px 8px;font-size:11px;font-weight:700;">{badge_text}</span></td>
+            </tr>"""
             for item in target_list
-        ]
-        st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+        )
+        st.markdown(
+            f"""<table style="width:100%;border-collapse:collapse;">
+              <thead><tr style="border-bottom:1px solid rgba(255,255,255,0.06);">
+                <th style="color:#718096;font-size:11px;font-weight:500;letter-spacing:0.08em;text-align:left;padding:6px 10px;">Scheme</th>
+                <th style="color:#718096;font-size:11px;font-weight:500;letter-spacing:0.08em;text-align:left;padding:6px 10px;">Amount</th>
+                <th style="color:#718096;font-size:11px;font-weight:500;letter-spacing:0.08em;text-align:left;padding:6px 10px;">Day</th>
+                <th style="color:#718096;font-size:11px;font-weight:500;letter-spacing:0.08em;text-align:left;padding:6px 10px;">Last date</th>
+                <th style="color:#718096;font-size:11px;font-weight:500;letter-spacing:0.08em;text-align:left;padding:6px 10px;">Next due</th>
+                <th style="color:#718096;font-size:11px;font-weight:500;letter-spacing:0.08em;text-align:left;padding:6px 10px;">Status</th>
+              </tr></thead>
+              <tbody>{rows_html}</tbody>
+            </table>""",
+            unsafe_allow_html=True,
+        )
     else:
         st.info("No SIPs in this category.")
 
     all_sips = live_sips + dead_sips
     if all_sips:
-        st.markdown('<div class="section-sep">Monthly Outflow by Scheme</div>', unsafe_allow_html=True)
-        df_bar = pd.DataFrame([
-            {"Scheme": clean_name(item["scheme"]), "Amount": item["amount"]}
-            for item in all_sips
-        ])
+        st.markdown('<div class="section-sep">Monthly outflow by scheme</div>', unsafe_allow_html=True)
+        df_bar = pd.DataFrame(
+            [{"Scheme": clean_name(item["scheme"]), "Amount": item["amount"], "Status": "Live"} for item in live_sips] +
+            [{"Scheme": clean_name(item["scheme"]), "Amount": item["amount"], "Status": "Inactive"} for item in dead_sips]
+        )
         fig_bar = px.bar(
             df_bar,
             x="Amount",
             y="Scheme",
             orientation="h",
-            color="Amount",
-            color_continuous_scale=["#1a365d", C_ACCENT, "#bee3f8"],
+            color="Status",
+            color_discrete_map={"Live": "#10B981", "Inactive": "#EF4444"},
+            text="Amount",
+        )
+        fig_bar.update_traces(
+            texttemplate="₹%{text:,.0f}",
+            textposition="outside",
+            textfont=dict(size=10, color="#718096"),
         )
         fig_bar.update_layout(
-            height=max(200, len(all_sips) * 30),
+            height=max(220, len(all_sips) * 32),
             xaxis=dict(visible=False),
             yaxis=dict(tickfont=dict(size=11, color="#718096"), title=""),
-            coloraxis_showscale=False,
+            legend=dict(font=dict(size=11, color="#718096"), bgcolor="rgba(0,0,0,0)"),
             **PLOT_BASE,
         )
         st.plotly_chart(fig_bar, use_container_width=True, config={"displayModeBar": False})
