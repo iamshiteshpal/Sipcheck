@@ -224,9 +224,11 @@ if st.session_state["family_members"]:
 
     st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
 
-    if st.button("Continue to Finances →", type="primary", use_container_width=False, key="to_finances"):
-        st.session_state["fp_step"] = 2
-        st.switch_page("pages/07_Family_Finances.py")
+    col_btn1, col_btn2 = st.columns([0.2, 0.8])
+    with col_btn1:
+        if st.button("Continue to Finances →", type="primary", key="to_finances"):
+            st.session_state["fp_step"] = 2
+            st.rerun()
 
 else:
     st.markdown("""
@@ -234,3 +236,187 @@ else:
     👆 Add your first family member above to get started
 </div>
 """, unsafe_allow_html=True)
+
+if st.session_state.get("fp_step", 1) >= 2:
+
+    st.markdown("""
+<div style="display:flex;gap:0;margin-bottom:2rem;margin-top:2rem;">
+    <div style="flex:1;text-align:center;">
+        <div style="width:32px;height:32px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#10B981;color:#fff;border:2px solid #10B981;">✓</div>
+        <div style="font-size:10px;font-weight:500;color:#10B981;">Family Setup</div>
+    </div>
+    <div style="flex:1;text-align:center;">
+        <div style="width:32px;height:32px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#A855F7;color:#fff;border:2px solid #A855F7;">2</div>
+        <div style="font-size:10px;font-weight:500;color:#D8B4FE;">Finances</div>
+    </div>
+    <div style="flex:1;text-align:center;">
+        <div style="width:32px;height:32px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:rgba(30,25,45,0.8);color:#6B7280;border:2px solid #2D2D2D;">3</div>
+        <div style="font-size:10px;font-weight:500;color:#6B7280;">Goals</div>
+    </div>
+    <div style="flex:1;text-align:center;">
+        <div style="width:32px;height:32px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:rgba(30,25,45,0.8);color:#6B7280;border:2px solid #2D2D2D;">4</div>
+        <div style="font-size:10px;font-weight:500;color:#6B7280;">Your Plan</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+    st.markdown('<div class="section-accent">Family Finances</div>', unsafe_allow_html=True)
+
+    fin_col1, fin_col2 = st.columns(2)
+
+    with fin_col1:
+        st.markdown("""
+<div style="font-size:12px;font-weight:600;color:#D8B4FE;margin-bottom:12px;">Monthly Expenses</div>
+""", unsafe_allow_html=True)
+
+        exp_household = st.number_input(
+            "Household expenses (rent, food, bills)",
+            min_value=0, max_value=1000000, value=30000, step=1000, key="exp_household"
+        )
+        exp_education = st.number_input(
+            "Children education fees",
+            min_value=0, max_value=500000, value=10000, step=1000, key="exp_education"
+        )
+        exp_lifestyle = st.number_input(
+            "Lifestyle (dining, entertainment, travel)",
+            min_value=0, max_value=500000, value=10000, step=1000, key="exp_lifestyle"
+        )
+        exp_other = st.number_input(
+            "Other expenses",
+            min_value=0, max_value=500000, value=5000, step=1000, key="exp_other"
+        )
+
+    with fin_col2:
+        st.markdown("""
+<div style="font-size:12px;font-weight:600;color:#D8B4FE;margin-bottom:12px;">EMIs &amp; Obligations</div>
+""", unsafe_allow_html=True)
+
+        emi_home = st.number_input(
+            "Home loan EMI", min_value=0, max_value=500000, value=0, step=1000, key="emi_home"
+        )
+        emi_car = st.number_input(
+            "Car loan EMI", min_value=0, max_value=200000, value=0, step=1000, key="emi_car"
+        )
+        emi_personal = st.number_input(
+            "Personal loan EMI", min_value=0, max_value=200000, value=0, step=1000, key="emi_personal"
+        )
+        insurance_premium = st.number_input(
+            "Total insurance premiums/month", min_value=0, max_value=100000, value=5000, step=500, key="insurance_premium"
+        )
+        existing_sip = st.number_input(
+            "Existing SIP/investments/month", min_value=0, max_value=500000, value=0, step=1000, key="existing_sip"
+        )
+
+    # ── CALCULATIONS ──────────────────────────────────────────────────────────
+    total_income = sum(m["income"] for m in st.session_state.get("family_members", []))
+    total_expenses = exp_household + exp_education + exp_lifestyle + exp_other
+    total_emis = emi_home + emi_car + emi_personal + insurance_premium
+    total_obligations = total_emis + existing_sip
+    monthly_surplus = total_income - total_expenses - total_obligations
+    savings_rate = (monthly_surplus / total_income * 100) if total_income > 0 else 0
+
+    st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
+
+    s1, s2, s3, s4 = st.columns(4)
+
+    with s1:
+        st.markdown(f"""
+<div style="background:rgba(30,25,45,0.6);border:1px solid rgba(168,85,247,0.2);border-top:2px solid #A855F7;border-radius:12px;padding:14px;text-align:center;">
+<div style="font-size:10px;color:#94A3B8;font-weight:600;margin-bottom:6px;">TOTAL INCOME</div>
+<div style="font-size:1.3rem;font-weight:700;color:#F8FAFC;">₹{total_income:,}</div>
+<div style="font-size:10px;color:#6B7280;">per month</div>
+</div>""", unsafe_allow_html=True)
+
+    with s2:
+        st.markdown(f"""
+<div style="background:rgba(30,25,45,0.6);border:1px solid rgba(255,77,77,0.2);border-top:2px solid #FF4D4D;border-radius:12px;padding:14px;text-align:center;">
+<div style="font-size:10px;color:#94A3B8;font-weight:600;margin-bottom:6px;">TOTAL OUTFLOW</div>
+<div style="font-size:1.3rem;font-weight:700;color:#FF4D4D;">₹{total_expenses + total_obligations:,}</div>
+<div style="font-size:10px;color:#6B7280;">expenses + EMIs</div>
+</div>""", unsafe_allow_html=True)
+
+    with s3:
+        surplus_color = "#20C997" if monthly_surplus > 0 else "#FF4D4D"
+        st.markdown(f"""
+<div style="background:rgba(30,25,45,0.6);border:1px solid rgba(32,201,151,0.2);border-top:2px solid {surplus_color};border-radius:12px;padding:14px;text-align:center;">
+<div style="font-size:10px;color:#94A3B8;font-weight:600;margin-bottom:6px;">INVESTABLE SURPLUS</div>
+<div style="font-size:1.3rem;font-weight:700;color:{surplus_color};">₹{monthly_surplus:,}</div>
+<div style="font-size:10px;color:#6B7280;">available to invest</div>
+</div>""", unsafe_allow_html=True)
+
+    with s4:
+        rate_color = "#20C997" if savings_rate >= 20 else "#F59E0B" if savings_rate >= 10 else "#FF4D4D"
+        rate_label = "Excellent!" if savings_rate >= 20 else "Good" if savings_rate >= 10 else "Needs work"
+        st.markdown(f"""
+<div style="background:rgba(30,25,45,0.6);border:1px solid rgba(168,85,247,0.2);border-top:2px solid {rate_color};border-radius:12px;padding:14px;text-align:center;">
+<div style="font-size:10px;color:#94A3B8;font-weight:600;margin-bottom:6px;">SAVINGS RATE</div>
+<div style="font-size:1.3rem;font-weight:700;color:{rate_color};">{savings_rate:.1f}%</div>
+<div style="font-size:10px;color:#6B7280;">{rate_label}</div>
+</div>""", unsafe_allow_html=True)
+
+    # ── CASH FLOW BREAKDOWN ───────────────────────────────────────────────────
+    import plotly.graph_objects as go
+
+    st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
+
+    cf_col1, cf_col2 = st.columns([0.4, 0.6])
+
+    labels = ['Household', 'Education', 'Lifestyle', 'Other',
+              'EMIs', 'Insurance', 'Existing SIP', 'Surplus']
+    values = [exp_household, exp_education, exp_lifestyle, exp_other,
+              emi_home + emi_car + emi_personal, insurance_premium,
+              existing_sip, max(0, monthly_surplus)]
+    colors = ['#EF4444', '#F97316', '#F59E0B', '#94A3B8',
+              '#3B82F6', '#8B5CF6', '#06B6D4', '#20C997']
+
+    with cf_col1:
+        fig_cf = go.Figure(go.Pie(
+            labels=labels,
+            values=values,
+            hole=0.6,
+            marker=dict(colors=colors, line=dict(color='#0B0914', width=2)),
+            textinfo='percent',
+            textfont=dict(size=10, color='white'),
+        ))
+        fig_cf.update_layout(
+            height=250,
+            margin=dict(l=0, r=0, t=0, b=0),
+            paper_bgcolor='rgba(0,0,0,0)',
+            showlegend=False,
+            annotations=[dict(
+                text=f"₹{total_income:,}<br>income",
+                x=0.5, y=0.5,
+                font=dict(size=11, color='#F8FAFC'),
+                showarrow=False
+            )]
+        )
+        st.plotly_chart(fig_cf, use_container_width=True)
+
+    with cf_col2:
+        row_labels = ['Household expenses', 'Education', 'Lifestyle', 'Other expenses',
+                      'All EMIs', 'Insurance', 'Existing investments', 'Available surplus']
+        row_values = [exp_household, exp_education, exp_lifestyle, exp_other,
+                      emi_home + emi_car + emi_personal, insurance_premium,
+                      existing_sip, max(0, monthly_surplus)]
+        for lbl, val, col in zip(row_labels, row_values, colors):
+            pct = (val / total_income * 100) if total_income > 0 else 0
+            st.markdown(f"""
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+<div style="width:10px;height:10px;border-radius:50%;background:{col};flex-shrink:0;"></div>
+<div style="flex:1;font-size:11px;color:#94A3B8;">{lbl}</div>
+<div style="font-size:11px;font-weight:600;color:#F8FAFC;">₹{val:,}</div>
+<div style="font-size:10px;color:#6B7280;width:35px;text-align:right;">{pct:.0f}%</div>
+</div>""", unsafe_allow_html=True)
+
+    st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
+
+    if monthly_surplus > 0:
+        if st.button("Continue to Goals →", type="primary", key="to_goals"):
+            st.session_state["fp_step"] = 3
+            st.session_state["monthly_surplus"] = monthly_surplus
+            st.rerun()
+    else:
+        st.markdown("""
+<div style="background:rgba(255,77,77,0.08);border:1px solid rgba(255,77,77,0.2);border-radius:10px;padding:12px 16px;font-size:12px;color:#FF4D4D;">
+⚠️ Your expenses exceed income. Reduce expenses or increase income before planning investments.
+</div>""", unsafe_allow_html=True)
