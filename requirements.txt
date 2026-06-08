@@ -12,3 +12,4 @@ playwright
 yfinance
 feedparser
 anthropic
+google-generativeai

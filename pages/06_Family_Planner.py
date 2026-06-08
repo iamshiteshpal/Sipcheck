@@ -565,3 +565,215 @@ f"<strong style='color:#20C997;'>₹{st.session_state.get('monthly_surplus', 0):
         if st.button("Generate My Family Plan →", type="primary", key="gen_plan"):
             st.session_state["fp_step"] = 4
             st.rerun()
+
+if st.session_state.get("fp_step", 1) >= 4:
+
+    st.markdown("""
+<div style="display:flex;gap:0;margin-bottom:2rem;margin-top:2rem;">
+    <div style="flex:1;text-align:center;">
+        <div style="width:32px;height:32px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#10B981;color:#fff;">✓</div>
+        <div style="font-size:10px;color:#10B981;">Family Setup</div>
+    </div>
+    <div style="flex:1;text-align:center;">
+        <div style="width:32px;height:32px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#10B981;color:#fff;">✓</div>
+        <div style="font-size:10px;color:#10B981;">Finances</div>
+    </div>
+    <div style="flex:1;text-align:center;">
+        <div style="width:32px;height:32px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#10B981;color:#fff;">✓</div>
+        <div style="font-size:10px;color:#10B981;">Goals</div>
+    </div>
+    <div style="flex:1;text-align:center;">
+        <div style="width:32px;height:32px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#A855F7;color:#fff;border:2px solid #A855F7;">4</div>
+        <div style="font-size:10px;color:#D8B4FE;">Your Plan</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+    st.markdown("""
+<div style="text-align:center;padding:1rem 0 1.5rem;">
+    <div style="font-size:1.6rem;font-weight:800;color:#F8FAFC;">Your Family Financial Plan</div>
+    <div style="font-size:0.85rem;color:#6B7280;margin-top:4px;">Powered by AI · Based on your family data</div>
+</div>
+""", unsafe_allow_html=True)
+
+    members = st.session_state.get("family_members", [])
+    goals = st.session_state.get("family_goals", [])
+    surplus = st.session_state.get("monthly_surplus", 0)
+    total_income = sum(m["income"] for m in members)
+    total_sip = sum(g["sip_needed"] for g in goals)
+    savings_rate = (surplus / total_income * 100) if total_income > 0 else 0
+
+    score = 0
+    if savings_rate >= 30: score += 25
+    elif savings_rate >= 20: score += 20
+    elif savings_rate >= 10: score += 12
+    else: score += 5
+    if total_sip <= surplus: score += 25
+    elif total_sip <= surplus * 1.2: score += 15
+    else: score += 5
+    score += 20
+    score += 15
+    if len(goals) >= 2: score += 15
+    elif len(goals) >= 1: score += 10
+    score = min(score, 100)
+
+    score_color = "#20C997" if score >= 70 else "#F59E0B" if score >= 50 else "#FF4D4D"
+    score_label = "Excellent" if score >= 70 else "Good" if score >= 50 else "Needs Work"
+    ideal_cover = total_income * 12 * 15
+    emergency_needed = (
+        st.session_state.get("exp_household", 30000) +
+        st.session_state.get("exp_education", 0) +
+        st.session_state.get("exp_lifestyle", 10000)
+    ) * 6
+
+    m1, m2, m3, m4 = st.columns(4)
+
+    with m1:
+        st.markdown(f"""
+<div style="background:rgba(30,25,45,0.8);border:1px solid rgba(168,85,247,0.2);border-top:2px solid {score_color};border-radius:12px;padding:16px;text-align:center;">
+<div style="font-size:10px;color:#94A3B8;font-weight:600;margin-bottom:6px;">FINANCIAL HEALTH SCORE</div>
+<div style="font-size:2.5rem;font-weight:800;color:{score_color};">{score}</div>
+<div style="font-size:11px;color:{score_color};margin-top:2px;">{score_label}</div>
+<div style="background:#1F2937;border-radius:4px;height:5px;margin-top:8px;">
+<div style="width:{score}%;height:100%;border-radius:4px;background:{score_color};"></div>
+</div>
+</div>""", unsafe_allow_html=True)
+
+    with m2:
+        st.markdown(f"""
+<div style="background:rgba(30,25,45,0.8);border:1px solid rgba(32,201,151,0.2);border-top:2px solid #20C997;border-radius:12px;padding:16px;text-align:center;">
+<div style="font-size:10px;color:#94A3B8;font-weight:600;margin-bottom:6px;">MONTHLY SURPLUS</div>
+<div style="font-size:1.6rem;font-weight:800;color:#20C997;">₹{surplus:,}</div>
+<div style="font-size:11px;color:#6B7280;">available to invest</div>
+<div style="font-size:11px;color:#20C997;margin-top:4px;">Savings rate: {savings_rate:.1f}%</div>
+</div>""", unsafe_allow_html=True)
+
+    with m3:
+        st.markdown(f"""
+<div style="background:rgba(30,25,45,0.8);border:1px solid rgba(239,68,68,0.2);border-top:2px solid #FF4D4D;border-radius:12px;padding:16px;text-align:center;">
+<div style="font-size:10px;color:#94A3B8;font-weight:600;margin-bottom:6px;">IDEAL LIFE COVER NEEDED</div>
+<div style="font-size:1.6rem;font-weight:800;color:#FF4D4D;">₹{ideal_cover/100000:.0f}L</div>
+<div style="font-size:11px;color:#6B7280;">= 15× annual income</div>
+<div style="font-size:11px;color:#F59E0B;margin-top:4px;">Verify your current cover</div>
+</div>""", unsafe_allow_html=True)
+
+    with m4:
+        st.markdown(f"""
+<div style="background:rgba(30,25,45,0.8);border:1px solid rgba(245,158,11,0.2);border-top:2px solid #F59E0B;border-radius:12px;padding:16px;text-align:center;">
+<div style="font-size:10px;color:#94A3B8;font-weight:600;margin-bottom:6px;">EMERGENCY FUND NEEDED</div>
+<div style="font-size:1.6rem;font-weight:800;color:#F59E0B;">₹{emergency_needed:,}</div>
+<div style="font-size:11px;color:#6B7280;">6 months expenses</div>
+<div style="font-size:11px;color:#F59E0B;margin-top:4px;">Build this first</div>
+</div>""", unsafe_allow_html=True)
+
+    st.markdown('<div class="section-accent" style="margin-top:1.5rem;">Goal Roadmap</div>', unsafe_allow_html=True)
+
+    priority_order = sorted(goals, key=lambda x: (0 if x["priority"] == "High" else 1 if x["priority"] == "Medium" else 2))
+    remaining_surplus = surplus
+    for rank, goal in enumerate(priority_order):
+        feasible = goal["sip_needed"] <= remaining_surplus
+        remaining_surplus -= goal["sip_needed"]
+        p_color = "#FF4D4D" if goal["priority"] == "High" else "#F59E0B" if goal["priority"] == "Medium" else "#20C997"
+        st.markdown(f"""
+<div style="background:rgba(30,25,45,0.6);border:1px solid rgba(168,85,247,0.15);border-left:3px solid {p_color};border-radius:10px;padding:12px 16px;margin-bottom:6px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+<div style="width:24px;height:24px;border-radius:50%;background:{p_color}20;border:1px solid {p_color};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:{p_color};">#{rank+1}</div>
+<div style="font-size:1.2rem;">{goal['icon']}</div>
+<div style="flex:1;">
+<div style="font-size:13px;font-weight:600;color:#F8FAFC;">{goal['type']}</div>
+<div style="font-size:11px;color:#94A3B8;">{goal['member']} · {goal['years']} years · {goal['priority']} priority</div>
+</div>
+<div style="text-align:right;">
+<div style="font-size:14px;font-weight:700;color:#F8FAFC;">₹{goal['amount']:,}</div>
+<div style="font-size:11px;color:{'#20C997' if feasible else '#FF4D4D'};">SIP: ₹{goal['sip_needed']:,.0f}/mo</div>
+</div>
+<span style="font-size:10px;font-weight:600;padding:3px 10px;border-radius:4px;background:{'rgba(32,201,151,0.15)' if feasible else 'rgba(255,77,77,0.15)'};color:{'#20C997' if feasible else '#FF4D4D'};">
+{'✓ Funded' if feasible else '⚠ Shortfall'}
+</span>
+</div>""", unsafe_allow_html=True)
+
+    st.markdown('<div class="section-accent" style="margin-top:1.5rem;">AI Family Advisor</div>', unsafe_allow_html=True)
+
+    if st.button("🤖 Generate My AI Family Plan", type="primary", key="gen_ai_plan", use_container_width=False):
+
+        family_context = f"""
+Family Members:
+{chr(10).join([f"- {m['name']}, {m['role']}, Age {m['age']}, Income ₹{m['income']:,}/month" for m in members])}
+
+Total Family Income: ₹{total_income:,}/month
+Monthly Surplus: ₹{surplus:,}/month
+Savings Rate: {savings_rate:.1f}%
+
+Goals:
+{chr(10).join([f"- {g['type']} for {g['member']}: ₹{g['amount']:,} in {g['years']} years, SIP needed ₹{g['sip_needed']:,.0f}/month" for g in goals])}
+
+Financial Health Score: {score}/100
+Ideal Life Cover: ₹{ideal_cover/100000:.0f} Lakhs
+Emergency Fund Needed: ₹{emergency_needed:,}
+"""
+
+        prompt = f"""You are an expert Indian wealth manager and financial planner with 20 years of experience helping Indian families.
+
+Here is a complete family financial profile:
+{family_context}
+
+Create a comprehensive, personalized family financial plan. Write in simple language that a non-finance person can understand.
+
+Structure your response EXACTLY like this:
+
+**FAMILY FINANCIAL HEALTH SUMMARY**
+(2-3 sentences about overall financial health)
+
+**WHAT YOU'RE DOING WELL**
+(2-3 specific positive points about their finances)
+
+**YOUR PRIORITY ACTION PLAN**
+(Numbered list of 4-5 specific actions they should take this month, with exact rupee amounts)
+
+**GOAL-BY-GOAL STRATEGY**
+(For each goal, specific fund type recommendation and why — e.g. "For home purchase: Large cap + debt funds")
+
+**INSURANCE RECOMMENDATION**
+(Specific recommendation based on their income)
+
+**1 YEAR MILESTONE**
+(What success looks like in 12 months if they follow this plan)
+
+Keep total response under 400 words. Use ₹ for all amounts. Be warm, encouraging and specific."""
+
+        with st.spinner("🤖 AI is analyzing your family's finances..."):
+            try:
+                import os
+                import google.generativeai as genai
+                api_key = st.secrets.get("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY", ""))
+                genai.configure(api_key=api_key)
+                model = genai.GenerativeModel('gemini-1.5-flash')
+                response = model.generate_content(prompt)
+                st.session_state["family_plan"] = response.text
+            except Exception as e:
+                st.error(f"AI unavailable: {str(e)}")
+                st.session_state["family_plan"] = None
+
+    if st.session_state.get("family_plan"):
+        plan_html = (st.session_state["family_plan"]
+                     .replace("\n", "<br>")
+                     .replace("**", "<strong>", 1))
+        while "**" in plan_html:
+            plan_html = plan_html.replace("**", "</strong>", 1) if plan_html.count("**") % 2 == 0 else plan_html.replace("**", "<strong>", 1)
+
+        st.markdown(f"""
+<div style="background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.25);border-left:3px solid #A855F7;border-radius:12px;padding:22px 24px;margin-top:12px;">
+<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
+<span style="font-size:16px;">🤖</span>
+<span style="font-size:13px;font-weight:600;color:#D8B4FE;">Your Personalized Family Financial Plan</span>
+</div>
+<div style="font-size:13px;color:#E2E8F0;line-height:1.85;">{plan_html}</div>
+<div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(168,85,247,0.15);font-size:10px;color:#4B5563;">
+⚠️ This AI plan is for educational purposes only. Consult a SEBI-registered financial advisor before making investment decisions.
+</div>
+</div>
+""", unsafe_allow_html=True)
+
+        if st.button("🔄 Start Over", key="restart_plan"):
+            for key in ["fp_step", "family_members", "family_goals", "family_plan", "monthly_surplus"]:
+                st.session_state.pop(key, None)
+            st.rerun()
