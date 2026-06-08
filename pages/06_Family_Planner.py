@@ -420,3 +420,148 @@ if st.session_state.get("fp_step", 1) >= 2:
 <div style="background:rgba(255,77,77,0.08);border:1px solid rgba(255,77,77,0.2);border-radius:10px;padding:12px 16px;font-size:12px;color:#FF4D4D;">
 ⚠️ Your expenses exceed income. Reduce expenses or increase income before planning investments.
 </div>""", unsafe_allow_html=True)
+
+if st.session_state.get("fp_step", 1) >= 3:
+
+    st.markdown("""
+<div style="display:flex;gap:0;margin-bottom:2rem;margin-top:2rem;">
+    <div style="flex:1;text-align:center;">
+        <div style="width:32px;height:32px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#10B981;color:#fff;border:2px solid #10B981;">✓</div>
+        <div style="font-size:10px;font-weight:500;color:#10B981;">Family Setup</div>
+    </div>
+    <div style="flex:1;text-align:center;">
+        <div style="width:32px;height:32px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#10B981;color:#fff;border:2px solid #10B981;">✓</div>
+        <div style="font-size:10px;font-weight:500;color:#10B981;">Finances</div>
+    </div>
+    <div style="flex:1;text-align:center;">
+        <div style="width:32px;height:32px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:#A855F7;color:#fff;border:2px solid #A855F7;">3</div>
+        <div style="font-size:10px;font-weight:500;color:#D8B4FE;">Goals</div>
+    </div>
+    <div style="flex:1;text-align:center;">
+        <div style="width:32px;height:32px;border-radius:50%;margin:0 auto 6px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;background:rgba(30,25,45,0.8);color:#6B7280;border:2px solid #2D2D2D;">4</div>
+        <div style="font-size:10px;font-weight:500;color:#6B7280;">Your Plan</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+    st.markdown('<div class="section-accent">Family Goals</div>', unsafe_allow_html=True)
+
+    st.markdown("""
+<div style="font-size:12px;color:#94A3B8;margin-bottom:16px;">
+Add financial goals for your family. Each goal will be funded from your monthly surplus of """ +
+f"<strong style='color:#20C997;'>₹{st.session_state.get('monthly_surplus', 0):,}</strong>" +
+"""</div>
+""", unsafe_allow_html=True)
+
+    if "family_goals" not in st.session_state:
+        st.session_state["family_goals"] = []
+
+    GOAL_ICONS = {
+        "Home Purchase": "🏠",
+        "Child Education": "🎓",
+        "Retirement": "🌴",
+        "Emergency Fund": "🛡️",
+        "Car Purchase": "🚗",
+        "Wedding": "💍",
+        "Business": "💼",
+        "Vacation": "✈️",
+        "Medical Fund": "🏥",
+        "Custom": "🎯",
+    }
+
+    with st.expander("➕ Add a goal", expanded=len(st.session_state["family_goals"]) == 0):
+        gc1, gc2 = st.columns(2)
+        with gc1:
+            g_type = st.selectbox("Goal type", list(GOAL_ICONS.keys()), key="g_type")
+            g_member = st.selectbox(
+                "For which member?",
+                ["Entire Family"] + [m["name"] for m in st.session_state.get("family_members", [])],
+                key="g_member"
+            )
+            g_amount = st.number_input(
+                "Target amount (₹)", min_value=10000, max_value=100000000,
+                value=1000000, step=10000, key="g_amount"
+            )
+
+        with gc2:
+            g_years = st.slider("Years to achieve", min_value=1, max_value=30, value=5, key="g_years")
+            g_priority = st.selectbox("Priority", ["High", "Medium", "Low"], key="g_priority")
+            g_notes = st.text_input("Notes (optional)", placeholder="e.g. IIT fees for son", key="g_notes")
+
+        if st.button("Add Goal ➕", use_container_width=True, key="add_goal_btn"):
+            r = 12.0 / 100 / 12
+            m = g_years * 12
+            sip = (g_amount * r / ((1 + r) ** m - 1)) if r > 0 else (g_amount / m)
+            st.session_state["family_goals"].append({
+                "type": g_type,
+                "icon": GOAL_ICONS[g_type],
+                "member": g_member,
+                "amount": g_amount,
+                "years": g_years,
+                "priority": g_priority,
+                "notes": g_notes,
+                "sip_needed": sip,
+            })
+            st.rerun()
+
+    if st.session_state["family_goals"]:
+
+        total_sip_needed = sum(g["sip_needed"] for g in st.session_state["family_goals"])
+        surplus = st.session_state.get("monthly_surplus", 0)
+        sip_feasible = total_sip_needed <= surplus
+
+        for i, goal in enumerate(st.session_state["family_goals"]):
+            p_color = "#FF4D4D" if goal["priority"] == "High" else "#F59E0B" if goal["priority"] == "Medium" else "#20C997"
+            feasible = goal["sip_needed"] <= (surplus / len(st.session_state["family_goals"]))
+            notes_part = f" · {goal['notes']}" if goal["notes"] else ""
+
+            st.markdown(f"""
+<div style="background:rgba(30,25,45,0.6);border:1px solid rgba(168,85,247,0.2);border-left:3px solid {p_color};border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
+<div style="font-size:1.5rem;">{goal['icon']}</div>
+<div style="flex:1;min-width:150px;">
+<div style="font-size:13px;font-weight:600;color:#F8FAFC;">{goal['type']}</div>
+<div style="font-size:11px;color:#94A3B8;">For: {goal['member']} · {goal['years']} years{notes_part}</div>
+</div>
+<div style="text-align:center;min-width:100px;">
+<div style="font-size:10px;color:#94A3B8;">TARGET</div>
+<div style="font-size:14px;font-weight:700;color:#F8FAFC;">₹{goal['amount']:,}</div>
+</div>
+<div style="text-align:center;min-width:120px;">
+<div style="font-size:10px;color:#94A3B8;">MONTHLY SIP</div>
+<div style="font-size:14px;font-weight:700;color:{'#20C997' if feasible else '#FF4D4D'};">₹{goal['sip_needed']:,.0f}</div>
+</div>
+<div style="text-align:center;">
+<span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:4px;background:{'rgba(32,201,151,0.15)' if feasible else 'rgba(255,77,77,0.15)'};color:{'#20C997' if feasible else '#FF4D4D'};">
+{'✓ Feasible' if feasible else '⚠ Stretch'}
+</span>
+</div>
+</div>""", unsafe_allow_html=True)
+
+            if st.button(f"Remove goal {i+1}", key=f"rem_goal_{i}"):
+                st.session_state["family_goals"].pop(i)
+                st.rerun()
+
+        status_color = "#20C997" if sip_feasible else "#FF4D4D"
+        status_text = "✓ All goals feasible!" if sip_feasible else "⚠ Exceeds surplus — reduce goals or increase income"
+        st.markdown(f"""
+<div style="background:rgba(30,25,45,0.8);border:1px solid rgba(168,85,247,0.2);border-radius:12px;padding:14px 18px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:12px;">
+<div>
+<div style="font-size:11px;color:#94A3B8;margin-bottom:4px;">Total SIP needed for all goals</div>
+<div style="font-size:1.4rem;font-weight:700;color:#F8FAFC;">₹{total_sip_needed:,.0f}/month</div>
+</div>
+<div style="text-align:center;">
+<div style="font-size:11px;color:#94A3B8;margin-bottom:4px;">Available surplus</div>
+<div style="font-size:1.4rem;font-weight:700;color:#20C997;">₹{surplus:,}/month</div>
+</div>
+<div style="text-align:center;">
+<div style="font-size:11px;color:#94A3B8;margin-bottom:4px;">Status</div>
+<div style="font-size:13px;font-weight:700;color:{status_color};">{status_text}</div>
+</div>
+</div>
+""", unsafe_allow_html=True)
+
+        st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
+
+        if st.button("Generate My Family Plan →", type="primary", key="gen_plan"):
+            st.session_state["fp_step"] = 4
+            st.rerun()
