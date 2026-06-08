@@ -119,21 +119,44 @@ Build a complete financial plan for your entire family
 # ─── PROGRESS STEPS BAR ───────────────────────────────────────────────────────
 st.markdown("""
 <div style="display:flex;gap:0;margin-bottom:2rem;">
-""" + "".join([f"""
-    <div style="flex:1;text-align:center;position:relative;">
+    <div style="flex:1;text-align:center;">
         <div style="width:32px;height:32px;border-radius:50%;
         margin:0 auto 6px;display:flex;align-items:center;
         justify-content:center;font-size:12px;font-weight:600;
-        background:{'#A855F7' if i==0 else 'rgba(30,25,45,0.8)'};
-        color:{'#fff' if i==0 else '#6B7280'};
-        border:2px solid {'#A855F7' if i==0 else '#2D2D2D'};">
-        {i+1}</div>
+        background:#A855F7;color:#fff;
+        border:2px solid #A855F7;">1</div>
         <div style="font-size:10px;font-weight:500;
-        color:{'#D8B4FE' if i==0 else '#6B7280'};">
-        {s}</div>
-    </div>"""
-    for i, s in enumerate(["Family Setup", "Finances", "Goals", "Your Plan"])
-]) + "</div>", unsafe_allow_html=True)
+        color:#D8B4FE;">Family Setup</div>
+    </div>
+    <div style="flex:1;text-align:center;">
+        <div style="width:32px;height:32px;border-radius:50%;
+        margin:0 auto 6px;display:flex;align-items:center;
+        justify-content:center;font-size:12px;font-weight:600;
+        background:rgba(30,25,45,0.8);color:#6B7280;
+        border:2px solid #2D2D2D;">2</div>
+        <div style="font-size:10px;font-weight:500;
+        color:#6B7280;">Finances</div>
+    </div>
+    <div style="flex:1;text-align:center;">
+        <div style="width:32px;height:32px;border-radius:50%;
+        margin:0 auto 6px;display:flex;align-items:center;
+        justify-content:center;font-size:12px;font-weight:600;
+        background:rgba(30,25,45,0.8);color:#6B7280;
+        border:2px solid #2D2D2D;">3</div>
+        <div style="font-size:10px;font-weight:500;
+        color:#6B7280;">Goals</div>
+    </div>
+    <div style="flex:1;text-align:center;">
+        <div style="width:32px;height:32px;border-radius:50%;
+        margin:0 auto 6px;display:flex;align-items:center;
+        justify-content:center;font-size:12px;font-weight:600;
+        background:rgba(30,25,45,0.8);color:#6B7280;
+        border:2px solid #2D2D2D;">4</div>
+        <div style="font-size:10px;font-weight:500;
+        color:#6B7280;">Your Plan</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)
 
 # ─── ADD MEMBER FORM ──────────────────────────────────────────────────────────
 st.markdown('<div class="section-accent">Add Family Members</div>', unsafe_allow_html=True)
