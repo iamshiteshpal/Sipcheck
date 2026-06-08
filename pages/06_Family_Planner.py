@@ -746,7 +746,7 @@ Keep total response under 400 words. Use ₹ for all amounts. Be warm, encouragi
                 import google.generativeai as genai
                 api_key = st.secrets.get("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY", ""))
                 genai.configure(api_key=api_key)
-                model = genai.GenerativeModel('gemini-1.5-flash')
+                model = genai.GenerativeModel('gemini-2.0-flash')
                 response = model.generate_content(prompt)
                 st.session_state["family_plan"] = response.text
             except Exception as e:
