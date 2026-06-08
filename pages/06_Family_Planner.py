@@ -631,7 +631,8 @@ if st.session_state.get("fp_step", 1) >= 4:
     with m1:
         st.markdown(f"""
 <div style="background:rgba(30,25,45,0.8);border:1px solid rgba(168,85,247,0.2);border-top:2px solid {score_color};border-radius:12px;padding:16px;text-align:center;">
-<div style="font-size:10px;color:#94A3B8;font-weight:600;margin-bottom:6px;">FINANCIAL HEALTH SCORE</div>
+<div style="font-size:10px;color:#94A3B8;font-weight:600;margin-bottom:6px;">FINANCIAL HEALTH SCORE
+<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:rgba(168,85,247,0.3);color:#A855F7;font-size:9px;font-weight:700;text-align:center;line-height:14px;margin-left:4px;cursor:help;" title="Score out of 100 based on your savings rate, goal feasibility and financial cushion. 70+ is Excellent.">i</span></div>
 <div style="font-size:2.5rem;font-weight:800;color:{score_color};">{score}</div>
 <div style="font-size:11px;color:{score_color};margin-top:2px;">{score_label}</div>
 <div style="background:#1F2937;border-radius:4px;height:5px;margin-top:8px;">
@@ -642,7 +643,8 @@ if st.session_state.get("fp_step", 1) >= 4:
     with m2:
         st.markdown(f"""
 <div style="background:rgba(30,25,45,0.8);border:1px solid rgba(32,201,151,0.2);border-top:2px solid #20C997;border-radius:12px;padding:16px;text-align:center;">
-<div style="font-size:10px;color:#94A3B8;font-weight:600;margin-bottom:6px;">MONTHLY SURPLUS</div>
+<div style="font-size:10px;color:#94A3B8;font-weight:600;margin-bottom:6px;">MONTHLY SURPLUS
+<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:rgba(32,201,151,0.2);color:#20C997;font-size:9px;font-weight:700;text-align:center;line-height:14px;margin-left:4px;cursor:help;" title="Your income minus all expenses, EMIs and insurance. This is the money left every month to invest towards your goals.">i</span></div>
 <div style="font-size:1.6rem;font-weight:800;color:#20C997;">₹{surplus:,}</div>
 <div style="font-size:11px;color:#6B7280;">available to invest</div>
 <div style="font-size:11px;color:#20C997;margin-top:4px;">Savings rate: {savings_rate:.1f}%</div>
@@ -651,7 +653,8 @@ if st.session_state.get("fp_step", 1) >= 4:
     with m3:
         st.markdown(f"""
 <div style="background:rgba(30,25,45,0.8);border:1px solid rgba(239,68,68,0.2);border-top:2px solid #FF4D4D;border-radius:12px;padding:16px;text-align:center;">
-<div style="font-size:10px;color:#94A3B8;font-weight:600;margin-bottom:6px;">IDEAL LIFE COVER NEEDED</div>
+<div style="font-size:10px;color:#94A3B8;font-weight:600;margin-bottom:6px;">IDEAL LIFE COVER NEEDED
+<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:rgba(239,68,68,0.2);color:#FF4D4D;font-size:9px;font-weight:700;text-align:center;line-height:14px;margin-left:4px;cursor:help;" title="Ideal term insurance = 15 times your annual income. If anything happens to the earner, family can survive 15 years. Get a pure term plan - cheapest and best protection.">i</span></div>
 <div style="font-size:1.6rem;font-weight:800;color:#FF4D4D;">₹{ideal_cover/100000:.0f}L</div>
 <div style="font-size:11px;color:#6B7280;">= 15× annual income</div>
 <div style="font-size:11px;color:#F59E0B;margin-top:4px;">Verify your current cover</div>
@@ -660,7 +663,8 @@ if st.session_state.get("fp_step", 1) >= 4:
     with m4:
         st.markdown(f"""
 <div style="background:rgba(30,25,45,0.8);border:1px solid rgba(245,158,11,0.2);border-top:2px solid #F59E0B;border-radius:12px;padding:16px;text-align:center;">
-<div style="font-size:10px;color:#94A3B8;font-weight:600;margin-bottom:6px;">EMERGENCY FUND NEEDED</div>
+<div style="font-size:10px;color:#94A3B8;font-weight:600;margin-bottom:6px;">EMERGENCY FUND NEEDED
+<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:rgba(245,158,11,0.2);color:#F59E0B;font-size:9px;font-weight:700;text-align:center;line-height:14px;margin-left:4px;cursor:help;" title="6 months of essential expenses kept in a liquid fund or savings account. Never invest this in equity. This protects your family during job loss or medical emergency.">i</span></div>
 <div style="font-size:1.6rem;font-weight:800;color:#F59E0B;">₹{emergency_needed:,}</div>
 <div style="font-size:11px;color:#6B7280;">6 months expenses</div>
 <div style="font-size:11px;color:#F59E0B;margin-top:4px;">Build this first</div>
@@ -691,106 +695,153 @@ if st.session_state.get("fp_step", 1) >= 4:
 </span>
 </div>""", unsafe_allow_html=True)
 
-    st.markdown('<div class="section-accent" style="margin-top:1.5rem;">AI Family Advisor</div>', unsafe_allow_html=True)
+    st.markdown('<div class="section-accent" style="margin-top:1.5rem;">Your Personalized Plan</div>', unsafe_allow_html=True)
 
-    if st.button("🤖 Generate My AI Family Plan", type="primary", key="gen_ai_plan", use_container_width=False):
-
-        family_context = f"""
-Family Members:
-{chr(10).join([f"- {m['name']}, {m['role']}, Age {m['age']}, Income ₹{m['income']:,}/month" for m in members])}
-
-Total Family Income: ₹{total_income:,}/month
-Monthly Surplus: ₹{surplus:,}/month
-Savings Rate: {savings_rate:.1f}%
-
-Goals:
-{chr(10).join([f"- {g['type']} for {g['member']}: ₹{g['amount']:,} in {g['years']} years, SIP needed ₹{g['sip_needed']:,.0f}/month" for g in goals])}
-
-Financial Health Score: {score}/100
-Ideal Life Cover: ₹{ideal_cover/100000:.0f} Lakhs
-Emergency Fund Needed: ₹{emergency_needed:,}
-"""
-
-        prompt = f"""You are an expert Indian wealth manager and financial planner with 20 years of experience helping Indian families.
-
-Here is a complete family financial profile:
-{family_context}
-
-Create a comprehensive, personalized family financial plan. Write in simple language that a non-finance person can understand.
-
-Structure your response EXACTLY like this:
-
-**FAMILY FINANCIAL HEALTH SUMMARY**
-(2-3 sentences about overall financial health)
-
-**WHAT YOU'RE DOING WELL**
-(2-3 specific positive points about their finances)
-
-**YOUR PRIORITY ACTION PLAN**
-(Numbered list of 4-5 specific actions they should take this month, with exact rupee amounts)
-
-**GOAL-BY-GOAL STRATEGY**
-(For each goal, specific fund type recommendation and why — e.g. "For home purchase: Large cap + debt funds")
-
-**INSURANCE RECOMMENDATION**
-(Specific recommendation based on their income)
-
-**1 YEAR MILESTONE**
-(What success looks like in 12 months if they follow this plan)
-
-Keep total response under 400 words. Use ₹ for all amounts. Be warm, encouraging and specific."""
-
-        with st.spinner("🤖 AI is analyzing your family's finances..."):
-            try:
-                import os
-                import google.generativeai as genai
-                api_key = st.secrets.get("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY", ""))
-                genai.configure(api_key=api_key)
-
-                response_text = None
-                for model_name in [
-                    'gemini-2.0-flash',
-                    'gemini-1.5-flash',
-                    'gemini-pro',
-                    'gemini-1.0-pro'
-                ]:
-                    try:
-                        model = genai.GenerativeModel(model_name)
-                        response = model.generate_content(prompt)
-                        response_text = response.text
-                        break
-                    except Exception:
-                        continue
-
-                if response_text:
-                    st.session_state["family_plan"] = response_text
-                else:
-                    st.error("All Gemini models unavailable. Please try again later.")
-            except Exception as e:
-                st.error(f"AI unavailable: {str(e)}")
-                st.session_state["family_plan"] = None
+    if st.button("Generate My Family Plan", type="primary", key="gen_ai_plan"):
+        st.session_state["family_plan"] = "generated"
 
     if st.session_state.get("family_plan"):
-        plan_html = (st.session_state["family_plan"]
-                     .replace("\n", "<br>")
-                     .replace("**", "<strong>", 1))
-        while "**" in plan_html:
-            plan_html = plan_html.replace("**", "</strong>", 1) if plan_html.count("**") % 2 == 0 else plan_html.replace("**", "<strong>", 1)
 
-        st.markdown(f"""
+        members = st.session_state.get("family_members", [])
+        goals = st.session_state.get("family_goals", [])
+        surplus = st.session_state.get("monthly_surplus", 0)
+        total_income = sum(m["income"] for m in members)
+        total_sip = sum(g["sip_needed"] for g in goals)
+        savings_rate = (surplus / total_income * 100 if total_income > 0 else 0)
+        ideal_cover = total_income * 12 * 15
+        emergency_needed = (
+            st.session_state.get("exp_household", 30000) +
+            st.session_state.get("exp_education", 0) +
+            st.session_state.get("exp_lifestyle", 10000)
+        ) * 6
+
+        primary = members[0] if members else {"name": "Your family", "role": ""}
+
+        insights = []
+        if savings_rate >= 30:
+            insights.append(f"✅ Excellent savings rate of {savings_rate:.1f}% — you are in the top 10% of Indian families financially.")
+        elif savings_rate >= 20:
+            insights.append(f"✅ Good savings rate of {savings_rate:.1f}% — slightly above the recommended 20% minimum.")
+        elif savings_rate >= 10:
+            insights.append(f"⚠️ Your savings rate is {savings_rate:.1f}% — try to reach 20% by reducing lifestyle expenses.")
+        else:
+            insights.append(f"🔴 Your savings rate of {savings_rate:.1f}% is too low — focus on reducing expenses before investing.")
+
+        if total_sip <= surplus * 0.7:
+            insights.append(f"✅ Your goals need ₹{total_sip:,.0f}/month which is well within your ₹{surplus:,} surplus — you have room to add more goals.")
+        elif total_sip <= surplus:
+            insights.append(f"✅ Your goals need ₹{total_sip:,.0f}/month — just within your surplus. Stay consistent and avoid new EMIs.")
+        else:
+            insights.append(f"🔴 Your goals need ₹{total_sip:,.0f}/month but surplus is only ₹{surplus:,} — reduce goal amounts or extend timelines.")
+
+        actions = []
+        actions.append(f"Build emergency fund of ₹{emergency_needed:,} first — keep in liquid mutual fund or savings account")
+
+        high_goals = [g for g in goals if g["priority"] == "High"]
+        if high_goals:
+            g = high_goals[0]
+            actions.append(f"Start SIP of ₹{g['sip_needed']:,.0f}/month for {g['type']} — this is your highest priority goal")
+
+        if len(goals) > 1:
+            for g in goals[1:]:
+                actions.append(f"Allocate ₹{g['sip_needed']:,.0f}/month for {g['type']} ({g['years']} year goal)")
+
+        actions.append(f"Get term life insurance of ₹{ideal_cover/100000:.0f} Lakhs — costs only ₹{int(ideal_cover/100000*40):,}/year for a {primary.get('age', 35)} year old")
+
+        leftover = surplus - total_sip
+        if leftover > 5000:
+            actions.append(f"Remaining ₹{leftover:,.0f} surplus — invest in Nifty 50 index fund for long-term wealth building")
+
+        fund_recs = {
+            "Home Purchase": "Large Cap + Debt funds (60:40 ratio) — stable growth with capital protection",
+            "Child Education": "Mid Cap + Large Cap funds (50:50) — 8+ year horizon allows equity exposure",
+            "Retirement": "Multi-cap + PPF (70:30) — diversified for very long term",
+            "Emergency Fund": "Liquid mutual fund or high-yield savings account — never equity",
+            "Car Purchase": "Debt fund + RD (50:50) — short term goal needs stable returns",
+            "Wedding": "Debt fund + Gold ETF (60:40) — 3-5 year horizon",
+            "Business": "Large Cap + Liquid fund (70:30) — preserve capital while growing",
+            "Vacation": "Liquid fund or RD — short term, capital preservation",
+            "Medical Fund": "Liquid fund — instant access needed",
+            "Custom": "Large Cap index fund — reliable long-term compounder",
+        }
+
+        corpus_1yr = total_sip * 12 * 1.12
+
+        insights_html = "".join([f'<div style="font-size:12px;color:#E2E8F0;margin-bottom:6px;line-height:1.6;">{i}</div>' for i in insights])
+        actions_html = "".join([f'<div style="font-size:12px;color:#E2E8F0;margin-bottom:8px;display:flex;gap:8px;"><span style="color:#A855F7;font-weight:700;flex-shrink:0;">{i+1}.</span><span style="line-height:1.6;">{a}</span></div>' for i, a in enumerate(actions)])
+        funds_html = "".join([f'<div style="font-size:12px;color:#E2E8F0;margin-bottom:6px;line-height:1.6;"><span style="color:#20C997;">{g["icon"]} {g["type"]}: </span>{fund_recs.get(g["type"], "Large Cap index fund — reliable compounder")}</div>' for g in goals])
+
+        plan_html = f"""
 <div style="background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.25);border-left:3px solid #A855F7;border-radius:12px;padding:22px 24px;margin-top:12px;">
-<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px;">
-<span style="font-size:16px;">🤖</span>
-<span style="font-size:13px;font-weight:600;color:#D8B4FE;">Your Personalized Family Financial Plan</span>
+<div style="font-size:14px;font-weight:700;color:#D8B4FE;margin-bottom:16px;">📋 {primary['name'].split()[0]}'s Family Financial Plan</div>
+<div style="font-size:13px;font-weight:600;color:#A855F7;margin-bottom:8px;letter-spacing:0.05em;">FINANCIAL HEALTH INSIGHTS</div>
+{insights_html}
+<div style="height:1px;background:rgba(168,85,247,0.15);margin:14px 0;"></div>
+<div style="font-size:13px;font-weight:600;color:#A855F7;margin-bottom:8px;letter-spacing:0.05em;">YOUR ACTION PLAN — DO THESE NOW</div>
+{actions_html}
+<div style="height:1px;background:rgba(168,85,247,0.15);margin:14px 0;"></div>
+<div style="font-size:13px;font-weight:600;color:#A855F7;margin-bottom:8px;letter-spacing:0.05em;">FUND RECOMMENDATIONS PER GOAL</div>
+{funds_html}
+<div style="height:1px;background:rgba(168,85,247,0.15);margin:14px 0;"></div>
+<div style="font-size:13px;font-weight:600;color:#A855F7;margin-bottom:8px;letter-spacing:0.05em;">12-MONTH MILESTONE</div>
+<div style="font-size:12px;color:#E2E8F0;line-height:1.6;">
+If you follow this plan consistently for 12 months, your investment portfolio will grow to approximately <strong style="color:#20C997;">₹{corpus_1yr:,.0f}</strong>. Your emergency fund will be fully built. All your goals will be on track. Your family will be financially protected.
 </div>
-<div style="font-size:13px;color:#E2E8F0;line-height:1.85;">{plan_html}</div>
-<div style="margin-top:16px;padding-top:12px;border-top:1px solid rgba(168,85,247,0.15);font-size:10px;color:#4B5563;">
-⚠️ This AI plan is for educational purposes only. Consult a SEBI-registered financial advisor before making investment decisions.
+<div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(168,85,247,0.15);font-size:10px;color:#4B5563;">
+⚠️ This plan is for educational purposes only. Consult a SEBI-registered financial advisor before investing.
 </div>
 </div>
-""", unsafe_allow_html=True)
+"""
+        st.markdown(plan_html, unsafe_allow_html=True)
 
-        if st.button("🔄 Start Over", key="restart_plan"):
-            for key in ["fp_step", "family_members", "family_goals", "family_plan", "monthly_surplus"]:
-                st.session_state.pop(key, None)
-            st.rerun()
+        from datetime import datetime
+        report_date = datetime.now().strftime("%d %B %Y")
+        family_name = members[0]['name'].split()[-1] if members else "Family"
+
+        pdf_text = f"""CAS 360 VIEW — FAMILY FINANCIAL PLAN
+Generated: {report_date}
+{'='*50}
+
+FAMILY MEMBERS
+{chr(10).join([f"{m['avatar']} {m['name']} | {m['role']} | Age {m['age']} | ₹{m['income']:,}/month" for m in members])}
+
+Combined Income: ₹{total_income:,}/month
+Investable Surplus: ₹{surplus:,}/month
+Savings Rate: {savings_rate:.1f}%
+
+{'='*50}
+GOALS
+{chr(10).join([f"#{i+1} {g['type']} | {g['member']} | ₹{g['amount']:,} in {g['years']} years | SIP: ₹{g['sip_needed']:,.0f}/month" for i, g in enumerate(goals)])}
+
+{'='*50}
+ACTION PLAN
+{chr(10).join([f"{i+1}. {a}" for i, a in enumerate(actions)])}
+
+{'='*50}
+FUND RECOMMENDATIONS
+{chr(10).join([f"{g['type']}: {fund_recs.get(g['type'], 'Large Cap index fund')}" for g in goals])}
+
+{'='*50}
+12-MONTH MILESTONE
+Portfolio target: ₹{corpus_1yr:,.0f}
+
+Generated by CAS 360 View
+⚠️ For educational purposes only.
+"""
+
+        st.markdown("<div style='margin-top:12px;'></div>", unsafe_allow_html=True)
+
+        col_dl, col_restart = st.columns([0.3, 0.7])
+        with col_dl:
+            st.download_button(
+                label="📄 Download Plan",
+                data=pdf_text.encode('utf-8'),
+                file_name=f"CAS360_{family_name}_Plan_{datetime.now().strftime('%d%b%Y')}.txt",
+                mime="text/plain",
+                key="download_plan"
+            )
+        with col_restart:
+            if st.button("🔄 Start Over", key="restart"):
+                for k in ["fp_step", "family_members", "family_goals", "family_plan", "monthly_surplus"]:
+                    st.session_state.pop(k, None)
+                st.rerun()
