@@ -746,9 +746,26 @@ Keep total response under 400 words. Use ₹ for all amounts. Be warm, encouragi
                 import google.generativeai as genai
                 api_key = st.secrets.get("GEMINI_API_KEY", os.getenv("GEMINI_API_KEY", ""))
                 genai.configure(api_key=api_key)
-                model = genai.GenerativeModel('gemini-pro')
-                response = model.generate_content(prompt)
-                st.session_state["family_plan"] = response.text
+
+                response_text = None
+                for model_name in [
+                    'gemini-2.0-flash',
+                    'gemini-1.5-flash',
+                    'gemini-pro',
+                    'gemini-1.0-pro'
+                ]:
+                    try:
+                        model = genai.GenerativeModel(model_name)
+                        response = model.generate_content(prompt)
+                        response_text = response.text
+                        break
+                    except Exception:
+                        continue
+
+                if response_text:
+                    st.session_state["family_plan"] = response_text
+                else:
+                    st.error("All Gemini models unavailable. Please try again later.")
             except Exception as e:
                 st.error(f"AI unavailable: {str(e)}")
                 st.session_state["family_plan"] = None
