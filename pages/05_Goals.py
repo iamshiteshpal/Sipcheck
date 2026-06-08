@@ -123,13 +123,43 @@ st.markdown('<div class="section-accent">Choose Your Goal</div>', unsafe_allow_h
 if "selected_goal" not in st.session_state:
     st.session_state["selected_goal"] = "🏠 Buy a Home"
 
+goal_names = list(GOAL_TEMPLATES.keys())
 cols = st.columns(4)
-for i, (gname, gdata) in enumerate(GOAL_TEMPLATES.items()):
+for i, gname in enumerate(goal_names):
+    gdata = GOAL_TEMPLATES[gname]
     with cols[i % 4]:
-        is_selected = st.session_state.get("selected_goal") == gname
-        border = "#A855F7" if is_selected else "rgba(168,85,247,0.2)"
-        bg = "rgba(168,85,247,0.15)" if is_selected else "rgba(30,25,45,0.6)"
-        if st.button(f"{gdata['icon']} {gname.split(' ', 1)[1]}", key=f"goal_{i}", use_container_width=True):
+        is_selected = st.session_state["selected_goal"] == gname
+        icon = gdata['icon']
+        short_name = gname.split(' ', 1)[1]
+
+        border = "2px solid #A855F7" if is_selected else "1px solid rgba(168,85,247,0.3)"
+        bg = "rgba(168,85,247,0.15)" if is_selected else "rgba(30,25,45,0.4)"
+        text_color = "#D8B4FE" if is_selected else "#94A3B8"
+        check = " ✓" if is_selected else ""
+
+        st.markdown(f"""
+        <div onclick="void(0)" style="
+        background:{bg};
+        border:{border};
+        border-radius:8px;
+        padding:11px 8px;
+        text-align:center;
+        font-size:12px;
+        font-weight:600;
+        color:{text_color};
+        margin-bottom:2px;
+        min-height:44px;
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        gap:5px;">
+        {icon} {short_name}{check}
+        </div>
+        """, unsafe_allow_html=True)
+
+        if st.button("Select",
+                     key=f"g_{i}",
+                     use_container_width=True):
             st.session_state["selected_goal"] = gname
             st.rerun()
 
@@ -347,3 +377,130 @@ for i, (sname, sret, scol) in enumerate(scenarios):
 <div style="font-size:10px;color:#6B7280;margin-top:4px;">/month</div>
 <div style="font-size:10px;color:#20C997;margin-top:6px;">Gain: ₹{max(0, s_gain):,.0f}</div>
 </div>""", unsafe_allow_html=True)
+
+# ─── SECTION 4: SIP STEP-UP POWER ─────────────────────────────────────────────
+st.markdown('<div class="section-accent">SIP Step-Up Power</div>', unsafe_allow_html=True)
+
+st.markdown("""
+<div style="font-size:12px;color:#94A3B8;margin-bottom:12px;">
+See how increasing your SIP by a small % every year
+dramatically changes your final corpus.
+</div>""", unsafe_allow_html=True)
+
+stepup_col1, stepup_col2 = st.columns([0.3, 0.7])
+
+with stepup_col1:
+    step_pct = st.slider(
+        "Annual SIP increase (%)",
+        min_value=0, max_value=25,
+        value=10, step=1,
+        key="step_pct"
+    )
+    st.markdown(f"""
+    <div style="background:rgba(168,85,247,0.1);
+    border:1px solid rgba(168,85,247,0.2);
+    border-radius:10px;padding:14px;margin-top:8px;
+    text-align:center;">
+        <div style="font-size:10px;color:#94A3B8;
+        margin-bottom:6px;">WITHOUT STEP-UP</div>
+        <div style="font-size:1.3rem;font-weight:700;
+        color:#94A3B8;">₹{sip_needed:,.0f}/mo</div>
+        <div style="font-size:10px;color:#6B7280;
+        margin-top:4px;">flat for {years} years</div>
+    </div>
+    """, unsafe_allow_html=True)
+
+with stepup_col2:
+    step_data_x = list(range(0, years + 1))
+    stepup_corpus = [0]
+    flat_corpus = [0]
+
+    for y in range(1, years + 1):
+        flat_total = sip_needed * (
+            ((1 + r_monthly) ** (y * 12) - 1) / r_monthly
+        ) if r_monthly > 0 else sip_needed * y * 12
+
+        stepup_total = 0
+        yearly_sip = sip_needed
+        for yr in range(1, y + 1):
+            months_remaining = (y - yr + 1) * 12
+            fv = yearly_sip * 12 * (
+                ((1 + r_monthly) ** months_remaining - 1) /
+                (r_monthly * 12)
+            ) if r_monthly > 0 else yearly_sip * months_remaining
+            stepup_total += fv
+            yearly_sip *= (1 + step_pct / 100)
+
+        stepup_corpus.append(stepup_total)
+        flat_corpus.append(flat_total)
+
+    extra_corpus = stepup_corpus[-1] - flat_corpus[-1]
+
+    fig2 = go.Figure()
+
+    fig2.add_trace(go.Scatter(
+        x=step_data_x, y=flat_corpus,
+        name='Flat SIP',
+        line=dict(color='#6B7280', width=2, dash='dot'),
+        hovertemplate='Year %{x}: ₹%{y:,.0f}<extra>Flat SIP</extra>'
+    ))
+
+    fig2.add_trace(go.Scatter(
+        x=step_data_x, y=stepup_corpus,
+        name=f'Step-up SIP (+{step_pct}%/yr)',
+        fill='tonexty',
+        fillcolor='rgba(168,85,247,0.12)',
+        line=dict(color='#A855F7', width=2.5),
+        hovertemplate='Year %{x}: ₹%{y:,.0f}<extra>Step-up</extra>'
+    ))
+
+    fig2.update_layout(
+        height=220,
+        margin=dict(l=0, r=0, t=10, b=0),
+        paper_bgcolor='rgba(0,0,0,0)',
+        plot_bgcolor='rgba(0,0,0,0)',
+        font=dict(color='#94A3B8'),
+        xaxis=dict(showgrid=False, zeroline=False, title='Years', color='#4B5563'),
+        yaxis=dict(
+            showgrid=True,
+            gridcolor='rgba(168,85,247,0.08)',
+            side='right', zeroline=False,
+            color='#4B5563'
+        ),
+        legend=dict(
+            bgcolor='rgba(30,25,45,0.8)',
+            bordercolor='rgba(168,85,247,0.2)',
+            borderwidth=1, font=dict(size=10)
+        ),
+        hovermode='x unified',
+    )
+    st.plotly_chart(fig2, use_container_width=True)
+
+st.markdown(f"""
+<div style="background:rgba(168,85,247,0.08);
+border:1px solid rgba(168,85,247,0.25);
+border-radius:10px;padding:14px 18px;
+display:flex;align-items:center;
+justify-content:space-between;flex-wrap:wrap;gap:10px;">
+    <div>
+        <div style="font-size:11px;color:#94A3B8;
+        margin-bottom:4px;">By stepping up {step_pct}% every year</div>
+        <div style="font-size:13px;color:#D8B4FE;">
+        Your SIP starts at
+        <strong style="color:#F8FAFC;">₹{sip_needed:,.0f}/month</strong>
+        and reaches
+        <strong style="color:#F8FAFC;">
+        ₹{sip_needed * ((1 + step_pct / 100) ** (years - 1)):,.0f}/month</strong>
+        by year {years}
+        </div>
+    </div>
+    <div style="text-align:center;">
+        <div style="font-size:10px;color:#94A3B8;
+        margin-bottom:4px;">EXTRA CORPUS GAINED</div>
+        <div style="font-size:1.8rem;font-weight:800;
+        color:#A855F7;">₹{extra_corpus:,.0f}</div>
+        <div style="font-size:10px;color:#6B7280;">
+        vs flat SIP</div>
+    </div>
+</div>
+""", unsafe_allow_html=True)

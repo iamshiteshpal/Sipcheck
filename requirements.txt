@@ -9,3 +9,6 @@ openpyxl
 google-auth
 google-api-python-client
 playwright
+yfinance
+feedparser
+anthropic
