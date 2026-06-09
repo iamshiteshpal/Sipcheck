@@ -753,10 +753,10 @@ if st.session_state.get("fp_step", 1) >= 4:
             actions.append(f"Remaining ₹{leftover:,.0f} surplus — invest in Nifty 50 index fund for long-term wealth building")
 
         fund_recs = {
-            "Home Purchase": "Large Cap + Debt funds (60:40 ratio) — stable growth with capital protection",
+            "Home Purchase": "Large Cap + Debt funds (60:40) — stable growth with capital protection",
             "Child Education": "Mid Cap + Large Cap funds (50:50) — 8+ year horizon allows equity exposure",
-            "Retirement": "Multi-cap + PPF (70:30) — diversified for very long term",
-            "Emergency Fund": "Liquid mutual fund or high-yield savings account — never equity",
+            "Retirement": "Multi-cap + PPF + NPS (60:20:20) — diversified for very long term",
+            "Emergency Fund": "Liquid mutual fund — never equity, instant access needed",
             "Car Purchase": "Debt fund + RD (50:50) — short term goal needs stable returns",
             "Wedding": "Debt fund + Gold ETF (60:40) — 3-5 year horizon",
             "Business": "Large Cap + Liquid fund (70:30) — preserve capital while growing",
@@ -1017,6 +1017,109 @@ FUND RECOMMENDATIONS PER GOAL</div>
 </div>
 </div>
 """, unsafe_allow_html=True)
+
+        st.markdown("<div style='margin-top:1rem;'></div>",
+                    unsafe_allow_html=True)
+
+        st.markdown("""
+<div style="font-size:11px;font-weight:700;color:#A855F7;letter-spacing:0.1em;margin-bottom:10px;">
+SAFE INVESTMENT OPTIONS — BEYOND MUTUAL FUNDS
+</div>
+""", unsafe_allow_html=True)
+
+        safe_col1, safe_col2, safe_col3, safe_col4 = st.columns(4)
+
+        with safe_col1:
+            st.markdown(f"""
+<div style="background:rgba(30,25,45,0.6);border:1px solid rgba(245,158,11,0.3);border-top:2px solid #F59E0B;border-radius:10px;padding:14px;">
+<div style="font-size:20px;margin-bottom:6px;">🥇</div>
+<div style="font-size:12px;font-weight:600;color:#F59E0B;margin-bottom:6px;">Gold Investment</div>
+<div style="font-size:11px;color:#E2E8F0;line-height:1.6;margin-bottom:8px;">
+Allocate 5-10% of portfolio to gold.
+Best options: <strong style="color:#F8FAFC;">Gold ETF or Sovereign Gold Bond (SGB)</strong>.
+SGB gives 2.5% extra interest + gold price appreciation.
+</div>
+<div style="background:rgba(245,158,11,0.08);border-radius:6px;padding:8px;">
+<div style="font-size:10px;color:#94A3B8;margin-bottom:3px;">Suggested allocation</div>
+<div style="font-size:13px;font-weight:700;color:#F59E0B;">₹{int(surplus * 0.07):,}/month</div>
+<div style="font-size:10px;color:#6B7280;">7% of your surplus</div>
+</div>
+<div style="margin-top:8px;font-size:10px;color:#94A3B8;line-height:1.5;">
+📈 10-year gold CAGR in India: ~10%<br>
+🛡️ Best hedge against inflation<br>
+💡 Sovereign Gold Bond: Zero making charge
+</div>
+</div>""", unsafe_allow_html=True)
+
+        with safe_col2:
+            st.markdown(f"""
+<div style="background:rgba(30,25,45,0.6);border:1px solid rgba(59,130,246,0.3);border-top:2px solid #3B82F6;border-radius:10px;padding:14px;">
+<div style="font-size:20px;margin-bottom:6px;">🏗️</div>
+<div style="font-size:12px;font-weight:600;color:#3B82F6;margin-bottom:6px;">Real Estate / Land</div>
+<div style="font-size:11px;color:#E2E8F0;line-height:1.6;margin-bottom:8px;">
+Land in Tier-2/3 cities gives 8-12% appreciation.
+Best option without large capital: <strong style="color:#F8FAFC;">REITs</strong>
+— invest in real estate from ₹300/unit.
+</div>
+<div style="background:rgba(59,130,246,0.08);border-radius:6px;padding:8px;">
+<div style="font-size:10px;color:#94A3B8;margin-bottom:3px;">REIT minimum investment</div>
+<div style="font-size:13px;font-weight:700;color:#3B82F6;">₹300 per unit</div>
+<div style="font-size:10px;color:#6B7280;">Embassy, Mindspace, Nexus REITs</div>
+</div>
+<div style="margin-top:8px;font-size:10px;color:#94A3B8;line-height:1.5;">
+📈 Avg REIT return India: 8-10% p.a.<br>
+💰 Quarterly dividend income<br>
+🏢 Commercial property exposure
+</div>
+</div>""", unsafe_allow_html=True)
+
+        with safe_col3:
+            fd_rate = 7.25
+            fd_amount = int(emergency_needed)
+            fd_return = fd_amount * (fd_rate / 100)
+            st.markdown(f"""
+<div style="background:rgba(30,25,45,0.6);border:1px solid rgba(32,201,151,0.3);border-top:2px solid #20C997;border-radius:10px;padding:14px;">
+<div style="font-size:20px;margin-bottom:6px;">🏦</div>
+<div style="font-size:12px;font-weight:600;color:#20C997;margin-bottom:6px;">Fixed Deposit</div>
+<div style="font-size:11px;color:#E2E8F0;line-height:1.6;margin-bottom:8px;">
+For emergency fund and safe returns.
+<strong style="color:#F8FAFC;">Small Finance Banks</strong> offer
+up to 9% FD rate. DICGC insured up to ₹5L.
+</div>
+<div style="background:rgba(32,201,151,0.08);border-radius:6px;padding:8px;">
+<div style="font-size:10px;color:#94A3B8;margin-bottom:3px;">If you FD your emergency fund</div>
+<div style="font-size:13px;font-weight:700;color:#20C997;">+₹{fd_return:,.0f}/year</div>
+<div style="font-size:10px;color:#6B7280;">at 7.25% on ₹{fd_amount:,}</div>
+</div>
+<div style="margin-top:8px;font-size:10px;color:#94A3B8;line-height:1.5;">
+🏦 Best FD rates: AU Bank, Ujjivan, ESAF<br>
+📅 Lock-in: 1-5 years<br>
+✅ Zero market risk — guaranteed returns
+</div>
+</div>""", unsafe_allow_html=True)
+
+        with safe_col4:
+            ppf_annual = min(150000, int(surplus * 12 * 0.1))
+            ppf_return = ppf_annual * 0.071
+            st.markdown(f"""
+<div style="background:rgba(30,25,45,0.6);border:1px solid rgba(168,85,247,0.3);border-top:2px solid #A855F7;border-radius:10px;padding:14px;">
+<div style="font-size:20px;margin-bottom:6px;">📮</div>
+<div style="font-size:12px;font-weight:600;color:#A855F7;margin-bottom:6px;">PPF + NPS</div>
+<div style="font-size:11px;color:#E2E8F0;line-height:1.6;margin-bottom:8px;">
+PPF: 7.1% tax-free returns + ₹1.5L tax deduction under 80C.
+NPS: Extra ₹50,000 tax deduction under 80CCD.
+</div>
+<div style="background:rgba(168,85,247,0.08);border-radius:6px;padding:8px;">
+<div style="font-size:10px;color:#94A3B8;margin-bottom:3px;">Annual PPF + tax saving</div>
+<div style="font-size:13px;font-weight:700;color:#A855F7;">₹{ppf_return:,.0f} + tax saved</div>
+<div style="font-size:10px;color:#6B7280;">Invest ₹{ppf_annual//12:,}/month in PPF</div>
+</div>
+<div style="margin-top:8px;font-size:10px;color:#94A3B8;line-height:1.5;">
+🔒 PPF lock-in: 15 years<br>
+💰 Save up to ₹46,800 in taxes<br>
+🏛️ Government guaranteed — zero risk
+</div>
+</div>""", unsafe_allow_html=True)
 
         st.markdown("<div style='margin-top:1rem;'></div>",
                     unsafe_allow_html=True)
