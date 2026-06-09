@@ -36,250 +36,145 @@ def apply_page_config():
 
 
 def inject_global_styles():
-    st.markdown(
-        """
-        <style>
-        @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600&family=Instrument+Sans:wght@400;500;600&display=swap');
-        :root {
-          --bg:        #07090f;
-          --bg2:       #0c0f1a;
-          --bg3:       #111627;
-          --border:    rgba(255,255,255,0.06);
-          --border-hi: rgba(99,179,237,0.35);
-          --accent:    #63b3ed;
-          --accent2:   #9f7aea;
-          --gain:      #48bb78;
-          --loss:      #fc8181;
-          --warn:      #f6ad55;
-          --text:      #e2e8f0;
-          --muted:     #718096;
-          --faint:     #2d3748;
-        }
-        *, *::before, *::after { box-sizing: border-box; }
-        html, body, .stApp {
-          background: var(--bg) !important;
-          color: var(--text) !important;
-          font-family: 'Instrument Sans', sans-serif !important;
-        }
+    st.markdown("""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-        /* ── Sidebar ── */
-        section[data-testid="stSidebar"] {
-            background: #0B0914 !important;
-            border-right: 1px solid rgba(168,85,247,0.15) !important;
-        }
-        section[data-testid="stSidebar"] a {
-            color: #6B7280 !important;
-            font-size: 13px !important;
-            font-weight: 500 !important;
-            transition: all 0.2s !important;
-        }
-        section[data-testid="stSidebar"] a:hover {
-            color: #D8B4FE !important;
-            background: rgba(168,85,247,0.06) !important;
-        }
-        section[data-testid="stSidebar"] [aria-selected="true"] {
-            color: #D8B4FE !important;
-            background: rgba(168,85,247,0.1) !important;
-            border-left: 3px solid #A855F7 !important;
-            font-weight: 600 !important;
-        }
+/* REMOVE ALL BORDERS COMPLETELY */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
 
-        /* ── All Buttons ── */
-        [data-testid="stButton"] button {
-          background: var(--bg3) !important;
-          color: var(--text) !important;
-          border: 1px solid rgba(99,179,237,0.20) !important;
-          border-radius: 8px !important;
-          font-weight: 500 !important;
-          font-size: 13px !important;
-          transition: border-color .2s, background .2s, transform .15s !important;
-        }
-        [data-testid="stButton"] button:hover {
-          background: var(--bg2) !important;
-          border-color: rgba(99,179,237,0.55) !important;
-          transform: translateY(-1px) !important;
-          box-shadow: 0 4px 16px rgba(99,179,237,0.12) !important;
-        }
-        [data-testid="stButton"] button:active { transform: translateY(0) !important; }
-        /* Danger/logout button — reddish tint */
-        [data-testid="stSidebar"] [data-testid="stButton"]:last-of-type button {
-          border-color: rgba(252,129,129,0.22) !important;
-          color: #fc8181 !important;
-        }
-        [data-testid="stSidebar"] [data-testid="stButton"]:last-of-type button:hover {
-          background: rgba(252,129,129,0.06) !important;
-          border-color: rgba(252,129,129,0.50) !important;
-        }
+/* Main app */
+.stApp {
+    background: #0B0914 !important;
+    color: #E2E8F0 !important;
+    font-family: 'Inter', sans-serif !important;
+}
 
-        /* ── Metrics ── */
-        div[data-testid="stMetric"] {
-          background: var(--bg2) !important;
-          border: 1px solid rgba(99,179,237,0.14) !important;
-          border-radius: 14px !important;
-          padding: 18px 20px !important;
-          transition: border-color .25s, transform .2s, box-shadow .2s;
-        }
-        div[data-testid="stMetric"]:hover {
-          border-color: rgba(99,179,237,0.38) !important;
-          transform: translateY(-2px);
-          box-shadow: 0 6px 24px rgba(99,179,237,0.08) !important;
-        }
-        div[data-testid="stMetricValue"] > div {
-          font-family: 'IBM Plex Mono', monospace !important;
-          font-size: 20px !important;
-          font-weight: 700 !important;
-          color: #f0f6ff !important;
-        }
-        div[data-testid="stMetricLabel"] > div {
-          font-size: 9px !important;
-          color: var(--muted) !important;
-          text-transform: uppercase;
-          letter-spacing: 1.6px;
-          font-weight: 600 !important;
-        }
-        div[data-testid="stMetricDelta"] > div { font-size: 11px !important; font-weight: 600 !important; }
+/* Remove any red/black borders */
+.stApp,
+[data-testid="stAppViewContainer"],
+[data-testid="stHeader"],
+[data-testid="stToolbar"],
+.main,
+.block-container {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+}
 
-        /* ── Vertical block borders ── */
-        [data-testid="stVerticalBlockBorderWrapper"] > div > div {
-          background: var(--bg2) !important;
-          border: 1px solid rgba(99,179,237,0.10) !important;
-          border-radius: 14px !important;
-        }
-        [data-testid="stVerticalBlockBorderWrapper"] > div > div:hover {
-          border-color: rgba(99,179,237,0.22) !important;
-        }
+/* Block container */
+.block-container {
+    padding: 0.5rem 2rem 2rem 2rem !important;
+    max-width: 100% !important;
+}
 
-        /* ── DataFrame / Table ── */
-        [data-testid="stDataFrame"] {
-          border-radius: 12px !important;
-          overflow: hidden !important;
-          border: 1px solid rgba(99,179,237,0.16) !important;
-          background: var(--bg2) !important;
-        }
-        [data-testid="stDataFrame"] > div { background: var(--bg2) !important; }
+/* Hide header */
+[data-testid="stHeader"] {
+    background: transparent !important;
+    border: none !important;
+}
 
-        /* ── Selectbox / Text Input ── */
-        [data-testid="stSelectbox"] > div > div {
-          background: var(--bg3) !important;
-          border: 1px solid rgba(99,179,237,0.18) !important;
-          border-radius: 8px !important;
-          color: var(--text) !important;
-        }
-        [data-testid="stSelectbox"] > div > div:focus-within {
-          border-color: var(--accent) !important;
-          box-shadow: 0 0 0 2px rgba(99,179,237,0.15) !important;
-        }
-        [data-testid="stTextInput"] input {
-          background: var(--bg3) !important;
-          border: 1px solid rgba(99,179,237,0.18) !important;
-          border-radius: 8px !important;
-          color: var(--text) !important;
-          font-family: 'IBM Plex Mono', monospace !important;
-        }
-        [data-testid="stTextInput"] input:focus {
-          border-color: var(--accent) !important;
-          box-shadow: 0 0 0 2px rgba(99,179,237,0.15) !important;
-        }
+/* PREMIUM SIDEBAR */
+section[data-testid="stSidebar"] {
+    background: #0D0B1A !important;
+    border: none !important;
+    border-right: 1px solid rgba(168,85,247,0.12) !important;
+    box-shadow: none !important;
+}
 
-        /* ── File Uploader ── */
-        [data-testid="stFileUploader"] {
-          background: rgba(99,179,237,0.03) !important;
-          border: 2px dashed rgba(99,179,237,0.25) !important;
-          border-radius: 14px !important;
-        }
-        [data-testid="stFileUploader"]:hover {
-          border-color: rgba(99,179,237,0.55) !important;
-          background: rgba(99,179,237,0.06) !important;
-        }
-        [data-testid="stFileUploaderDropzone"] {
-          background: transparent !important;
-        }
-        [data-testid="stFileUploaderDropzoneInstructions"] {
-          color: var(--muted) !important;
-        }
+section[data-testid="stSidebar"] > div {
+    background: #0D0B1A !important;
+    border: none !important;
+}
 
-        /* ── Segmented Control ── */
-        [data-testid="stSegmentedControl"] > div {
-          background: var(--bg3) !important;
-          border: 1px solid rgba(99,179,237,0.14) !important;
-          border-radius: 10px !important;
-          padding: 3px !important;
-        }
-        [data-testid="stSegmentedControl"] button {
-          color: var(--muted) !important;
-          border-radius: 7px !important;
-          font-weight: 500 !important;
-        }
-        [data-testid="stSegmentedControl"] button[aria-checked="true"] {
-          background: linear-gradient(135deg,#1a4a7a,#3b2d6e) !important;
-          color: #e2e8f0 !important;
-          border-radius: 7px !important;
-          box-shadow: 0 2px 10px rgba(99,179,237,0.18) !important;
-          font-weight: 600 !important;
-        }
+/* Sidebar nav links */
+section[data-testid="stSidebar"] a {
+    color: #6B7280 !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    padding: 9px 20px !important;
+    border-radius: 0 !important;
+    border-left: 2px solid transparent !important;
+    text-decoration: none !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+}
 
-        /* ── Radio (nav) ── */
-        [data-testid="stRadio"] label {
-          color: var(--muted) !important;
-          font-size: 13px !important;
-          font-weight: 500 !important;
-          padding: 6px 0 !important;
-          transition: color .15s;
-        }
-        [data-testid="stRadio"] label:hover { color: var(--text) !important; }
-        [data-testid="stRadio"] [aria-checked="true"] ~ span { color: var(--accent) !important; font-weight: 600 !important; }
+section[data-testid="stSidebar"] a:hover {
+    color: #D8B4FE !important;
+    background: rgba(168,85,247,0.07) !important;
+    border-left: 2px solid rgba(168,85,247,0.5) !important;
+}
 
-        /* ── Scrollbar ── */
-        hr { border-color: rgba(99,179,237,0.10) !important; }
-        ::-webkit-scrollbar { width: 4px; height: 4px; }
-        ::-webkit-scrollbar-track { background: var(--bg); }
-        ::-webkit-scrollbar-thumb { background: rgba(99,179,237,0.20); border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: rgba(99,179,237,0.40); }
+section[data-testid="stSidebar"] [aria-selected="true"] {
+    color: #D8B4FE !important;
+    background: rgba(168,85,247,0.12) !important;
+    border-left: 2px solid #A855F7 !important;
+    font-weight: 600 !important;
+}
 
-        /* ── Force dark on inline white/light backgrounds ── */
-        [style*="background:#ffffff"],[style*="background: #ffffff"],
-        [style*="background:#fff;"],[style*="background: #fff;"],
-        [style*="background:#fff "],[style*="background: #fff "] {
-          background: var(--bg2) !important; color: var(--text) !important;
-        }
-        [style*="background:#f8fafc"],[style*="background: #f8fafc"],
-        [style*="background:#f1f5f9"],[style*="background: #f1f5f9"],
-        [style*="background:#f0f4f8"],[style*="background: #f0f4f8"] {
-          background: var(--bg3) !important; color: var(--text) !important;
-        }
-        [style*="color:#0f172a"],[style*="color: #0f172a"],
-        [style*="color:#1e293b"],[style*="color: #1e293b"],
-        [style*="color:#334155"],[style*="color: #334155"],
-        [style*="color:#2d3748"],[style*="color: #2d3748"] { color: var(--text) !important; }
+/* Remove sidebar borders */
+section[data-testid="stSidebar"] * {
+    border-color: rgba(168,85,247,0.1) !important;
+}
 
-        /* ── Component classes ── */
-        .card {
-          background: var(--bg2);
-          border: 1px solid rgba(99,179,237,0.12);
-          border-radius: 16px;
-          padding: 22px 24px;
-          margin-bottom: 16px;
-          position: relative;
-          transition: border-color .2s, box-shadow .2s;
-        }
-        .card:hover { border-color: rgba(99,179,237,0.28); box-shadow: 0 4px 24px rgba(99,179,237,0.06); }
-        .card-title { font-size: 11px; font-weight: 500; color: #718096; letter-spacing: 0.08em; margin-bottom: 14px; }
-        .pill-gain { display: inline-flex; align-items: center; gap: 4px; background: rgba(72,187,120,0.1); border: 1px solid rgba(72,187,120,0.28); color: var(--gain); font-family: 'IBM Plex Mono',monospace; font-size: 11px; font-weight: 600; padding: 3px 11px; border-radius: 20px; }
-        .pill-loss { display: inline-flex; align-items: center; gap: 4px; background: rgba(252,129,129,0.1); border: 1px solid rgba(252,129,129,0.28); color: var(--loss); font-family: 'IBM Plex Mono',monospace; font-size: 11px; font-weight: 600; padding: 3px 11px; border-radius: 20px; }
-        .notice { background: rgba(99,179,237,0.05); border: 1px solid rgba(99,179,237,0.18); border-left: 3px solid var(--accent); border-radius: 0 10px 10px 0; padding: 12px 16px; font-size: 13px; color: var(--muted); margin-bottom: 22px; display: flex; align-items: flex-start; gap: 10px; }
-        .section-sep { font-size: 11px; font-weight: 500; color: #718096; letter-spacing: 0.08em; margin: 24px 0 12px; display: flex; align-items: center; gap: 10px; }
-        .section-sep::after { content:''; flex:1; height:1px; background: rgba(99,179,237,0.10); }
-        .page-title { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; color: #f0f6ff; letter-spacing: -0.5px; margin-bottom: 4px; }
-        .page-sub { font-size: 13px; color: var(--muted); margin-bottom: 22px; }
-        .sip-card { background: var(--bg3); border: 1px solid rgba(99,179,237,0.10); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
-        .alloc-row { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.04); }
-        .alloc-dot { width:7px;height:7px;border-radius:50%;display:inline-block;margin-right:8px; }
-        .alert-card { border-left: 3px solid; border-radius: 0 10px 10px 0; padding: 12px 16px; margin-bottom: 10px; background: var(--bg2); border-top: 1px solid rgba(255,255,255,0.04); border-right: 1px solid rgba(255,255,255,0.04); border-bottom: 1px solid rgba(255,255,255,0.04); }
-        div[data-testid="stAppViewBlockContainer"] { padding-top: 2.5rem !important; }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+/* Buttons */
+.stButton > button {
+    border: 1px solid rgba(168,85,247,0.4) !important;
+    background: rgba(30,25,45,0.8) !important;
+    color: #D8B4FE !important;
+    font-weight: 500 !important;
+    border-radius: 8px !important;
+    transition: all 0.2s !important;
+    box-shadow: none !important;
+}
+
+.stButton > button:hover {
+    border-color: #A855F7 !important;
+    background: rgba(168,85,247,0.15) !important;
+    color: #fff !important;
+    box-shadow: 0 0 12px rgba(168,85,247,0.3) !important;
+}
+
+/* Selectbox */
+.stSelectbox > div > div {
+    background: #1A1A2E !important;
+    border: 1px solid rgba(168,85,247,0.2) !important;
+    color: #fff !important;
+    border-radius: 8px !important;
+}
+
+/* Tabs */
+.stTabs [data-baseweb="tab-list"] {
+    background: rgba(30,25,45,0.4) !important;
+    border-radius: 8px !important;
+    padding: 4px !important;
+    border: none !important;
+    gap: 8px !important;
+}
+
+.stTabs [data-baseweb="tab"] {
+    color: #94A3B8 !important;
+    font-weight: 600 !important;
+    border-radius: 6px !important;
+    border: none !important;
+}
+
+.stTabs [aria-selected="true"] {
+    background: rgba(168,85,247,0.2) !important;
+    color: #D8B4FE !important;
+    border-bottom: 2px solid #A855F7 !important;
+}
+
+/* Hide streamlit branding */
+#MainMenu { visibility: hidden !important; }
+footer { visibility: hidden !important; }
+</style>
+""", unsafe_allow_html=True)
 
 
 # ─────────────────────────────────────────────
@@ -1248,23 +1143,27 @@ def show_upload():
 def build_sidebar(data):
     with st.sidebar:
         st.markdown("""
-<div style="padding:20px 16px 16px;border-bottom:1px solid rgba(168,85,247,0.12);margin-bottom:6px;">
-<div style="font-size:18px;font-weight:800;color:#F8FAFC;letter-spacing:-0.03em;">
+<div style="padding:22px 18px 14px;border-bottom:1px solid rgba(168,85,247,0.1);margin-bottom:4px;">
+<div style="font-size:20px;font-weight:800;color:#F8FAFC;letter-spacing:-0.03em;line-height:1;">
 CAS <span style="color:#A855F7;">360</span>
-<span style="color:#A855F7;font-size:14px;">✦</span>
+<span style="color:#A855F7;">✦</span>
 </div>
-<div style="font-size:9px;color:#4B5563;font-weight:600;letter-spacing:0.18em;margin-top:3px;">PORTFOLIO INTELLIGENCE</div>
+<div style="font-size:9px;color:#4B5563;font-weight:600;letter-spacing:0.2em;margin-top:5px;text-transform:uppercase;">
+Portfolio Intelligence
+</div>
 </div>
 
-<div style="padding:6px 16px 10px;border-bottom:1px solid rgba(168,85,247,0.08);margin-bottom:8px;">
-<div style="font-size:9px;color:#4B5563;font-weight:600;letter-spacing:0.12em;margin-bottom:8px;">MAIN MENU</div>
+<div style="padding:10px 18px 6px;">
+<div style="font-size:9px;color:#4B5563;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">
+Navigation
+</div>
 </div>
 """, unsafe_allow_html=True)
 
         if data:
             menu = st.radio(
                 "nav",
-                ["⬡ Overview", "💼 My Portfolio", "🔄 SIP Center", "Transactions", "Alerts", "Analytics"],
+                ["🏠 Overview", "💼 My Portfolio", "🔄 SIP Center", "Transactions", "Alerts", "Analytics"],
                 label_visibility="collapsed",
             )
             st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
@@ -3119,7 +3018,7 @@ def run_app():
     if not active:
         show_upload()
         st.stop()
-    if menu == "⬡ Overview":
+    if menu == "🏠 Overview":
         render_dashboard(active)
     elif menu == "💼 My Portfolio":
         render_my_portfolio(active)
