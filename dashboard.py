@@ -168,6 +168,9 @@ section[data-testid="stSidebar"] [aria-selected="true"] {
 /* Hide streamlit branding */
 #MainMenu { visibility: hidden !important; }
 footer { visibility: hidden !important; }
+
+/* Hide Streamlit auto-generated multi-page nav */
+[data-testid="stSidebarNav"] { display: none !important; }
 </style>
 """, unsafe_allow_html=True)
 
