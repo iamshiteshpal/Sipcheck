@@ -47,7 +47,7 @@ def inject_global_styles():
 
 /* Main app */
 .stApp {
-    background: #0B0914 !important;
+    background: #07090f !important;
     color: #E2E8F0 !important;
     font-family: 'Inter', sans-serif !important;
 }
@@ -115,11 +115,6 @@ section[data-testid="stSidebar"] [aria-selected="true"] {
     background: rgba(168,85,247,0.12) !important;
     border-left: 2px solid #A855F7 !important;
     font-weight: 600 !important;
-}
-
-/* Remove sidebar borders */
-section[data-testid="stSidebar"] * {
-    border-color: rgba(168,85,247,0.1) !important;
 }
 
 /* Buttons */
@@ -1163,7 +1158,7 @@ Navigation
         if data:
             menu = st.radio(
                 "nav",
-                ["🏠 Overview", "💼 My Portfolio", "🔄 SIP Center", "Transactions", "Alerts", "Analytics"],
+                ["🏠 Overview", "💼 My Portfolio", "🔄 SIP Center", "📋 Transactions", "🔔 Alerts", "📊 Analytics"],
                 label_visibility="collapsed",
             )
             st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
@@ -3024,11 +3019,11 @@ def run_app():
         render_my_portfolio(active)
     elif menu == "🔄 SIP Center":
         render_sip_center(active)
-    elif menu == "Transactions":
+    elif menu == "📋 Transactions":
         render_transactions(active)
-    elif menu == "Alerts":
+    elif menu == "🔔 Alerts":
         render_alerts(active)
-    elif menu == "Analytics":
+    elif menu == "📊 Analytics":
         render_mf_analytics(active)
 
 
