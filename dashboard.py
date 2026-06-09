@@ -63,41 +63,24 @@ def inject_global_styles():
         }
 
         /* ── Sidebar ── */
-        [data-testid="stSidebar"] {
-          background: var(--bg2) !important;
-          border-right: 1px solid rgba(99,179,237,0.12) !important;
-        }
-        [data-testid="stSidebar"] * { font-family: 'Instrument Sans', sans-serif !important; }
-        [data-testid="stSidebar"] label { color: var(--muted) !important; font-size: 12px !important; }
-
         section[data-testid="stSidebar"] {
             background: #0B0914 !important;
             border-right: 1px solid rgba(168,85,247,0.15) !important;
-            min-width: 220px !important;
-        }
-        section[data-testid="stSidebar"] * {
-            font-family: 'Inter', sans-serif !important;
         }
         section[data-testid="stSidebar"] a {
             color: #6B7280 !important;
-            font-size: 12px !important;
+            font-size: 13px !important;
             font-weight: 500 !important;
-            letter-spacing: 0.02em !important;
-            padding: 9px 18px !important;
-            border-radius: 0 !important;
-            border-left: 2px solid transparent !important;
             transition: all 0.2s !important;
-            display: block !important;
         }
         section[data-testid="stSidebar"] a:hover {
             color: #D8B4FE !important;
             background: rgba(168,85,247,0.06) !important;
-            border-left: 2px solid rgba(168,85,247,0.4) !important;
         }
         section[data-testid="stSidebar"] [aria-selected="true"] {
             color: #D8B4FE !important;
             background: rgba(168,85,247,0.1) !important;
-            border-left: 2px solid #A855F7 !important;
+            border-left: 3px solid #A855F7 !important;
             font-weight: 600 !important;
         }
 
