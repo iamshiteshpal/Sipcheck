@@ -165,6 +165,120 @@ section[data-testid="stSidebar"] [aria-selected="true"] {
     border-bottom: 2px solid #A855F7 !important;
 }
 
+/* ── Layout classes ── */
+.page-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: #F8FAFC;
+    letter-spacing: -0.03em;
+    margin-bottom: 10px;
+}
+.notice {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    background: rgba(99,179,237,0.05);
+    border: 1px solid rgba(99,179,237,0.12);
+    border-radius: 8px;
+    font-size: 12px;
+    color: #718096;
+    margin-bottom: 8px;
+}
+.card {
+    background: #0C0F1A;
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 16px;
+}
+.card-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: #4A5568;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 14px;
+}
+.pill-gain {
+    display: inline-block;
+    padding: 3px 10px;
+    background: rgba(72,187,120,0.12);
+    border: 1px solid rgba(72,187,120,0.25);
+    border-radius: 20px;
+    color: #48bb78;
+    font-size: 12px;
+    font-weight: 600;
+}
+.pill-loss {
+    display: inline-block;
+    padding: 3px 10px;
+    background: rgba(252,129,129,0.12);
+    border: 1px solid rgba(252,129,129,0.25);
+    border-radius: 20px;
+    color: #fc8181;
+    font-size: 12px;
+    font-weight: 600;
+}
+.section-sep {
+    font-size: 10px;
+    font-weight: 700;
+    color: #4A5568;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin: 14px 0 10px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.alloc-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.alloc-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 10px;
+    flex-shrink: 0;
+}
+
+/* ── Streamlit metric override ── */
+[data-testid="stMetric"] {
+    background: #0C0F1A !important;
+    border: 1px solid rgba(255,255,255,0.06) !important;
+    border-radius: 14px !important;
+    padding: 16px 20px !important;
+}
+[data-testid="stMetricLabel"] p {
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    color: #4A5568 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.12em !important;
+}
+[data-testid="stMetricValue"] {
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    color: #F8FAFC !important;
+}
+[data-testid="stMetricDelta"] svg { display: none !important; }
+[data-testid="stMetricDelta"] > div {
+    font-size: 12px !important;
+    color: #48bb78 !important;
+}
+
+/* ── Plotly chart containers ── */
+.js-plotly-plot .plotly .main-svg { background: transparent !important; }
+[data-testid="stPlotlyChart"] > div { border-radius: 10px; }
+
+/* ── DataFrame / table ── */
+[data-testid="stDataFrame"] { border-radius: 10px !important; overflow: hidden; }
+
 /* Hide streamlit branding */
 #MainMenu { visibility: hidden !important; }
 footer { visibility: hidden !important; }
@@ -1357,24 +1471,31 @@ def render_dashboard(data):
     pnl_pct = (display_pnl / data["total_invested"] * 100) if data["total_invested"] else 0.0
     sip_monthly = sum(s["amount"] for s in data["live_sips"])
 
-    # ── FIX: use fmt_inr_short so values never truncate in metric tiles ──
-    m1, m2, m3, m4 = st.columns(4)
-    with m1:
-        st.metric("Total Wealth", fmt_inr(display_wealth))
-    with m2:
-        st.metric("Invested", fmt_inr(data["total_invested"]))
-    with m3:
-        st.metric(
-            "Unrealized P&L",
-            fmt_inr(display_pnl),
-            delta=f"{gain_arrow(display_pnl)} {abs(pnl_pct):.2f}% all-time",
-        )
-    with m4:
-        st.metric(
-            "Monthly SIP",
-            fmt_inr(sip_monthly),
-            delta=f"{len(data['live_sips'])} active",
-        )
+    pnl_clr    = "#48bb78" if display_pnl >= 0 else "#fc8181"
+    pnl_bg     = "rgba(72,187,120,0.08)"  if display_pnl >= 0 else "rgba(252,129,129,0.08)"
+    pnl_border = "rgba(72,187,120,0.18)"  if display_pnl >= 0 else "rgba(252,129,129,0.18)"
+    st.markdown(f"""
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:12px 0 20px;">
+  <div style="background:#0C0F1A;border:1px solid rgba(255,255,255,0.06);border-radius:14px;padding:18px 20px;">
+    <div style="font-size:10px;font-weight:700;color:#4A5568;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;">Total Wealth</div>
+    <div style="font-size:22px;font-weight:700;color:#F8FAFC;font-family:'IBM Plex Mono',monospace;letter-spacing:-0.5px;">{fmt_inr(display_wealth)}</div>
+  </div>
+  <div style="background:#0C0F1A;border:1px solid rgba(99,179,237,0.12);border-radius:14px;padding:18px 20px;">
+    <div style="font-size:10px;font-weight:700;color:#4A5568;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;">Invested</div>
+    <div style="font-size:22px;font-weight:700;color:#63b3ed;font-family:'IBM Plex Mono',monospace;letter-spacing:-0.5px;">{fmt_inr(data['total_invested'])}</div>
+  </div>
+  <div style="background:{pnl_bg};border:1px solid {pnl_border};border-radius:14px;padding:18px 20px;">
+    <div style="font-size:10px;font-weight:700;color:#4A5568;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;">Unrealized P&amp;L</div>
+    <div style="font-size:22px;font-weight:700;color:{pnl_clr};font-family:'IBM Plex Mono',monospace;letter-spacing:-0.5px;">{fmt_inr(display_pnl)}</div>
+    <div style="font-size:11px;color:{pnl_clr};margin-top:4px;font-weight:600;opacity:0.85;">{gain_arrow(display_pnl)} {abs(pnl_pct):.2f}% all-time</div>
+  </div>
+  <div style="background:#0C0F1A;border:1px solid rgba(168,85,247,0.14);border-radius:14px;padding:18px 20px;">
+    <div style="font-size:10px;font-weight:700;color:#4A5568;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;">Monthly SIP</div>
+    <div style="font-size:22px;font-weight:700;color:#D8B4FE;font-family:'IBM Plex Mono',monospace;letter-spacing:-0.5px;">{fmt_inr(sip_monthly)}</div>
+    <div style="font-size:11px;color:#9f7aea;margin-top:4px;font-weight:600;">↑ {len(data['live_sips'])} active</div>
+  </div>
+</div>
+""", unsafe_allow_html=True)
 
     st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
 
