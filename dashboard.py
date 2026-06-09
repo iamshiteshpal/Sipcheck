@@ -171,6 +171,37 @@ footer { visibility: hidden !important; }
 
 /* Hide Streamlit auto-generated multi-page nav */
 [data-testid="stSidebarNav"] { display: none !important; }
+
+/* Page link nav styling */
+section[data-testid="stSidebar"] [data-testid="stPageLink"] {
+    padding: 0 !important;
+    margin: 0 !important;
+}
+section[data-testid="stSidebar"] [data-testid="stPageLink"] a {
+    color: #6B7280 !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    padding: 8px 20px !important;
+    text-decoration: none !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 10px !important;
+    border-left: 2px solid transparent !important;
+    border-radius: 0 !important;
+    transition: all 0.2s !important;
+    width: 100% !important;
+}
+section[data-testid="stSidebar"] [data-testid="stPageLink"] a:hover {
+    color: #D8B4FE !important;
+    background: rgba(168,85,247,0.07) !important;
+    border-left-color: rgba(168,85,247,0.5) !important;
+}
+section[data-testid="stSidebar"] [data-testid="stPageLink-active"] a {
+    color: #D8B4FE !important;
+    background: rgba(168,85,247,0.12) !important;
+    border-left-color: #A855F7 !important;
+    font-weight: 600 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
@@ -1150,18 +1181,22 @@ CAS <span style="color:#A855F7;">360</span>
 Portfolio Intelligence
 </div>
 </div>
-
-<div style="padding:10px 18px 6px;">
-<div style="font-size:9px;color:#4B5563;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">
-Navigation
-</div>
-</div>
 """, unsafe_allow_html=True)
 
+        st.markdown('<div style="padding:8px 18px 2px;"><div style="font-size:9px;color:#4B5563;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Pages</div></div>', unsafe_allow_html=True)
+        st.page_link("dashboard.py", label="CAS Dashboard", icon="🏠")
+        st.page_link("pages/01_Markets.py", label="Markets", icon="📈")
+        st.page_link("pages/02_Mutual_Funds.py", label="Mutual Funds", icon="🏦")
+        st.page_link("pages/03_SIP_Simulator.py", label="SIP Simulator", icon="🔄")
+        st.page_link("pages/04_News.py", label="News", icon="📰")
+        st.page_link("pages/05_Goals.py", label="Goals", icon="🎯")
+        st.page_link("pages/06_Family_Planner.py", label="Family Planner", icon="👨‍👩‍👧")
+
         if data:
+            st.markdown('<div style="padding:8px 18px 2px;margin-top:6px;border-top:1px solid rgba(168,85,247,0.08);"><div style="font-size:9px;color:#4B5563;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Portfolio</div></div>', unsafe_allow_html=True)
             menu = st.radio(
                 "nav",
-                ["🏠 Overview", "💼 My Portfolio", "🔄 SIP Center", "📋 Transactions", "🔔 Alerts", "📊 Analytics"],
+                ["Overview", "My Portfolio", "SIP Center", "Transactions", "Alerts", "Analytics"],
                 label_visibility="collapsed",
             )
             st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
@@ -3016,17 +3051,17 @@ def run_app():
     if not active:
         show_upload()
         st.stop()
-    if menu == "🏠 Overview":
+    if menu == "Overview":
         render_dashboard(active)
-    elif menu == "💼 My Portfolio":
+    elif menu == "My Portfolio":
         render_my_portfolio(active)
-    elif menu == "🔄 SIP Center":
+    elif menu == "SIP Center":
         render_sip_center(active)
-    elif menu == "📋 Transactions":
+    elif menu == "Transactions":
         render_transactions(active)
-    elif menu == "🔔 Alerts":
+    elif menu == "Alerts":
         render_alerts(active)
-    elif menu == "📊 Analytics":
+    elif menu == "Analytics":
         render_mf_analytics(active)
 
 
