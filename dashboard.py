@@ -70,6 +70,37 @@ def inject_global_styles():
         [data-testid="stSidebar"] * { font-family: 'Instrument Sans', sans-serif !important; }
         [data-testid="stSidebar"] label { color: var(--muted) !important; font-size: 12px !important; }
 
+        section[data-testid="stSidebar"] {
+            background: #0B0914 !important;
+            border-right: 1px solid rgba(168,85,247,0.15) !important;
+            min-width: 220px !important;
+        }
+        section[data-testid="stSidebar"] * {
+            font-family: 'Inter', sans-serif !important;
+        }
+        section[data-testid="stSidebar"] a {
+            color: #6B7280 !important;
+            font-size: 12px !important;
+            font-weight: 500 !important;
+            letter-spacing: 0.02em !important;
+            padding: 9px 18px !important;
+            border-radius: 0 !important;
+            border-left: 2px solid transparent !important;
+            transition: all 0.2s !important;
+            display: block !important;
+        }
+        section[data-testid="stSidebar"] a:hover {
+            color: #D8B4FE !important;
+            background: rgba(168,85,247,0.06) !important;
+            border-left: 2px solid rgba(168,85,247,0.4) !important;
+        }
+        section[data-testid="stSidebar"] [aria-selected="true"] {
+            color: #D8B4FE !important;
+            background: rgba(168,85,247,0.1) !important;
+            border-left: 2px solid #A855F7 !important;
+            font-weight: 600 !important;
+        }
+
         /* ── All Buttons ── */
         [data-testid="stButton"] button {
           background: var(--bg3) !important;
@@ -1233,22 +1264,24 @@ def show_upload():
 
 def build_sidebar(data):
     with st.sidebar:
-        st.markdown(
-            """
-            <div style="padding:6px 0 20px;">
-              <div style="font-family:'Syne',sans-serif;font-size:21px;font-weight:800;
-    color:#f7fafc;letter-spacing:-0.5px;">CAS 360 <span style="color:#63b3ed;">View</span></div>
-              <div style="font-size:10px;color:#2d3748;text-transform:uppercase;letter-spacing:2px;
-    font-weight:600;margin-top:2px;">Portfolio Intelligence</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
+        st.markdown("""
+<div style="padding:20px 16px 16px;border-bottom:1px solid rgba(168,85,247,0.12);margin-bottom:6px;">
+<div style="font-size:18px;font-weight:800;color:#F8FAFC;letter-spacing:-0.03em;">
+CAS <span style="color:#A855F7;">360</span>
+<span style="color:#A855F7;font-size:14px;">✦</span>
+</div>
+<div style="font-size:9px;color:#4B5563;font-weight:600;letter-spacing:0.18em;margin-top:3px;">PORTFOLIO INTELLIGENCE</div>
+</div>
+
+<div style="padding:6px 16px 10px;border-bottom:1px solid rgba(168,85,247,0.08);margin-bottom:8px;">
+<div style="font-size:9px;color:#4B5563;font-weight:600;letter-spacing:0.12em;margin-bottom:8px;">MAIN MENU</div>
+</div>
+""", unsafe_allow_html=True)
 
         if data:
             menu = st.radio(
                 "nav",
-                ["Dashboard", "My Portfolio", "SIP Center", "Transactions", "Alerts", "Analytics"],
+                ["⬡ Overview", "💼 My Portfolio", "🔄 SIP Center", "Transactions", "Alerts", "Analytics"],
                 label_visibility="collapsed",
             )
             st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
@@ -3103,11 +3136,11 @@ def run_app():
     if not active:
         show_upload()
         st.stop()
-    if menu == "Dashboard":
+    if menu == "⬡ Overview":
         render_dashboard(active)
-    elif menu == "My Portfolio":
+    elif menu == "💼 My Portfolio":
         render_my_portfolio(active)
-    elif menu == "SIP Center":
+    elif menu == "🔄 SIP Center":
         render_sip_center(active)
     elif menu == "Transactions":
         render_transactions(active)
