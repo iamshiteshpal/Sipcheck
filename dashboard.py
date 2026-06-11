@@ -1301,10 +1301,10 @@ Portfolio Intelligence
         st.page_link("dashboard.py", label="CAS Dashboard", icon="🏠")
         st.page_link("pages/01_Markets.py", label="Markets", icon="📈")
         st.page_link("pages/02_Mutual_Funds.py", label="Mutual Funds", icon="🏦")
-        st.page_link("pages/03_SIP_Simulator.py", label="SIP Simulator", icon="🔄")
         st.page_link("pages/04_News.py", label="News", icon="📰")
         st.page_link("pages/05_Goals.py", label="Goals", icon="🎯")
         st.page_link("pages/06_Family_Planner.py", label="Family Planner", icon="👨‍👩‍👧")
+        st.page_link("pages/07_MF_Report.py", label="MF Report", icon="📊")
 
         if data:
             st.markdown('<div style="padding:8px 18px 2px;margin-top:6px;border-top:1px solid rgba(168,85,247,0.08);"><div style="font-size:9px;color:#4B5563;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Portfolio</div></div>', unsafe_allow_html=True)
