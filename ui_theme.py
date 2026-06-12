@@ -1,5 +1,5 @@
 # ──────────────────────────────────────────────────────────────────
-#  CAS 360 – 2.0 DESIGN SYSTEM  ("Aurora Glass")
+#  CAS 360 – 2.2 DESIGN SYSTEM  ("Aurora Glass")
 #  Import this at the top of EVERY page:
 #
 #      from ui_theme import inject_theme, glass_kpi, page_header, section
@@ -11,14 +11,14 @@ import streamlit as st
 
 # ── Design tokens ──────────────────────────────────────────────────
 C = {
-    "void":    "#070714",   # page background
+    "void":    "#070714",
     "glass":   "rgba(17,17,48,0.55)",
     "border":  "rgba(139,92,246,0.16)",
-    "violet":  "#8b5cf6",   # brand
-    "cyan":    "#22d3ee",   # aurora accent
-    "mint":    "#34d399",   # gains
-    "ember":   "#f87171",   # losses
-    "amber":   "#fbbf24",   # warnings
+    "violet":  "#8b5cf6",
+    "cyan":    "#22d3ee",
+    "mint":    "#34d399",
+    "ember":   "#f87171",
+    "amber":   "#fbbf24",
     "ink":     "#f0f0ff",
     "muted":   "#8b93a7",
     "faint":   "#3b4154",
@@ -36,7 +36,17 @@ def inject_theme():
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500;600;700&display=swap');
 
-#MainMenu, footer, header[data-testid="stHeader"] {{ visibility:hidden; height:0; }}
+#MainMenu, footer {{ visibility:hidden; height:0; }}
+
+/* ── FIX: black band at top — make header fully transparent ─────── */
+header[data-testid="stHeader"] {{
+    background: transparent !important;
+    backdrop-filter: none !important;
+}}
+header[data-testid="stHeader"] * {{ background: transparent !important; }}
+div[data-testid="stToolbar"] {{ background: transparent !important; }}
+div[data-testid="stDecoration"] {{ display: none !important; }}
+div[data-testid="stStatusWidget"] {{ background: transparent !important; }}
 
 /* ── Aurora background: animated gradient mesh ─────────────────── */
 .stApp {{
@@ -146,6 +156,95 @@ h1,h2,h3, .display {{ font-family:'Space Grotesk',sans-serif; letter-spacing:-0.
     box-shadow:0 0 22px -6px {C['violet']}; transform:translateY(-1px); }}
 div[data-testid="stMetric"] {{ background:{C['glass']}; border:1px solid {C['border']};
     border-radius:14px; padding:0.8rem 1rem; }}
+
+/* ── SIP Cards ───────────────────────────────────────────────────── */
+.sip-grid {{ display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:14px; }}
+.sip-card {{
+    position:relative; background:{C['glass']}; backdrop-filter:blur(14px);
+    border:1px solid {C['border']}; border-radius:16px; padding:1.1rem 1.2rem;
+    transition:transform .25s ease, border-color .25s ease, box-shadow .25s ease;
+    overflow:hidden;
+}}
+.sip-card:hover {{
+    transform:translateY(-3px); border-color:rgba(139,92,246,0.45);
+    box-shadow:0 12px 40px -12px rgba(139,92,246,0.35);
+}}
+.sip-card::after {{
+    content:''; position:absolute; top:0; left:0; right:0; height:3px;
+    background:linear-gradient(90deg, {C['violet']}, {C['cyan']});
+}}
+.sip-card.overdue::after {{ background:linear-gradient(90deg, {C['ember']}, {C['amber']}); }}
+.sip-card.missed::after  {{ background:{C['ember']}; }}
+.sip-name {{ font-size:0.82rem; font-weight:600; color:{C['ink']}; margin-bottom:6px;
+             white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
+.sip-amt  {{ font-family:'JetBrains Mono',monospace; font-size:1.35rem; font-weight:700;
+             color:{C['ink']}; display:flex; align-items:center; gap:8px; }}
+.sip-detail {{ display:grid; grid-template-columns:1fr 1fr; gap:4px 12px;
+               margin-top:10px; font-size:0.72rem; color:{C['muted']}; }}
+.sip-detail b {{ color:{C['ink']}; font-weight:600; }}
+.sip-bar {{ height:6px; background:rgba(139,92,246,0.12); border-radius:3px;
+            margin-top:12px; overflow:hidden; }}
+.sip-bar-fill {{ height:100%; border-radius:3px;
+                 background:linear-gradient(90deg, {C['violet']}, {C['mint']}); }}
+.sip-bar-fill.bad {{ background:linear-gradient(90deg, {C['ember']}, {C['amber']}); }}
+.sip-streak {{ font-size:0.65rem; color:{C['muted']}; margin-top:4px;
+               font-family:'JetBrains Mono',monospace; }}
+.sip-badge {{ display:inline-flex; align-items:center; gap:4px;
+              font-size:0.62rem; font-weight:700; padding:2px 10px; border-radius:999px; }}
+.sip-badge.live    {{ background:rgba(52,211,153,0.15); color:{C['mint']}; }}
+.sip-badge.dead    {{ background:rgba(248,113,113,0.15); color:{C['ember']}; }}
+.sip-badge.overdue {{ background:rgba(251,191,36,0.2);  color:{C['amber']}; }}
+.sip-badge.missed  {{ background:rgba(248,113,113,0.2); color:{C['ember']}; }}
+
+/* ── Alert banner ────────────────────────────────────────────────── */
+.alert-banner {{
+    display:flex; align-items:center; gap:14px; padding:0.8rem 1.2rem;
+    border-radius:14px; margin-bottom:10px; border-left:4px solid;
+    background:{C['glass']}; backdrop-filter:blur(14px);
+}}
+.alert-banner.critical {{ border-left-color:{C['ember']}; background:rgba(248,113,113,0.06); }}
+.alert-banner.warning  {{ border-left-color:{C['amber']}; background:rgba(251,191,36,0.06); }}
+.alert-banner.info     {{ border-left-color:{C['cyan']};  background:rgba(34,211,238,0.06); }}
+.alert-icon  {{ font-size:1.6rem; flex-shrink:0; }}
+.alert-body  {{ flex:1; }}
+.alert-title {{ font-size:0.82rem; font-weight:600; color:{C['ink']}; }}
+.alert-sub   {{ font-size:0.72rem; color:{C['muted']}; margin-top:2px; }}
+
+/* ── MOBILE RESPONSIVE ───────────────────────────────────────────── */
+@media (max-width: 768px) {{
+    .block-container {{ padding: 0.8rem 0.9rem 2rem !important; }}
+    .pg-h {{ font-size: 1.3rem !important; }}
+    .pg-s {{ font-size: 0.74rem !important; }}
+    .kpi-value {{ font-size: 1.15rem !important; }}
+    .kpi-label {{ font-size: 0.6rem !important; }}
+    .g-card {{ padding: 0.8rem 0.9rem; border-radius: 12px; }}
+    .g-card:hover {{ transform: none; }}
+    .g-card svg {{ width: 140px !important; height: 140px !important; }}
+    .g-card > div:first-child {{ width: 140px !important; height: 140px !important; }}
+    .sec .t {{ font-size: 0.68rem !important; letter-spacing: 0.1em; }}
+    .sip-grid {{ grid-template-columns: 1fr !important; }}
+    .sip-amt  {{ font-size: 1.1rem !important; }}
+    .stTabs [data-baseweb="tab-list"] {{
+        overflow-x: auto !important; flex-wrap: nowrap !important;
+        -webkit-overflow-scrolling: touch; padding: 4px;
+    }}
+    .stTabs [data-baseweb="tab"] {{
+        white-space: nowrap; padding: 6px 12px !important;
+        font-size: 0.72rem !important;
+    }}
+    .pill {{ font-size: 0.6rem; padding: 2px 8px; }}
+    .alert-banner {{ padding: 0.6rem 0.9rem; }}
+    .alert-icon {{ font-size: 1.2rem; }}
+    .stButton > button {{ min-height: 44px; font-size: 0.82rem; }}
+    .js-plotly-plot {{ overflow: hidden !important; }}
+}}
+@media (max-width: 480px) {{
+    .block-container {{ padding: 0.5rem 0.6rem 2rem !important; }}
+    .pg-h {{ font-size: 1.1rem !important; }}
+    .kpi-value {{ font-size: 1rem !important; }}
+    .g-card {{ padding: 0.6rem 0.7rem; }}
+    .sip-card {{ padding: 0.8rem; }}
+}}
 </style>
 """, unsafe_allow_html=True)
 

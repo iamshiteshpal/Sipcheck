@@ -1,5 +1,5 @@
 # ──────────────────────────────────────────────────────────────────
-#  CAS 360 v2.1 – UNIFIED SIDEBAR  (sidebar_v2.py)
+#  CAS 360 v2.2 – UNIFIED SIDEBAR  (sidebar_v2.py)
 #  Place in PROJECT ROOT next to dashboard.py.
 #
 #  Use on every page (dashboard.py + each file in pages/):
@@ -14,7 +14,6 @@
 import os
 import streamlit as st
 
-# label → script path  (edit labels here to rename sidebar tabs anytime)
 NAV = [
     ("🏠   CAS Dashboard",   "dashboard.py"),
     ("📈  Live Markets",     "pages/01_Markets.py"),
@@ -27,28 +26,33 @@ NAV = [
 
 
 def render_sidebar():
-    _H = lambda s: " ".join(line.strip() for line in s.splitlines() if line.strip())
+    # Fix: black band/border at top of every page — make Streamlit's header transparent
+    st.markdown(
+        """<style>
+        header[data-testid="stHeader"]{background:transparent !important;backdrop-filter:none !important;}
+        header[data-testid="stHeader"] *{background:transparent !important;}
+        div[data-testid="stToolbar"]{background:transparent !important;}
+        div[data-testid="stDecoration"]{display:none !important;}
+        div[data-testid="stStatusWidget"]{background:transparent !important;}
+        </style>""",
+        unsafe_allow_html=True)
+
     with st.sidebar:
-        st.markdown(_H("""
+        st.markdown(
+            " ".join(line.strip() for line in """
             <div style="padding:0.4rem 0 1.1rem;">
-              <div style="font-family:'Space Grotesk',sans-serif;font-size:1.35rem;font-weight:700;">
-                <span style="color:#f0f0ff;">CAS</span>
-                <span style="background:linear-gradient(90deg,#8b5cf6,#22d3ee);
-                  -webkit-background-clip:text;background-clip:text;color:transparent;">360</span>
-                <span style="color:#8b5cf6;">✦</span>
-              </div>
-              <div style="font-size:0.6rem;letter-spacing:0.22em;color:#6b7280;font-weight:600;">
-                PORTFOLIO INTELLIGENCE · v2.1
-              </div>
-            </div>"""), unsafe_allow_html=True)
+            <div style="font-family:'Space Grotesk',sans-serif;font-size:1.35rem;font-weight:700;">
+            <span style="color:#f0f0ff;">CAS</span>
+            <span style="background:linear-gradient(90deg,#8b5cf6,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent;">360</span>
+            <span style="color:#8b5cf6;">✦</span></div>
+            <div style="font-size:0.6rem;letter-spacing:0.22em;color:#6b7280;font-weight:600;">PORTFOLIO INTELLIGENCE · v2.2</div>
+            </div>""".splitlines() if line.strip()),
+            unsafe_allow_html=True)
 
         for label, path in NAV:
             if os.path.exists(path):
                 st.page_link(path, label=label, use_container_width=True)
 
         st.markdown(
-            "<div style='margin-top:1.2rem;padding-top:0.9rem;"
-            "border-top:1px solid rgba(139,92,246,0.15);"
-            "font-size:0.62rem;color:#374151;letter-spacing:0.06em;'>"
-            "Your data never leaves your device.</div>",
+            """<div style="margin-top:1.2rem;padding-top:0.9rem;border-top:1px solid rgba(139,92,246,0.15);font-size:0.62rem;color:#374151;letter-spacing:0.06em;">Your data never leaves your device.</div>""",
             unsafe_allow_html=True)
