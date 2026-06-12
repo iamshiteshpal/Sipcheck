@@ -106,67 +106,75 @@ def _parse_date(s):
 def detect_sip_misses(sips, today=None):
     """Returns list of dicts with miss status per SIP.
     status: 'on_track' | 'overdue' | 'missed' | 'inactive'
-    overdue = expected this month but not yet seen (could be processing)
-    missed  = at least 1 full cycle (30+ days) past expected date
+
+    Priority: parser's own flags (status/missed_last_month/days_since_last)
+    are trusted first because next_date is recalculated from today() at
+    parse time and would always appear future-dated otherwise.
     """
     today = today or datetime.now()
     results = []
     for s in (sips or []):
-        name = str(_g(s, "scheme", "name", "fund", default="SIP"))
-        amt  = _g(s, "amount", "sip_amount", default=0) or 0
-        day  = _g(s, "day", "sip_day", default="")
-        last = _parse_date(_g(s, "last_date", "last", "last_seen", default=""))
-        nxt  = _parse_date(_g(s, "next_due", "next", "next_date", default=""))
+        name         = str(_g(s, "scheme", "name", "fund", default="SIP"))
+        amt          = _g(s, "amount", "sip_amount", default=0) or 0
+        # parser uses "dom" (int day-of-month) and "day_label" ("25th")
+        day          = _g(s, "dom", "day", "sip_day", default="") or _g(s, "day_label", default="")
+        last         = _parse_date(_g(s, "last_date", "last", "last_seen", default=""))
+        days_since   = int(_g(s, "days_since_last", default=0) or 0)
+        missed_flag  = bool(s.get("missed_last_month", False))
+        parser_st    = str(_g(s, "status", default="")).strip().lower()
 
-        try:
-            d = int(str(day).replace("th", "").replace("st", "").replace(
-                "nd", "").replace("rd", "").strip())
-        except (ValueError, TypeError):
-            d = 0
-
-        if last is None:
-            status = "inactive"
-            days_over = 0
+        # ── Step 1: trust the parser's own classification ──────────
+        if parser_st == "inactive":
+            status       = "inactive"
+            days_over    = days_since
             expected_str = "—"
+        elif missed_flag:
+            status       = "missed"
+            days_over    = max(0, days_since - 30)
+            expected_str = ((last + timedelta(days=30)).strftime("%d %b %Y")
+                            if last else "—")
         else:
-            if nxt:
-                expected = nxt
-            elif d:
-                m = last.month + 1 if last.month < 12 else 1
-                y = last.year + (1 if last.month == 12 else 0)
-                try:
-                    expected = last.replace(year=y, month=m, day=min(d, 28))
-                except Exception:
+            # ── Step 2: date-math fallback for live SIPs ───────────
+            try:
+                d = int(str(day).replace("th", "").replace("st", "").replace(
+                    "nd", "").replace("rd", "").strip())
+            except (ValueError, TypeError):
+                d = 0
+
+            if last is None:
+                status = "inactive"; days_over = 0; expected_str = "—"
+            else:
+                if d:
+                    m = last.month + 1 if last.month < 12 else 1
+                    y = last.year + (1 if last.month == 12 else 0)
+                    try:
+                        expected = last.replace(year=y, month=m, day=min(d, 28))
+                    except Exception:
+                        expected = last + timedelta(days=32)
+                else:
                     expected = last + timedelta(days=32)
-            else:
-                expected = last + timedelta(days=32)
 
-            days_over = (today - expected).days
-            expected_str = expected.strftime("%d %b %Y")
+                days_over    = (today - expected).days
+                expected_str = expected.strftime("%d %b %Y")
 
-            if days_over > 120:
-                status = "inactive"
-            elif days_over > 45:
-                status = "missed"
-            elif days_over > 5:
-                status = "overdue"
-            else:
-                status = "on_track"
+                if days_over > 120:   status = "inactive"
+                elif days_over > 45:  status = "missed"
+                elif days_over > 5:   status = "overdue"
+                else:                 status = "on_track"
 
-        total_months = 0
-        hit_months = 0
+        total_months = hit_months = 0
         if last:
             first_possible = _parse_date(_g(s, "first_date", "first", default=""))
             if not first_possible:
                 first_possible = last - timedelta(days=180)
             total_months = max(1, round((today - first_possible).days / 30.44))
-            hit_months = max(1, round((last - first_possible).days / 30.44)) + 1
-            hit_months = min(hit_months, total_months)
+            hit_months   = min(max(1, round((last - first_possible).days / 30.44)) + 1,
+                               total_months)
 
         results.append({
             "name": name, "amount": amt, "day": day,
             "last_date": last.strftime("%d %b %Y") if last else "—",
-            "next_due": _g(s, "next_due", "next", "next_date", default=expected_str),
+            "next_due":  _g(s, "next_date", "next_due", "next", default=expected_str),
             "status": status, "days_overdue": max(0, days_over),
             "expected_str": expected_str,
             "total_months": total_months, "hit_months": hit_months,
