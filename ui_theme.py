@@ -11,11 +11,11 @@ import streamlit as st
 
 # ── Design tokens ──────────────────────────────────────────────────
 C = {
-    "void":    "#070714",   # page background (deeper than 1.0's #0d0d24)
+    "void":    "#070714",   # page background
     "glass":   "rgba(17,17,48,0.55)",
     "border":  "rgba(139,92,246,0.16)",
-    "violet":  "#8b5cf6",   # brand – kept from 1.0
-    "cyan":    "#22d3ee",   # NEW aurora accent
+    "violet":  "#8b5cf6",   # brand
+    "cyan":    "#22d3ee",   # aurora accent
     "mint":    "#34d399",   # gains
     "ember":   "#f87171",   # losses
     "amber":   "#fbbf24",   # warnings
@@ -23,6 +23,13 @@ C = {
     "muted":   "#8b93a7",
     "faint":   "#3b4154",
 }
+
+
+def _H(s: str) -> str:
+    """Collapse multi-line HTML into one line so Streamlit's markdown
+    never treats indented lines as a code block (4-space indent = <pre>)."""
+    return " ".join(line.strip() for line in s.splitlines() if line.strip())
+
 
 def inject_theme():
     st.markdown(f"""
@@ -99,7 +106,7 @@ h1,h2,h3, .display {{ font-family:'Space Grotesk',sans-serif; letter-spacing:-0.
 .rise-1 {{ animation-delay:.05s }} .rise-2 {{ animation-delay:.12s }}
 .rise-3 {{ animation-delay:.19s }} .rise-4 {{ animation-delay:.26s }}
 
-/* ── Section header (evolved from your 1.0 .section-title) ──────── */
+/* ── Section header ──────────────────────────────────────────────── */
 .sec {{
     display:flex; align-items:center; gap:10px;
     margin:1.8rem 0 0.9rem;
@@ -145,20 +152,20 @@ div[data-testid="stMetric"] {{ background:{C['glass']}; border:1px solid {C['bor
 
 def page_header(title: str, sub: str, live: bool = False):
     pill = '<span class="pill live">LIVE</span>' if live else ''
-    st.markdown(f'<div class="pg-h rise">{title} {pill}</div>'
-                f'<div class="pg-s rise rise-1">{sub}</div>', unsafe_allow_html=True)
+    st.markdown(_H(f'<div class="pg-h rise">{title} {pill}</div>'
+                   f'<div class="pg-s rise rise-1">{sub}</div>'), unsafe_allow_html=True)
 
 
 def section(title: str):
-    st.markdown(f'<div class="sec"><span class="tick"></span>'
-                f'<span class="t">{title}</span><span class="line"></span></div>',
+    st.markdown(_H(f'<div class="sec"><span class="tick"></span>'
+                   f'<span class="t">{title}</span><span class="line"></span></div>'),
                 unsafe_allow_html=True)
 
 
 def glass_kpi(label: str, value: str, sub: str = "", tone: str = "", delay: int = 1):
-    st.markdown(f"""
+    st.markdown(_H(f"""
     <div class="g-card rise rise-{delay}">
         <div class="kpi-label">{label}</div>
         <div class="kpi-value">{value}</div>
         <div class="kpi-sub {tone}">{sub}</div>
-    </div>""", unsafe_allow_html=True)
+    </div>"""), unsafe_allow_html=True)
