@@ -12,6 +12,9 @@ st.set_page_config(
     page_icon="📊",
     layout="wide",
 )
+from sidebar_v2 import render_sidebar
+render_sidebar()
+
 
 # ── global CSS – matches CAS 360 dark theme ──────────────────────────────────
 st.markdown("""

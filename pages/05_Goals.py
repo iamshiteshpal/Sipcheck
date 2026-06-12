@@ -6,6 +6,9 @@ from datetime import datetime, date
 import math
 
 st.set_page_config(page_title="Goals — CAS 360", page_icon="🎯", layout="wide")
+from sidebar_v2 import render_sidebar
+render_sidebar()
+
 
 st.markdown("""
 <style>

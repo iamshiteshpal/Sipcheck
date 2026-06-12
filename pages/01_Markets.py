@@ -22,6 +22,9 @@ def get_market_status():
 status = get_market_status()
 
 st.set_page_config(page_title="Markets — CAS 360", page_icon="📈", layout="wide")
+from sidebar_v2 import render_sidebar
+render_sidebar()
+
 
 # ==========================================
 # 1. DATA FETCHING & INDICATOR MATH

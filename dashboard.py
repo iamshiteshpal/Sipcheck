@@ -1,5 +1,6 @@
 ﻿import streamlit as st
 import streamlit.components.v1 as components
+from sidebar_v2 import render_sidebar
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -1285,36 +1286,7 @@ def show_upload():
 
 def build_sidebar(data):
     with st.sidebar:
-        st.markdown("""
-<div style="padding:22px 18px 14px;border-bottom:1px solid rgba(168,85,247,0.1);margin-bottom:4px;">
-<div style="font-size:20px;font-weight:800;color:#F8FAFC;letter-spacing:-0.03em;line-height:1;">
-CAS <span style="color:#A855F7;">360</span>
-<span style="color:#A855F7;">✦</span>
-</div>
-<div style="font-size:9px;color:#4B5563;font-weight:600;letter-spacing:0.2em;margin-top:5px;text-transform:uppercase;">
-Portfolio Intelligence
-</div>
-</div>
-""", unsafe_allow_html=True)
-
-        st.markdown('<div style="padding:8px 18px 2px;"><div style="font-size:9px;color:#4B5563;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Pages</div></div>', unsafe_allow_html=True)
-        st.page_link("dashboard.py", label="CAS Dashboard", icon="🏠")
-        st.page_link("pages/01_Markets.py", label="Markets", icon="📈")
-        st.page_link("pages/02_Mutual_Funds.py", label="Mutual Funds", icon="🏦")
-        st.page_link("pages/04_News.py", label="News", icon="📰")
-        st.page_link("pages/05_Goals.py", label="Goals", icon="🎯")
-        st.page_link("pages/06_Family_Planner.py", label="Family Planner", icon="👨‍👩‍👧")
-        st.page_link("pages/07_MF_Report.py", label="MF Report", icon="📊")
-
         if data:
-            st.markdown('<div style="padding:8px 18px 2px;margin-top:6px;border-top:1px solid rgba(168,85,247,0.08);"><div style="font-size:9px;color:#4B5563;font-weight:600;letter-spacing:0.15em;text-transform:uppercase;">Portfolio</div></div>', unsafe_allow_html=True)
-            menu = st.radio(
-                "nav",
-                ["Overview", "My Portfolio", "SIP Center", "Transactions", "Alerts", "Analytics"],
-                label_visibility="collapsed",
-            )
-            st.markdown("<div style='height:12px'></div>", unsafe_allow_html=True)
-
             email_display = data["investor_email"] if st.session_state.show_email else "••••••••••"
             st.markdown(
                 f"""
@@ -1399,7 +1371,6 @@ Portfolio Intelligence
                 use_container_width=True,
             )
         else:
-            menu = "upload"
             if st.session_state.profiles:
                 keys = list(st.session_state.profiles.keys())
                 selected = st.selectbox("Return to", ["— select —"] + keys, label_visibility="collapsed")
@@ -1407,7 +1378,6 @@ Portfolio Intelligence
                     st.session_state.active = selected
                     st.session_state.pin_ok = True
                     st.rerun()
-    return menu
 
 
 # ─────────────────────────────────────────────
@@ -1416,7 +1386,13 @@ Portfolio Intelligence
 
 def render_dashboard(data):
     import dashboard_v2
-    dashboard_v2.render_v2(data)
+    dashboard_v2.render_app(
+        data,
+        legacy={
+            "transactions": render_transactions,
+            "alerts":       render_alerts,
+            "analytics":    render_mf_analytics,
+        })
 
 # ─────────────────────────────────────────────
 # MY PORTFOLIO
@@ -2828,23 +2804,13 @@ def run_app():
     apply_page_config()
     inject_global_styles()
     initialize_session_state()
+    render_sidebar()
     active = active_data()
-    menu = build_sidebar(active)
+    build_sidebar(active)
     if not active:
         show_upload()
         st.stop()
-    if menu == "Overview":
-        render_dashboard(active)
-    elif menu == "My Portfolio":
-        render_my_portfolio(active)
-    elif menu == "SIP Center":
-        render_sip_center(active)
-    elif menu == "Transactions":
-        render_transactions(active)
-    elif menu == "Alerts":
-        render_alerts(active)
-    elif menu == "Analytics":
-        render_mf_analytics(active)
+    render_dashboard(active)
 
 
 run_app()
