@@ -1194,6 +1194,19 @@ def process(raw):
     result["alloc_values"]           = type_map
     result["alloc_pct"]              = {k: (v / total_val) * 100 for k, v in type_map.items()} if total_val else {}
 
+    # Build folio / AMC index for Reconciliation page
+    scheme_folio: dict = {}   # {scheme_name: folio_number}
+    amc_schemes:  dict = {}   # {amc_name: [scheme_names]}
+    for _folio in raw.get("folios", []):
+        _fnum = str(_folio.get("folio", "")).strip()
+        _amc  = str(_folio.get("amc",   "Unknown")).strip()
+        for _scheme in _folio.get("schemes", []):
+            _sname = _scheme.get("scheme", "")
+            scheme_folio[_sname] = _fnum
+            amc_schemes.setdefault(_amc, []).append(_sname)
+    result["scheme_folio"] = scheme_folio
+    result["amc_schemes"]  = amc_schemes
+
     result["recent_redemptions"] = sorted(
         result["recent_redemptions"], key=lambda x: x["date_obj"], reverse=True
     )

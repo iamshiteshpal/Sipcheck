@@ -21,6 +21,7 @@ NAV = [
     ("🎯  Goal Tracker",     "pages/05_Goals.py"),
     ("👨‍👩‍👧  Family Wealth",    "pages/06_Family_Planner.py"),
     ("📊  MF Report Pro",    "pages/07_MF_Report.py"),
+    ("🔒  Reconciliation",   "pages/08_Reconciliation.py"),
 ]
 
 # Pages that are under development — shown in nav but with a Coming Soon badge
