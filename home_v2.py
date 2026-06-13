@@ -97,15 +97,17 @@ def _css():
     .hsub {{ font-size:1.02rem;color:{MU};line-height:1.65;margin:0 0 1.4rem;max-width:530px; }}
 
     .cta-p,.cta-g {{ display:inline-flex;align-items:center;gap:8px;font:600 0.95rem 'Inter',sans-serif;
-        padding:13px 24px;border-radius:12px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;text-decoration:none; }}
-    .cta-p {{ background:linear-gradient(135deg,{V},{CY});color:{INK};border:none;
-        box-shadow:0 8px 24px -8px {V}; }}
+        padding:13px 24px;border-radius:12px;cursor:pointer;transition:all .25s;position:relative;overflow:hidden;text-decoration:none !important; }}
+    .cta-p,a.cta-p,a.cta-p:link,a.cta-p:visited,a.cta-p:active {{
+        background:linear-gradient(135deg,{V},{CY}) !important;color:{INK} !important;border:none;
+        box-shadow:0 8px 24px -8px {V};text-decoration:none !important; }}
     .cta-p::before {{ content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;
         background:linear-gradient(90deg,transparent,rgba(255,255,255,0.22),transparent);transition:left .6s; }}
-    .cta-p:hover {{ transform:translateY(-2px);box-shadow:0 14px 36px -8px {V}; }}
+    .cta-p:hover,a.cta-p:hover {{ transform:translateY(-2px);box-shadow:0 14px 36px -8px {V}; }}
     .cta-p:hover::before {{ left:100%; }}
-    .cta-g {{ background:transparent;color:{INK};border:1px solid {BD}; }}
-    .cta-g:hover {{ border-color:{V};background:rgba(139,92,246,0.06); }}
+    .cta-g,a.cta-g,a.cta-g:link,a.cta-g:visited,a.cta-g:active {{
+        background:transparent !important;color:{INK} !important;border:1px solid {BD};text-decoration:none !important; }}
+    .cta-g:hover,a.cta-g:hover {{ border-color:{V};background:rgba(139,92,246,0.06) !important; }}
 
     .rfp {{ margin-top:10px;padding:8px 12px;background:rgba(52,211,153,0.06);
         border:1px solid rgba(52,211,153,0.2);border-radius:10px;font-size:0.74rem;color:{MU}; }}
