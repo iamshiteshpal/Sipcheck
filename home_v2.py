@@ -256,7 +256,7 @@ def _css():
 # ───────────────── 1. TICKER ─────────────────
 def _ticker():
     items = [
-        ("g", "3,000+", "CAS files parsed"),
+        ("g", "1,247", "CAS files parsed"),
         ("v", "58",     "funds tracked live"),
         ("c", "₹0",     "ever charged · free forever"),
         ("g", "9 PM IST", "NAVs refresh daily"),
@@ -392,7 +392,7 @@ def _timer():
 def _stats():
     st.markdown(H(f"""
     <div class="cstr" id="cstrip">
-    <div class="cc"><div class="cn gr" data-t="3000" data-s="+">0</div><div class="cl">CAS files parsed</div></div>
+    <div class="cc"><div class="cn gr" data-t="1247">0</div><div class="cl">CAS files parsed</div></div>
     <div class="cc"><div class="cn" data-t="58">0</div><div class="cl">funds tracked live</div></div>
     <div class="cc"><div class="cn" data-t="6" data-s=" sec">0</div><div class="cl">avg parse time</div></div>
     <div class="cc"><div class="cn gr">₹0</div><div class="cl">ever charged</div></div>
