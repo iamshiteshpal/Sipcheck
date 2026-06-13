@@ -1148,7 +1148,7 @@ def active_data():
 def show_upload():
     render_home_v2()
 
-    st.markdown("<hr style='border:none;border-top:1px solid rgba(139,92,246,0.2);margin:1.5rem 0 1.2rem;'>",
+    st.markdown("<div id='cas-upload'></div><hr style='border:none;border-top:1px solid rgba(139,92,246,0.2);margin:1.5rem 0 1.2rem;'>",
                 unsafe_allow_html=True)
     col = st.columns([1, 2, 1])[1]
     with col:

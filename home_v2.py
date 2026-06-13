@@ -308,7 +308,7 @@ def _hero():
     rebalancer, and a 58-fund research desk.
     <b style="color:{INK};">No signup. No tracking. Nothing leaves your browser.</b></p>
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
-    <button class="cta-p" onclick="window.scrollTo({{top:document.body.scrollHeight,behavior:'smooth'}})">⬇  Upload CAS · it's free</button>
+    <button class="cta-p" onclick="document.getElementById('cas-upload')?.scrollIntoView({{behavior:'smooth',block:'start'}})">⬇  Upload CAS · it's free</button>
     <a class="cta-g" href="#hiw">▶  See how it works</a>
     </div>
     <div class="rfp">✓ No signup &nbsp;·&nbsp; ✓ No email &nbsp;·&nbsp; ✓ No credit card &nbsp;·&nbsp;
@@ -521,7 +521,7 @@ def _final_cta():
     <h2>The dashboard CAMS forgot to build.</h2>
     <div class="ss">Free forever · No signup · 6 seconds from PDF to insight</div>
     <button class="cta-p" style="font-size:1.02rem;padding:14px 34px"
-     onclick="window.scrollTo({{top:document.body.scrollHeight,behavior:'smooth'}})">
+     onclick="document.getElementById('cas-upload')?.scrollIntoView({{behavior:'smooth',block:'start'}})">
     ⬇  Upload your CAS now</button>
     <div style="margin-top:1.2rem;font-size:0.68rem;color:{FNT};">
     SipCheck — The dashboard CAMS forgot to build · Data never leaves your device · v2.5</div>
