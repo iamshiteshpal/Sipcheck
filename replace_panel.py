@@ -237,7 +237,7 @@ new_block = r'''    # ── 3D PANEL ROW ────────────�
     <div style="text-align:center;padding:48px 0 32px;">
       <div style="display:inline-block;background:rgba(176,38,255,0.07);border:1px solid rgba(176,38,255,0.28);
                   border-radius:40px;padding:4px 16px;margin-bottom:13px;">
-        <span style="font-size:9px;font-weight:700;color:#c084fc;letter-spacing:2px;text-transform:uppercase;">WHY CAS 360</span>
+        <span style="font-size:9px;font-weight:700;color:#c084fc;letter-spacing:2px;text-transform:uppercase;">WHY SipCheck</span>
       </div>
       <h2 style="font-size:clamp(1.7rem,3.5vw,2.6rem);font-weight:900;color:white;
                  letter-spacing:-2px;margin:0 0 8px;line-height:1.1;">

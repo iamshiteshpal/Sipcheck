@@ -1,5 +1,6 @@
 [browser]
 gatherUsageStats = false
+serverName = "sipcheck.streamlit.app"
 
 [server]
 enableCORS = false

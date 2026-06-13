@@ -1,5 +1,5 @@
 # ──────────────────────────────────────────────────────────────────
-#  CAS 360 v2.2 – FULL DASHBOARD ENGINE  (dashboard_v2.py)
+#  SipCheck – FULL DASHBOARD ENGINE  (dashboard_v2.py)
 #  Place in PROJECT ROOT next to dashboard.py.
 #
 #  WHAT'S NEW IN v2.2
@@ -377,7 +377,7 @@ def render_overview(data, holdings, use_live, live_total, nav_date, hits):
     with hc1:
         src = (f"LIVE NAV · {nav_date} · {hits}/{len(holdings)} funds"
                if (use_live and hits) else f"CAS NAV · {data.get('statement_date', '')}")
-        page_header(f"Welcome back, {name} 👋", f"{src} · CAS 360 v2.2", live=use_live and hits > 0)
+        page_header(f"Welcome back, {name} 👋", f"{src} · SipCheck", live=use_live and hits > 0)
     with hc2:
         if st.button("↻  Refresh Live NAV", use_container_width=True, key="v2_live_btn"):
             fetch_live_nav.clear()
@@ -758,7 +758,7 @@ def render_overview(data, holdings, use_live, live_total, nav_date, hits):
             {st.session_state['v2_review']}</div>"""), unsafe_allow_html=True)
 
     st.markdown(H(f"""<div style="text-align:center;padding:2.5rem 0 1rem;color:{C['faint']};
-        font-size:0.7rem;">CAS 360 v2.2 · live NAVs via mfapi.in (free) · everything else
+        font-size:0.7rem;">SipCheck · live NAVs via mfapi.in (free) · everything else
         runs on your device · heuristics for self-review, not investment advice</div>"""),
         unsafe_allow_html=True)
 

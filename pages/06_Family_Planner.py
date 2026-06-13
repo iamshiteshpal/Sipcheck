@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.set_page_config(page_title="Family Planner — CAS 360", page_icon="👨‍👩‍👧‍👦", layout="wide")
+st.set_page_config(page_title="Family Planner — SipCheck", page_icon="👨‍👩‍👧‍👦", layout="wide")
 from sidebar_v2 import render_sidebar
 render_sidebar()
 

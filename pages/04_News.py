@@ -5,7 +5,7 @@ import requests
 import os
 from datetime import datetime
 
-st.set_page_config(page_title="News — CAS 360", page_icon="📰", layout="wide")
+st.set_page_config(page_title="News — SipCheck", page_icon="📰", layout="wide")
 from sidebar_v2 import render_sidebar
 render_sidebar()
 

@@ -15,7 +15,7 @@ import os
 import streamlit as st
 
 NAV = [
-    ("🏠   CAS Dashboard",   "dashboard.py"),
+    ("🏠   SipCheck Home",   "dashboard.py"),
     ("📈  Live Markets",     "pages/01_Markets.py"),
     ("🏦  MF Hub",           "pages/02_Mutual_Funds.py"),
     ("📰  News & Pulse",     "pages/04_News.py"),
@@ -42,10 +42,11 @@ def render_sidebar():
             " ".join(line.strip() for line in """
             <div style="padding:0.4rem 0 1.1rem;">
             <div style="font-family:'Space Grotesk',sans-serif;font-size:1.35rem;font-weight:700;">
-            <span style="color:#f0f0ff;">CAS</span>
-            <span style="background:linear-gradient(90deg,#8b5cf6,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent;">360</span>
-            <span style="color:#8b5cf6;">✦</span></div>
+            <span style="color:#f0f0ff;">Sip</span>
+            <span style="background:linear-gradient(90deg,#8b5cf6,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent;">Check</span>
+            <span style="color:#8b5cf6;">📊</span></div>
             <div style="font-size:0.6rem;letter-spacing:0.22em;color:#6b7280;font-weight:600;">PORTFOLIO INTELLIGENCE · v2.2</div>
+            <div style="font-size:0.68rem;color:#8b93a7;margin-top:4px;font-style:italic;">Track your SIP. Grow your Wealth.</div>
             </div>""".splitlines() if line.strip()),
             unsafe_allow_html=True)
 

@@ -4,7 +4,7 @@ import requests
 import pandas as pd
 from datetime import datetime, timedelta
 
-st.set_page_config(page_title="Mutual Funds — CAS 360", page_icon="🏦", layout="wide")
+st.set_page_config(page_title="Mutual Funds — SipCheck", page_icon="🏦", layout="wide")
 from sidebar_v2 import render_sidebar
 render_sidebar()
 
