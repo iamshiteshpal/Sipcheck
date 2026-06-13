@@ -1,6 +1,7 @@
 ﻿import streamlit as st
 import streamlit.components.v1 as components
 from sidebar_v2 import render_sidebar
+from home_v2 import render_home_v2
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -1145,25 +1146,10 @@ def active_data():
 # ─────────────────────────────────────────────
 
 def show_upload():
-    st.markdown(
-        """
-        <div style="display:flex;justify-content:center;padding-top:48px;">
-          <div style="max-width:520px;width:100%;text-align:center;">
-            <div style="width:64px;height:64px;background:rgba(99,179,237,0.08);border:1px solid rgba(99,179,237,0.2);
-                        border-radius:18px;display:flex;align-items:center;justify-content:center;
-    margin:0 auto 22px;font-size:28px;">📂</div>
-            <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:#f7fafc;
-    letter-spacing:-0.5px;margin-bottom:8px;">Upload your CAS PDF</div>
-            <div style="font-size:14px;color:#718096;margin-bottom:32px;line-height:1.7;">
-              Consolidated Account Statement from CAMS or KFintech.<br>
-              Your data never leaves your device.
-            </div>
-          </div>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    render_home_v2()
 
+    st.markdown("<hr style='border:none;border-top:1px solid rgba(139,92,246,0.2);margin:1.5rem 0 1.2rem;'>",
+                unsafe_allow_html=True)
     col = st.columns([1, 2, 1])[1]
     with col:
         uploaded = st.file_uploader("CAS PDF", type=["pdf"], label_visibility="collapsed")
