@@ -45,7 +45,7 @@ def render_sidebar():
             <span style="color:#f0f0ff;">Sip</span>
             <span style="background:linear-gradient(90deg,#8b5cf6,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent;">Check</span>
             <span style="color:#8b5cf6;">📊</span></div>
-            <div style="font-size:0.6rem;letter-spacing:0.22em;color:#6b7280;font-weight:600;">PORTFOLIO INTELLIGENCE · v2.2</div>
+            <div style="font-size:0.6rem;letter-spacing:0.22em;color:#6b7280;font-weight:600;">PORTFOLIO INTELLIGENCE · v2.3</div>
             <div style="font-size:0.68rem;color:#8b93a7;margin-top:4px;font-style:italic;">Track your SIP. Grow your Wealth.</div>
             </div>""".splitlines() if line.strip()),
             unsafe_allow_html=True)

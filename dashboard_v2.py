@@ -187,8 +187,11 @@ def get_realized(data):
     for k in ("realized_pnl", "realised_pnl", "realized", "booked_pnl",
               "realized_gain", "realised_gain"):
         v = data.get(k)
-        if isinstance(v, (int, float)):
-            return float(v), data.get("closed_positions") or data.get("redeemed")
+        if v is not None and not isinstance(v, (str, list, dict, bool)):
+            try:
+                return float(v), data.get("closed_positions") or data.get("redeemed")
+            except (TypeError, ValueError):
+                pass
 
     closed = None
     for k in ("closed_positions", "closed", "redeemed", "exited",
@@ -205,7 +208,7 @@ def get_realized(data):
                 redeem = _g(c, "redeemed_amount", "redeemed", "redemption_value", "sold_value", default=0) or 0
                 inv    = _g(c, "invested", "cost", "book_cost", default=0) or 0
                 p = redeem - inv
-            total += p or 0
+            total += float(p or 0)
         return total, closed
 
     zero_units = [h for h in data.get("holdings", [])
@@ -258,8 +261,9 @@ def apply_live_navs(holdings):
 #  SCORE ENGINE
 # ─────────────────────────────────────────────────────────────────────────────
 def compute_scores(holdings, TV, alloc_pct, live_sips):
+    TV_f = float(TV or 1)
     n = len(holdings)
-    weights = [h["value"] / TV for h in holdings] if holdings else [1.0]
+    weights = [float(h.get("value") or 0) / TV_f for h in holdings] if holdings else [1.0]
 
     if 6 <= n <= 12: s_div = 100
     elif n < 6:      s_div = max(20, n / 6 * 90)
@@ -268,7 +272,8 @@ def compute_scores(holdings, TV, alloc_pct, live_sips):
     hhi   = sum(w * w for w in weights)
     s_con = max(0, min(100, 100 - (hhi - 1 / max(n, 1)) * 400))
 
-    xirrs = [(h.get("xirr") or 0, h["value"]) for h in holdings if h.get("xirr")]
+    xirrs = [(float(h.get("xirr") or 0), float(h.get("value") or 0))
+             for h in holdings if h.get("xirr")]
     wx    = sum(x * v for x, v in xirrs) / sum(v for _, v in xirrs) if xirrs else 0
     s_ret = max(0, min(100, 50 + (wx - 12) * 5))
 
@@ -278,8 +283,9 @@ def compute_scores(holdings, TV, alloc_pct, live_sips):
         if "gold" in cat.lower() and pct > 25: s_bal -= (pct - 25) * 2.5
     s_bal = max(0, s_bal)
 
-    sip_monthly = sum(_g(s, "amount", "sip_amount", default=0) for s in (live_sips or []))
-    s_sip = max(0, min(100, (sip_monthly * 12) / TV * 100 * 2.2))
+    sip_monthly = float(sum(float(_g(s, "amount", "sip_amount", default=0) or 0)
+                            for s in (live_sips or [])))
+    s_sip = max(0, min(100, (sip_monthly * 12) / TV_f * 100 * 2.2))
 
     subs = {"Diversification": round(s_div), "Concentration": round(s_con),
             "Returns": round(s_ret), "Category Balance": round(s_bal),
@@ -300,7 +306,14 @@ def render_app(data, legacy=None):
     _inject_tab_css()
     legacy = legacy or {}
 
-    holdings = sorted(data.get("holdings", []), key=lambda h: -h.get("value", 0))
+    # Normalize parser Decimal values to float so all arithmetic works
+    holdings_raw = data.get("holdings", [])
+    for _h in holdings_raw:
+        for _k in ("value", "invested", "units", "xirr", "cas_nav", "live_value"):
+            if _h.get(_k) is not None:
+                try: _h[_k] = float(_h[_k])
+                except (TypeError, ValueError): pass
+    holdings = sorted(holdings_raw, key=lambda h: -(h.get("value") or 0))
 
     use_live = st.session_state.get("v2_use_live", False)
     if use_live:
@@ -344,8 +357,8 @@ def _inject_tab_css():
 #  TAB 1 – OVERVIEW
 # ─────────────────────────────────────────────────────────────────────────────
 def render_overview(data, holdings, use_live, live_total, nav_date, hits):
-    TV_cas = data.get("total_value", 0) or 1
-    TI     = data.get("total_invested", 0) or 1
+    TV_cas = float(data.get("total_value", 0) or 1)
+    TI     = float(data.get("total_invested", 0) or 1)
     TV     = live_total if (use_live and live_total) else TV_cas
     PNL    = TV - TI
     name   = (data.get("investor_name", "Investor") or "Investor").split()[0].title()
@@ -549,9 +562,9 @@ def render_overview(data, holdings, use_live, live_total, nav_date, hits):
 
     # ── Fund Power Rankings ────────────────────────────────────────
     section("Fund Power Rankings")
-    TVx0   = data.get("total_value", 0) or 1
+    TVx0   = float(data.get("total_value", 0) or 1)
     ranked = sorted(holdings, key=lambda h: -(h.get("xirr") or -99))
-    rows_html = ""
+    rows_list = []
     for i, h in enumerate(ranked):
         w = h.get("value", 0) / TVx0 * 100
         x = h.get("xirr")
@@ -566,7 +579,7 @@ def render_overview(data, holdings, use_live, live_total, nav_date, hits):
         else:
             verdict, vcolor, xtxt = "⚠️ Dragging — review",     EMBER,  f"{x:+.1f}%"
         rank_badge = ["🥇", "🥈", "🥉"][i] if i < 3 and (x or 0) >= 12 else f"#{i+1}"
-        rows_html += H(f"""
+        rows_list.append(H(f"""
         <div style="display:flex;align-items:center;gap:12px;padding:0.6rem 0.9rem;margin-bottom:6px;
              background:rgba(17,17,48,0.55);border:1px solid rgba(139,92,246,0.14);border-radius:12px;">
         <div class="num" style="width:34px;text-align:center;font-size:0.95rem;">{rank_badge}</div>
@@ -583,12 +596,15 @@ def render_overview(data, holdings, use_live, live_total, nav_date, hits):
         <div style="text-align:right;width:170px;">
         <div class="num" style="font-size:0.95rem;font-weight:700;color:{vcolor};">{xtxt}</div>
         <div style="font-size:0.66rem;color:{vcolor};">{verdict}</div>
-        </div></div>""")
-    st.markdown(rows_html, unsafe_allow_html=True)
+        </div></div>"""))
+    st.markdown("".join(rows_list[:3]), unsafe_allow_html=True)
+    if len(rows_list) > 3:
+        with st.expander(f"View all {len(ranked)} funds ↓"):
+            st.markdown("".join(rows_list[3:]), unsafe_allow_html=True)
     st.caption("Ranked by XIRR (true annualised return) · bar = share of your portfolio · 12% benchmark")
 
     # ── Advisor Flags ──────────────────────────────────────────────
-    TVx    = data.get("total_value", 0) or 1
+    TVx    = float(data.get("total_value", 0) or 1)
     flags  = []
     laggards = [h for h in holdings if (h.get("xirr") or 99) < 8 and h.get("value", 0) > TVx * 0.05]
     for h in holdings:
@@ -882,7 +898,7 @@ def render_sip_v2(data):
     page_header("SIP Center", "Every mandate, its rhythm, and what it costs you per year")
     sips = data.get("live_sips", []) or []
     dead = data.get("inactive_sips", data.get("dead_sips", [])) or []
-    monthly = sum(_g(s, "amount", "sip_amount", default=0) for s in sips)
+    monthly = float(sum(float(_g(s, "amount", "sip_amount", default=0) or 0) for s in sips))
     nd = sorted([str(_g(s, "next_due", "next", "next_date", default=""))
                  for s in sips if _g(s, "next_due", "next", "next_date")])
 
@@ -994,7 +1010,7 @@ def render_transactions_v2(data, legacy_fn=None):
         if "PURCHASE" not in ttype and "SIP" not in ttype and "INVEST" not in ttype:
             continue
         d   = _parse_date(_g(t, "date", "txn_date", default=""))
-        amt = _g(t, "amount", "amt", default=0) or 0
+        amt = float(_g(t, "amount", "amt", default=0) or 0)
         if d and amt:
             monthly[(d.year, d.month)] = monthly.get((d.year, d.month), 0) + amt
     if monthly:
@@ -1034,8 +1050,8 @@ def render_transactions_v2(data, legacy_fn=None):
     txs  = [t for s, t in all_tx if s == sel]
     buys = [t for t in txs if "PURCHASE" in str(_g(t, "type", "txn_type", default="")).upper()
             or "SIP" in str(_g(t, "type", "txn_type", default="")).upper()]
-    book  = sum(_g(t, "amount", "amt", default=0) or 0 for t in buys)
-    units = sum(_g(t, "units", default=0) or 0 for t in buys)
+    book  = sum(float(_g(t, "amount", "amt", default=0) or 0) for t in buys)
+    units = sum(float(_g(t, "units", default=0) or 0) for t in buys)
     k1, k2, k3 = st.columns(3)
     with k1: glass_kpi("Book Cost",    f"₹{book:,.2f}", f"{len(buys)} purchases", "", 1)
     with k2: glass_kpi("Units Bought", f"{units:,.3f}", "", "", 2)
@@ -1058,7 +1074,7 @@ def render_transactions_v2(data, legacy_fn=None):
 # ─────────────────────────────────────────────────────────────────────────────
 def render_alerts_v2(data, holdings):
     page_header("Alerts & Insights", "Auto-generated from your CAS — no setup needed")
-    TV    = data.get("total_value", 0) or 1
+    TV    = float(data.get("total_value", 0) or 1)
     cards = []
 
     all_sips = ((data.get("live_sips", []) or []) +
@@ -1153,7 +1169,7 @@ def _monte_carlo(start, sip, yrs, mu, sigma, paths=1000, seed=7):
     rng    = np.random.default_rng(seed)
     months = yrs * 12
     rets   = rng.normal(mu/100/12, sigma/100/np.sqrt(12), size=(paths, months))
-    w      = np.empty((paths, months + 1)); w[:, 0] = start
+    w      = np.empty((paths, months + 1)); w[:, 0] = float(start)
     for t in range(months):
         w[:, t+1] = (w[:, t] + sip) * (1 + rets[:, t])
     return w
