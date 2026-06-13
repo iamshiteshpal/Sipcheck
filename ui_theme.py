@@ -1,5 +1,5 @@
 # ──────────────────────────────────────────────────────────────────
-#  CAS 360 – 2.2 DESIGN SYSTEM  ("Aurora Glass")
+#  SipCheck – DESIGN SYSTEM  ("Aurora Glass")
 #  Import this at the top of EVERY page:
 #
 #      from ui_theme import inject_theme, glass_kpi, page_header, section
@@ -24,13 +24,6 @@ C = {
     "faint":   "#3b4154",
 }
 
-
-def _H(s: str) -> str:
-    """Collapse multi-line HTML into one line so Streamlit's markdown
-    never treats indented lines as a code block (4-space indent = <pre>)."""
-    return " ".join(line.strip() for line in s.splitlines() if line.strip())
-
-
 def inject_theme():
     st.markdown(f"""
 <style>
@@ -38,7 +31,7 @@ def inject_theme():
 
 #MainMenu, footer {{ visibility:hidden; height:0; }}
 
-/* ── FIX: black band at top — make header fully transparent ─────── */
+/* ── FIX: black band at top – make header fully transparent ────── */
 header[data-testid="stHeader"] {{
     background: transparent !important;
     backdrop-filter: none !important;
@@ -48,7 +41,7 @@ div[data-testid="stToolbar"] {{ background: transparent !important; }}
 div[data-testid="stDecoration"] {{ display: none !important; }}
 div[data-testid="stStatusWidget"] {{ background: transparent !important; }}
 
-/* ── Aurora background: animated gradient mesh ─────────────────── */
+/* ── Aurora background ──────────────────────────────────────────── */
 .stApp {{
     background:
         radial-gradient(900px 500px at 85% -10%, rgba(139,92,246,0.14), transparent 60%),
@@ -74,8 +67,6 @@ section[data-testid="stSidebar"] {{
 .block-container {{ padding: 1.4rem 2.2rem 3rem; max-width: 1500px; }}
 
 h1,h2,h3, .display {{ font-family:'Space Grotesk',sans-serif; letter-spacing:-0.02em; }}
-
-/* every number in the portal is mono – money deserves precision */
 .num {{ font-family:'JetBrains Mono',monospace; font-feature-settings:'zero'; }}
 
 /* ── Glass card ─────────────────────────────────────────────────── */
@@ -101,7 +92,7 @@ h1,h2,h3, .display {{ font-family:'Space Grotesk',sans-serif; letter-spacing:-0.
     pointer-events:none;
 }}
 
-/* ── KPI ──────────────────────────────────────────────────────────*/
+/* ── KPI ────────────────────────────────────────────────────────── */
 .kpi-label {{ font-size:0.68rem; font-weight:600; color:{C['muted']};
               text-transform:uppercase; letter-spacing:0.12em; margin-bottom:6px; }}
 .kpi-value {{ font-family:'JetBrains Mono',monospace; font-size:1.55rem;
@@ -116,7 +107,7 @@ h1,h2,h3, .display {{ font-family:'Space Grotesk',sans-serif; letter-spacing:-0.
 .rise-1 {{ animation-delay:.05s }} .rise-2 {{ animation-delay:.12s }}
 .rise-3 {{ animation-delay:.19s }} .rise-4 {{ animation-delay:.26s }}
 
-/* ── Section header ──────────────────────────────────────────────── */
+/* ── Section header ─────────────────────────────────────────────── */
 .sec {{
     display:flex; align-items:center; gap:10px;
     margin:1.8rem 0 0.9rem;
@@ -128,7 +119,7 @@ h1,h2,h3, .display {{ font-family:'Space Grotesk',sans-serif; letter-spacing:-0.
 .sec .line {{ flex:1; height:1px;
               background:linear-gradient(90deg, {C['border']}, transparent); }}
 
-/* ── Pills / badges ────────────────────────────────────────────── */
+/* ── Pills / badges ─────────────────────────────────────────────── */
 .pill {{ display:inline-flex; align-items:center; gap:6px;
          font-size:0.68rem; font-weight:600; padding:3px 11px; border-radius:999px;
          border:1px solid {C['border']}; color:{C['muted']};
@@ -139,7 +130,7 @@ h1,h2,h3, .display {{ font-family:'Space Grotesk',sans-serif; letter-spacing:-0.
          animation:pulse 1.6s infinite; }}
 @keyframes pulse {{ 0%,100%{{opacity:1}} 50%{{opacity:.35}} }}
 
-/* ── Page header ─────────────────────────────────────────────────*/
+/* ── Page header ────────────────────────────────────────────────── */
 .pg-h {{ font-family:'Space Grotesk',sans-serif; font-size:1.75rem; font-weight:700;
          background:linear-gradient(90deg,{C['ink']} 30%, {C['violet']} 80%, {C['cyan']});
          -webkit-background-clip:text; background-clip:text; color:transparent;
@@ -157,7 +148,7 @@ h1,h2,h3, .display {{ font-family:'Space Grotesk',sans-serif; letter-spacing:-0.
 div[data-testid="stMetric"] {{ background:{C['glass']}; border:1px solid {C['border']};
     border-radius:14px; padding:0.8rem 1rem; }}
 
-/* ── SIP Cards ───────────────────────────────────────────────────── */
+/* ── SIP Cards ──────────────────────────────────────────────────── */
 .sip-grid {{ display:grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap:14px; }}
 .sip-card {{
     position:relative; background:{C['glass']}; backdrop-filter:blur(14px);
@@ -177,8 +168,8 @@ div[data-testid="stMetric"] {{ background:{C['glass']}; border:1px solid {C['bor
 .sip-card.missed::after  {{ background:{C['ember']}; }}
 .sip-name {{ font-size:0.82rem; font-weight:600; color:{C['ink']}; margin-bottom:6px;
              white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }}
-.sip-amt  {{ font-family:'JetBrains Mono',monospace; font-size:1.35rem; font-weight:700;
-             color:{C['ink']}; display:flex; align-items:center; gap:8px; }}
+.sip-amt {{ font-family:'JetBrains Mono',monospace; font-size:1.35rem; font-weight:700;
+            color:{C['ink']}; display:flex; align-items:center; gap:8px; }}
 .sip-detail {{ display:grid; grid-template-columns:1fr 1fr; gap:4px 12px;
                margin-top:10px; font-size:0.72rem; color:{C['muted']}; }}
 .sip-detail b {{ color:{C['ink']}; font-weight:600; }}
@@ -196,21 +187,24 @@ div[data-testid="stMetric"] {{ background:{C['glass']}; border:1px solid {C['bor
 .sip-badge.overdue {{ background:rgba(251,191,36,0.2);  color:{C['amber']}; }}
 .sip-badge.missed  {{ background:rgba(248,113,113,0.2); color:{C['ember']}; }}
 
-/* ── Alert banner ────────────────────────────────────────────────── */
+/* ── Alert banner ───────────────────────────────────────────────── */
 .alert-banner {{
     display:flex; align-items:center; gap:14px; padding:0.8rem 1.2rem;
     border-radius:14px; margin-bottom:10px; border-left:4px solid;
     background:{C['glass']}; backdrop-filter:blur(14px);
 }}
-.alert-banner.critical {{ border-left-color:{C['ember']}; background:rgba(248,113,113,0.06); }}
-.alert-banner.warning  {{ border-left-color:{C['amber']}; background:rgba(251,191,36,0.06); }}
-.alert-banner.info     {{ border-left-color:{C['cyan']};  background:rgba(34,211,238,0.06); }}
-.alert-icon  {{ font-size:1.6rem; flex-shrink:0; }}
-.alert-body  {{ flex:1; }}
+.alert-banner.critical {{ border-left-color:{C['ember']};
+    background:rgba(248,113,113,0.06); }}
+.alert-banner.warning  {{ border-left-color:{C['amber']};
+    background:rgba(251,191,36,0.06); }}
+.alert-banner.info     {{ border-left-color:{C['cyan']};
+    background:rgba(34,211,238,0.06); }}
+.alert-icon {{ font-size:1.6rem; flex-shrink:0; }}
+.alert-body {{ flex:1; }}
 .alert-title {{ font-size:0.82rem; font-weight:600; color:{C['ink']}; }}
 .alert-sub   {{ font-size:0.72rem; color:{C['muted']}; margin-top:2px; }}
 
-/* ── MOBILE RESPONSIVE ───────────────────────────────────────────── */
+/* ── MOBILE RESPONSIVE ──────────────────────────────────────────── */
 @media (max-width: 768px) {{
     .block-container {{ padding: 0.8rem 0.9rem 2rem !important; }}
     .pg-h {{ font-size: 1.3rem !important; }}
@@ -223,7 +217,7 @@ div[data-testid="stMetric"] {{ background:{C['glass']}; border:1px solid {C['bor
     .g-card > div:first-child {{ width: 140px !important; height: 140px !important; }}
     .sec .t {{ font-size: 0.68rem !important; letter-spacing: 0.1em; }}
     .sip-grid {{ grid-template-columns: 1fr !important; }}
-    .sip-amt  {{ font-size: 1.1rem !important; }}
+    .sip-amt {{ font-size: 1.1rem !important; }}
     .stTabs [data-baseweb="tab-list"] {{
         overflow-x: auto !important; flex-wrap: nowrap !important;
         -webkit-overflow-scrolling: touch; padding: 4px;
@@ -238,6 +232,7 @@ div[data-testid="stMetric"] {{ background:{C['glass']}; border:1px solid {C['bor
     .stButton > button {{ min-height: 44px; font-size: 0.82rem; }}
     .js-plotly-plot {{ overflow: hidden !important; }}
 }}
+
 @media (max-width: 480px) {{
     .block-container {{ padding: 0.5rem 0.6rem 2rem !important; }}
     .pg-h {{ font-size: 1.1rem !important; }}
@@ -247,6 +242,11 @@ div[data-testid="stMetric"] {{ background:{C['glass']}; border:1px solid {C['bor
 }}
 </style>
 """, unsafe_allow_html=True)
+
+
+def _H(s: str) -> str:
+    """Collapse multi-line HTML into one line so Streamlit never treats indented lines as a code block."""
+    return " ".join(line.strip() for line in s.splitlines() if line.strip())
 
 
 def page_header(title: str, sub: str, live: bool = False):

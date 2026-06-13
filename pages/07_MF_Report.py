@@ -1399,3 +1399,8 @@ st.markdown("""
   Consult a qualified financial advisor before making investment decisions.
 </div>
 """, unsafe_allow_html=True)
+
+# ── Fund Library (57 funds) + Request a Scheme ─────────────────────────────
+from fund_registry_v2 import render_registry_browser, render_request_scheme
+render_registry_browser(deep_dive_names=list(FUND_DB.keys()))
+render_request_scheme(existing_names=list(FUND_DB.keys()))
