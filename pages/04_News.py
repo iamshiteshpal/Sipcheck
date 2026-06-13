@@ -1,132 +1,35 @@
-"""Financial News Hub — SipCheck v2.0"""
+"""News & Pulse — SipCheck v3.0  (RSS-only, zero API keys)"""
 import streamlit as st
 import feedparser
 import requests
-import os
-from datetime import datetime, timedelta
+import re
+from collections import Counter
+from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 
 try:
     from zoneinfo import ZoneInfo
     IST = ZoneInfo("Asia/Kolkata")
+    def _now(): return datetime.now(IST)
 except ImportError:
     import pytz
     IST = pytz.timezone("Asia/Kolkata")
+    def _now(): return datetime.now(IST)
 
-st.set_page_config(page_title="Financial News Hub — SipCheck", page_icon="📰", layout="wide")
+st.set_page_config(page_title="News & Pulse — SipCheck", page_icon="📰", layout="wide")
 from sidebar_v2 import render_sidebar
 render_sidebar()
 
-# ── CSS ───────────────────────────────────────────────────────────────────────
-st.markdown("""<style>
-#MainMenu {visibility:hidden;} footer {visibility:hidden;}
-.stApp { background:#0d0d24; color:#f0f0ff; }
-section[data-testid="stSidebar"] { background:#0d0d24; border-right:1px solid rgba(139,92,246,0.15); }
-.block-container { padding:1.5rem 2rem; }
-
-.mkt-header { font-size:1.6rem; font-weight:700; color:#f0f0ff; margin-bottom:0.25rem; }
-.mkt-sub    { font-size:0.82rem; color:#6b7280; margin-bottom:1.2rem; }
-
-.section-title {
-    font-size:0.72rem; font-weight:600; color:#8b5cf6;
-    text-transform:uppercase; letter-spacing:0.08em;
-    margin:1.5rem 0 0.75rem; border-left:3px solid #8b5cf6; padding-left:10px;
-}
-
-/* Global Market Pulse ticker */
-.ticker-wrap {
-    background:#080818; border:1px solid rgba(139,92,246,0.2);
-    border-radius:10px; padding:0.65rem 1.1rem; margin-bottom:1rem;
-    overflow-x:auto; white-space:nowrap; scrollbar-width:none;
-}
-.ticker-item  { display:inline-block; margin-right:1.8rem; }
-.ticker-label { font-size:0.68rem; color:#6b7280; margin-right:4px; }
-.ticker-val   { font-size:0.85rem; font-weight:700; color:#f0f0ff; }
-.tick-up      { font-size:0.72rem; color:#10b981; margin-left:3px; }
-.tick-down    { font-size:0.72rem; color:#ef4444; margin-left:3px; }
-.ticker-ts    { font-size:0.68rem; color:#374151; margin-left:8px; }
-
-/* Economic calendar */
-.econ-card {
-    background:#0f0f2a; border:1px solid rgba(139,92,246,0.12);
-    border-radius:8px; padding:0.65rem 1rem; margin-bottom:0.4rem;
-    display:flex; align-items:flex-start; gap:10px;
-}
-.econ-dot    { width:9px; height:9px; border-radius:50%; margin-top:5px; flex-shrink:0; }
-.econ-red    { background:#ef4444; box-shadow:0 0 6px rgba(239,68,68,0.5); }
-.econ-yellow { background:#f59e0b; }
-.econ-green  { background:#10b981; }
-.econ-event  { font-size:0.84rem; font-weight:500; color:#f0f0ff; }
-.econ-meta   { font-size:0.7rem; color:#6b7280; margin-top:2px; }
-.econ-date   { font-size:0.7rem; color:#8b5cf6; font-weight:600; white-space:nowrap; flex-shrink:0; }
-
-.countdown-box {
-    background:linear-gradient(135deg,rgba(139,92,246,0.12),rgba(16,185,129,0.06));
-    border:1px solid rgba(139,92,246,0.25); border-radius:10px;
-    padding:0.85rem 1.1rem; margin-bottom:0.9rem; text-align:center;
-}
-
-/* News cards */
-.news-card {
-    background:#111130; border:1px solid rgba(139,92,246,0.1);
-    border-radius:10px; padding:0.85rem 1.1rem; margin-bottom:0.45rem;
-    border-left:3px solid #8b5cf6;
-}
-.news-card:hover { border-left-color:#10b981; }
-.news-title a { color:#f0f0ff; text-decoration:none; font-size:0.86rem;
-                font-weight:500; line-height:1.45; }
-.news-title a:hover { color:#8b5cf6; }
-.news-meta   { font-size:0.7rem; color:#6b7280; margin-top:4px; }
-.source-badge {
-    display:inline-block; background:rgba(139,92,246,0.12);
-    color:#8b5cf6; font-size:0.63rem; font-weight:700;
-    padding:1px 7px; border-radius:8px; margin-right:6px; letter-spacing:0.02em;
-}
-.rbi-badge  { display:inline-block; background:rgba(239,68,68,0.12); color:#ef4444;
-              font-size:0.63rem; font-weight:700; padding:1px 7px; border-radius:8px; margin-right:5px; }
-.sebi-badge { display:inline-block; background:rgba(245,158,11,0.12); color:#f59e0b;
-              font-size:0.63rem; font-weight:700; padding:1px 7px; border-radius:8px; margin-right:5px; }
-.pol-badge  { display:inline-block; background:rgba(99,179,237,0.12); color:#63b3ed;
-              font-size:0.63rem; font-weight:700; padding:1px 7px; border-radius:8px; margin-right:5px; }
-
-/* IPO/NFO */
-.ipo-card {
-    background:#0f0f2a; border:1px solid rgba(16,185,129,0.15);
-    border-left:3px solid #10b981; border-radius:8px;
-    padding:0.65rem 1rem; margin-bottom:0.4rem;
-}
-.nfo-card {
-    background:#0f0f2a; border:1px solid rgba(139,92,246,0.15);
-    border-left:3px solid #8b5cf6; border-radius:8px;
-    padding:0.65rem 1rem; margin-bottom:0.4rem;
-}
-
-/* Earnings */
-.earn-card {
-    background:#0f0f2a; border:1px solid rgba(245,158,11,0.15);
-    border-left:3px solid #f59e0b; border-radius:8px;
-    padding:0.65rem 1rem; margin-bottom:0.4rem;
-}
-
-/* Week preview */
-.week-card {
-    background:linear-gradient(135deg,#0f0f2a,#111130);
-    border:1px solid rgba(139,92,246,0.2); border-radius:12px;
-    padding:1.1rem 1.4rem; margin-bottom:0.8rem;
-}
-.week-title { font-size:0.95rem; font-weight:700; color:#8b5cf6; margin-bottom:0.6rem; }
-.week-item  { font-size:0.8rem; color:#9ca3af; padding:3px 0; }
-.week-item strong { color:#f0f0ff; }
-
-/* AI */
-.ai-box   { background:#0a0a1f; border:1px solid rgba(139,92,246,0.28);
-            border-radius:12px; padding:0.95rem 1.1rem; margin-bottom:0.8rem; }
-.ai-label { font-size:0.68rem; font-weight:700; color:#8b5cf6;
-            text-transform:uppercase; letter-spacing:0.08em; margin-bottom:6px; }
-</style>""", unsafe_allow_html=True)
-
-
 # ── Constants ─────────────────────────────────────────────────────────────────
+
+BULLISH_KW = [
+    "rally","surge","soar","gain","rise","bull","high","record","jump","climb",
+    "positive","strong","growth","profit","beat","boost","recover","advance","green",
+]
+BEARISH_KW = [
+    "fall","drop","crash","decline","down","bear","low","slip","tank","plunge",
+    "sink","weak","loss","miss","drag","selloff","pressure","slide","tumble","red",
+]
 
 RSS_FEEDS = [
     ("Economic Times",    "https://economictimes.indiatimes.com/markets/rssfeeds/1977021501.cms"),
@@ -139,109 +42,80 @@ RSS_FEEDS = [
     ("Financial Express", "https://www.financialexpress.com/market/feed/"),
 ]
 
-FILTERS = {
-    "All":          [],
-    "Nifty/Sensex": ["nifty", "sensex", "bse", "nse", "index"],
-    "Mutual Funds": ["mutual fund", "nav", "sip", "amfi", "scheme", " mf ", "fund"],
-    "RBI/Policy":   ["rbi", "repo", "inflation", "gdp", "monetary", "rupee", "rate cut", "rate hike"],
-    "Global":       ["fed", "us market", "global", "nasdaq", "dow", "s&p", "china", "europe", "dollar"],
-    "Gold/Crude":   ["gold", "crude", "oil", "silver", "commodity", "mcx"],
-    "IT/Stocks":    ["infosys", "tcs", "wipro", "hdfc", "reliance", "it sector"],
-    "IPO/NFO":      ["ipo", "nfo", "new fund offer", "listing", "allotment"],
+SOURCE_COLORS = {
+    "Economic Times":    "#f59e0b",
+    "Moneycontrol":      "#3b82f6",
+    "Business Standard": "#8b5cf6",
+    "LiveMint":          "#10b981",
+    "Reuters India":     "#ef4444",
+    "NDTV Profit":       "#06b6d4",
+    "CNBC TV18":         "#f97316",
+    "Financial Express": "#a855f7",
 }
 
-RBI_SEBI_KWS = [
-    "rbi", "sebi", "monetary policy", "repo rate", "rate cut", "rate hike",
-    "reserve bank", "securities exchange board", "rbi governor", "rbi meeting",
-    "mpc", "inflation target", "liquidity",
-]
-IPO_KWS  = ["ipo", "initial public offer", "ipo listing", "ipo open", "ipo close",
-             "ipo allotment", "ipo subscription", "mainboard ipo", "sme ipo"]
-NFO_KWS  = ["nfo", "new fund offer", "new scheme", "nfo open", "nfo close", "nfo subscription"]
-EARN_KWS = [
-    "results", "quarterly results", "q1 result", "q2 result", "q3 result", "q4 result",
-    "net profit", "net loss", "revenue", "earnings", "eps", "declares dividend",
-    "annual results",
-]
+SECTORS = {
+    "Banking":  ["hdfc bank","sbi","icici","kotak","axis bank","indusind","pnb","banking","bank nifty"],
+    "IT":       ["tcs","infosys","wipro","hcl","tech mahindra","ltimindtree","nifty it","it sector"],
+    "Pharma":   ["sun pharma","dr reddy","cipla","divis","lupin","biocon","pharma"],
+    "Auto":     ["tata motors","maruti","bajaj auto","hero motocorp","mahindra","eicher","tvs motor"],
+    "FMCG":     ["hul","itc","nestle","britannia","dabur","marico","fmcg"],
+    "Energy":   ["reliance","ongc","bpcl","ntpc","power grid","coal india","adani power"],
+    "Metal":    ["tata steel","hindalco","jsw steel","sail","vedanta","metal"],
+    "Realty":   ["dlf","godrej prop","prestige","brigade","sobha","realty"],
+}
 
-MARKET_SYMBOLS = [
-    ("S&P Fut",    "ES=F",      "$"),
-    ("Nasdaq Fut", "NQ=F",      "$"),
-    ("Crude Oil",  "CL=F",      "$"),
-    ("Gold",       "GC=F",      "$"),
-    ("USD/INR",    "USDINR=X",  "₹"),
-    ("US 10Y",     "^TNX",      "%"),
-    ("Nifty 50",   "^NSEI",     "₹"),
-    ("Bank Nifty", "^NSEBANK",  "₹"),
-]
+SECTOR_PALETTE = {
+    "Banking": "#3b82f6", "IT": "#8b5cf6", "Pharma": "#10b981",
+    "Auto": "#f59e0b",   "FMCG": "#ec4899", "Energy": "#f97316",
+    "Metal": "#6b7280",  "Realty": "#06b6d4",
+}
 
+CATEGORIES = {
+    "All":          [],
+    "Equities":     ["nifty","sensex","bse","nse","stock","equity","share","index"],
+    "Mutual Funds": ["mutual fund","nav","sip","amfi","scheme","fund house","amc"],
+    "RBI / Policy": ["rbi","repo","inflation","gdp","monetary","policy","rate cut","rate hike","mpc"],
+    "Global":       ["fed","us market","global","nasdaq","dow","s&p","china","europe","dollar","forex"],
+    "Commodities":  ["gold","silver","crude","oil","commodity","mcx","copper"],
+    "IPO / NFO":    ["ipo","nfo","new fund offer","listing","allotment","subscription"],
+    "Crypto":       ["bitcoin","crypto","ethereum","blockchain","btc","eth","defi","web3"],
+}
 
-# ── Data fetchers ─────────────────────────────────────────────────────────────
-
-@st.cache_data(ttl=300, show_spinner=False)
-def fetch_market_data():
-    try:
-        import yfinance as yf
-        result = []
-        for label, sym, prefix in MARKET_SYMBOLS:
-            try:
-                fi = yf.Ticker(sym).fast_info
-                price = float(fi.last_price or 0)
-                prev  = float(fi.previous_close or price)
-                pct   = ((price - prev) / prev * 100) if prev else 0.0
-                result.append({"label": label, "price": price, "pct": pct, "prefix": prefix})
-            except Exception:
-                pass
-        return result
-    except Exception:
-        return []
+STOP_WORDS = {
+    "the","a","an","and","or","but","in","on","at","to","for","of","with","by","from",
+    "is","are","was","were","be","been","has","have","had","will","would","could","should",
+    "this","that","these","those","it","its","as","up","down","over","under","after","before",
+    "than","then","also","if","not","all","more","new","says","said","say","can","may","via",
+    "amid","after","we","our","you","your","their","which","who","its","into","out","about",
+}
 
 
-@st.cache_data(ttl=3600, show_spinner=False)
-def fetch_econ_calendar():
-    try:
-        r = requests.get(
-            "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
-            headers={"User-Agent": "Mozilla/5.0 SipCheck/2.0"},
-            timeout=10,
-        )
-        if r.status_code == 200:
-            events = r.json()
-            return [
-                e for e in events
-                if e.get("impact") in ("High", "Medium")
-                and e.get("country", "").upper() in ("USD", "INR", "EUR", "GBP", "JPY", "CNY", "AUD")
-            ]
-    except Exception:
-        pass
-    return []
-
+# ── Data ──────────────────────────────────────────────────────────────────────
 
 @st.cache_data(ttl=1800, show_spinner=False)
-def fetch_rss(max_per_feed=10):
+def fetch_rss(max_per_feed=12):
     articles = []
     for source, url in RSS_FEEDS:
         try:
             feed = feedparser.parse(url)
             for entry in feed.entries[:max_per_feed]:
-                pub = ""
+                pub_dt = None
                 if hasattr(entry, "published"):
                     try:
-                        pub = parsedate_to_datetime(entry.published).strftime("%d %b, %I:%M %p")
+                        pub_dt = parsedate_to_datetime(entry.published)
                     except Exception:
-                        pub = entry.get("published", "")
+                        pass
                 title = entry.get("title", "").strip()
                 if not title:
                     continue
                 summary = ""
                 if hasattr(entry, "summary") and entry.summary:
-                    import re
-                    summary = re.sub(r"<[^>]+>", "", entry.summary)[:250]
+                    summary = re.sub(r"<[^>]+>", "", entry.summary)[:300]
                 articles.append({
-                    "title":   title,
-                    "source":  source,
-                    "url":     entry.get("link", "#"),
-                    "pub":     pub,
+                    "title":  title,
+                    "source": source,
+                    "url":    entry.get("link", "#"),
+                    "pub_dt": pub_dt,
                     "summary": summary,
                 })
         except Exception:
@@ -255,473 +129,645 @@ def fetch_rss(max_per_feed=10):
     return unique
 
 
-def filter_articles(articles, category):
-    kws = FILTERS.get(category, [])
-    if not kws:
-        return articles
-    out = [a for a in articles
-           if any(k in (a["title"] + " " + a.get("summary", "")).lower() for k in kws)]
-    return out if out else articles
-
-
-def get_ai_summary(headlines, api_key):
-    if not api_key:
-        return None
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_econ_calendar():
     try:
-        import anthropic
-        client = anthropic.Anthropic(api_key=api_key)
-        msg = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=220,
-            messages=[{"role": "user", "content":
-                "Summarise today's Indian financial market mood in 3 short, direct sentences "
-                "based on these headlines:\n" + "\n".join(f"- {h}" for h in headlines[:8])}],
+        r = requests.get(
+            "https://nfs.faireconomy.media/ff_calendar_thisweek.json",
+            headers={"User-Agent": "Mozilla/5.0 SipCheck/3.0"},
+            timeout=10,
         )
-        return msg.content[0].text.strip()
+        if r.status_code == 200:
+            return [
+                e for e in r.json()
+                if e.get("impact") in ("High", "Medium")
+                and e.get("country", "").upper() in ("USD","INR","EUR","GBP","JPY","CNY","AUD")
+            ]
+    except Exception:
+        pass
+    return []
+
+
+# ── Analysis helpers ──────────────────────────────────────────────────────────
+
+def _text(a):
+    return (a["title"] + " " + a.get("summary", "")).lower()
+
+
+def analyze_sentiment(articles):
+    bull = bear = 0
+    sector_counts = {s: 0 for s in SECTORS}
+    source_counts = Counter()
+    for a in articles:
+        t = _text(a)
+        bull += sum(1 for k in BULLISH_KW if k in t)
+        bear += sum(1 for k in BEARISH_KW if k in t)
+        source_counts[a["source"]] += 1
+        for sec, kws in SECTORS.items():
+            if any(k in t for k in kws):
+                sector_counts[sec] += 1
+    top_sec = max(sector_counts, key=sector_counts.get) if any(sector_counts.values()) else "Mixed"
+    top_src = source_counts.most_common(1)[0][0] if source_counts else "—"
+    total = bull + bear
+    score = (bull / total * 100) if total else 50
+    if   score >= 65: mood, mc = "Bullish",       "#10b981"
+    elif score >= 55: mood, mc = "Mildly Bullish", "#34d399"
+    elif score >= 45: mood, mc = "Neutral",        "#9ca3af"
+    elif score >= 35: mood, mc = "Mildly Bearish", "#fbbf24"
+    else:             mood, mc = "Bearish",         "#ef4444"
+    return dict(bull=bull, bear=bear, score=score, mood=mood, mood_color=mc,
+                top_sector=top_sec, top_source=top_src,
+                sector_counts=sector_counts, source_counts=source_counts)
+
+
+def get_trending(articles, n=8):
+    words = Counter()
+    for a in articles:
+        for w in re.sub(r"[^a-z\s]", " ", a["title"].lower()).split():
+            if len(w) >= 4 and w not in STOP_WORDS:
+                words[w] += 1
+    return [w for w, _ in words.most_common(n)]
+
+
+def article_sentiment(a):
+    t = _text(a)
+    b = sum(1 for k in BULLISH_KW if k in t)
+    d = sum(1 for k in BEARISH_KW if k in t)
+    if b > d:   return "#10b981"
+    if d > b:   return "#ef4444"
+    return "#6b7280"
+
+
+def rel_time(pub_dt):
+    if not pub_dt:
+        return ""
+    try:
+        now = datetime.now(pub_dt.tzinfo) if pub_dt.tzinfo else datetime.now(timezone.utc)
+        mins = max(0, int((now - pub_dt).total_seconds() / 60))
+        if mins < 60:   return f"{mins}m ago"
+        if mins < 1440: return f"{mins//60}h ago"
+        return f"{mins//1440}d ago"
+    except Exception:
+        return ""
+
+
+def _hex_rgb(h):
+    h = h.lstrip("#")
+    return f"{int(h[0:2],16)},{int(h[2:4],16)},{int(h[4:6],16)}"
+
+
+def _parse_ff_date(s):
+    try:
+        s2 = re.sub(r'([+-]\d{2})(\d{2})$', r'\1:\2', str(s))
+        d  = datetime.fromisoformat(s2)
+        try:
+            return d.astimezone(IST)
+        except Exception:
+            return d
     except Exception:
         return None
 
 
-def _now_ist():
-    from datetime import timezone
-    try:
-        return datetime.now(IST)
-    except Exception:
-        return datetime.now(timezone.utc)
+# ── CSS ───────────────────────────────────────────────────────────────────────
 
+def _css():
+    st.markdown("""<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
 
-def _parse_ff_date(date_str):
-    """Parse Forex Factory ISO date string → datetime with IST timezone."""
-    import re
-    try:
-        ds = re.sub(r'([+-]\d{2})(\d{2})$', r'\1:\2', str(date_str))
-        d = datetime.fromisoformat(ds)
-        return d.astimezone(IST)
-    except Exception:
-        return None
+#MainMenu{visibility:hidden;} footer{visibility:hidden;}
+.stApp{background:#0d0d24;color:#f0f0ff;font-family:'Inter',sans-serif;}
+section[data-testid="stSidebar"]{background:#0d0d24;border-right:1px solid rgba(139,92,246,0.15);}
+.block-container{padding:1.1rem 2rem 2rem;}
 
+/* ── Breaking news carousel ── */
+.car-wrap{
+    background:linear-gradient(135deg,rgba(139,92,246,0.1),rgba(16,185,129,0.06));
+    border:1px solid rgba(139,92,246,0.28);border-radius:14px;
+    padding:0.85rem 1.3rem 2.2rem;margin-bottom:1rem;
+    position:relative;overflow:hidden;min-height:88px;
+}
+.car-label{font-size:0.6rem;font-weight:700;color:#ef4444;
+           text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px;
+           display:flex;align-items:center;gap:5px;}
+.car-dot-live{width:6px;height:6px;background:#ef4444;border-radius:50%;
+              animation:livePulse 1.4s ease-in-out infinite;}
+@keyframes livePulse{0%,100%{opacity:1;transform:scale(1);}50%{opacity:0.4;transform:scale(0.7);}}
+.car-slide{
+    position:absolute;width:calc(100% - 2.6rem);
+    opacity:0;animation:cSlide 12s infinite ease-in-out;
+}
+.car-slide:nth-child(1){animation-delay:0s;}
+.car-slide:nth-child(2){animation-delay:4s;}
+.car-slide:nth-child(3){animation-delay:8s;}
+@keyframes cSlide{
+    0%,3%{opacity:0;transform:translateY(10px);}
+    9%,27%{opacity:1;transform:translateY(0);}
+    33%,100%{opacity:0;transform:translateY(-10px);}
+}
+.car-headline{font-size:0.92rem;font-weight:600;color:#f0f0ff;line-height:1.42;}
+.car-headline a{color:#f0f0ff;text-decoration:none;}
+.car-headline a:hover{color:#8b5cf6;}
+.car-meta{font-size:0.68rem;color:#6b7280;margin-top:3px;}
+.car-dots{
+    position:absolute;bottom:0.6rem;left:50%;transform:translateX(-50%);
+    display:flex;gap:6px;
+}
+.c-dot{
+    width:6px;height:6px;border-radius:3px;
+    background:rgba(139,92,246,0.25);
+    animation:dotAct 12s infinite ease-in-out;transition:all 0.3s;
+}
+.c-dot:nth-child(1){animation-delay:0s;}
+.c-dot:nth-child(2){animation-delay:4s;}
+.c-dot:nth-child(3){animation-delay:8s;}
+@keyframes dotAct{
+    0%,8%{background:rgba(139,92,246,0.25);width:6px;}
+    12%,28%{background:#8b5cf6;width:18px;box-shadow:0 0 6px rgba(139,92,246,0.5);}
+    33%,100%{background:rgba(139,92,246,0.25);width:6px;}
+}
 
-def _next_event_countdown(events):
-    now = _now_ist()
-    upcoming = [
-        (_parse_ff_date(e["date"]), e)
-        for e in events
-        if e.get("impact") == "High" and _parse_ff_date(e.get("date", ""))
-    ]
-    upcoming = [(d, e) for d, e in upcoming if d and d > now]
-    if not upcoming:
-        return None, None
-    upcoming.sort(key=lambda x: x[0])
-    nxt_dt, nxt_e = upcoming[0]
-    delta = nxt_dt - now
-    hrs  = int(delta.total_seconds()) // 3600
-    mins = (int(delta.total_seconds()) % 3600) // 60
-    return f"{hrs}h {mins}m", nxt_e
+/* ── Mood card ── */
+.mood-card{
+    background:linear-gradient(135deg,rgba(15,15,40,0.98),rgba(17,17,48,0.95));
+    border:1px solid rgba(139,92,246,0.18);border-radius:14px;
+    padding:1rem 1.25rem;
+}
+.mood-hdr{font-size:0.62rem;font-weight:700;color:#8b5cf6;
+          text-transform:uppercase;letter-spacing:0.1em;margin-bottom:7px;}
+.mood-txt{font-size:0.86rem;color:#e5e7eb;font-weight:500;line-height:1.5;margin-bottom:10px;}
+.mood-bar-bg{background:rgba(255,255,255,0.06);border-radius:20px;height:8px;
+             position:relative;margin-bottom:3px;overflow:visible;}
+.mood-fill{height:100%;border-radius:20px;
+           background:linear-gradient(90deg,#ef4444 0%,#f59e0b 40%,#10b981 100%);}
+.mood-pin{
+    position:absolute;top:50%;transform:translate(-50%,-50%);
+    width:14px;height:14px;border-radius:50%;border:2px solid #0d0d24;
+}
+.mood-lbl{display:flex;justify-content:space-between;
+          font-size:0.6rem;color:#4b5563;margin-top:3px;}
+.mood-nums{font-size:0.72rem;color:#9ca3af;margin-top:7px;
+           font-family:'JetBrains Mono',monospace;}
+
+/* ── Stats strip ── */
+.stats-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:0.9rem;}
+.stat-cell{background:#111130;border:1px solid rgba(139,92,246,0.1);
+           border-radius:10px;padding:0.6rem 0.8rem;text-align:center;}
+.stat-v{font-size:1.05rem;font-weight:800;color:#f0f0ff;
+        font-family:'JetBrains Mono',monospace;line-height:1.2;}
+.stat-l{font-size:0.58rem;color:#6b7280;margin-top:2px;letter-spacing:0.04em;text-transform:uppercase;}
+
+/* ── Trending pills ── */
+.trend-wrap{display:flex;gap:7px;flex-wrap:wrap;margin:0.5rem 0 1rem;}
+.t-pill{
+    display:inline-block;background:rgba(139,92,246,0.07);
+    border:1px solid rgba(139,92,246,0.18);border-radius:20px;
+    padding:3px 11px;font-size:0.73rem;color:#c4b5fd;font-weight:500;
+    white-space:nowrap;
+}
+
+/* ── Source radio → pill look ── */
+div[data-testid="stRadio"] label{
+    background:rgba(139,92,246,0.06)!important;border:1px solid rgba(139,92,246,0.15)!important;
+    border-radius:20px!important;padding:3px 12px!important;margin:0 3px 4px 0!important;
+    font-size:0.74rem!important;color:#9ca3af!important;cursor:pointer!important;
+    transition:all 0.15s!important;
+}
+div[data-testid="stRadio"] label:hover{
+    border-color:rgba(139,92,246,0.4)!important;color:#f0f0ff!important;
+    box-shadow:0 0 7px rgba(139,92,246,0.2)!important;
+}
+div[data-testid="stRadio"] [data-baseweb="radio"] input:checked + div + label,
+div[data-testid="stRadio"] label[aria-checked="true"]{
+    background:rgba(139,92,246,0.22)!important;border-color:#8b5cf6!important;
+    color:#f0f0ff!important;box-shadow:0 0 10px rgba(139,92,246,0.3)!important;
+}
+div[data-testid="stRadio"] [data-baseweb="radio"] div[class*="checkmark"]{display:none!important;}
+div[data-testid="stRadio"] > div{display:flex!important;flex-wrap:wrap!important;gap:0!important;}
+div[data-testid="stRadio"] > label{display:none!important;}
+
+/* ── News card ── */
+.nc{
+    background:#111130;border:1px solid rgba(139,92,246,0.1);
+    border-radius:10px;padding:0.7rem 0.85rem;margin-bottom:0.4rem;
+    transition:border-color 0.18s,box-shadow 0.18s,transform 0.18s;
+    min-height:70px;display:flex;flex-direction:column;justify-content:space-between;
+}
+.nc:hover{
+    border-color:rgba(139,92,246,0.38);
+    box-shadow:0 4px 18px rgba(139,92,246,0.13);
+    transform:translateY(-1px);
+}
+.nc-hl{font-size:0.81rem;font-weight:500;color:#f0f0ff;line-height:1.42;
+        display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.nc-hl a{color:#f0f0ff;text-decoration:none;}
+.nc-hl a:hover{color:#8b5cf6;}
+.nc-foot{display:flex;align-items:center;gap:5px;margin-top:5px;}
+.nc-sdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.nc-src{font-size:0.58rem;font-weight:700;padding:1px 5px;border-radius:5px;letter-spacing:0.03em;}
+.nc-ts{font-size:0.62rem;color:#4b5563;font-family:'JetBrains Mono',monospace;margin-left:auto;}
+
+/* ── Bookmark button miniaturize ── */
+div[data-testid="column"] div[data-testid="stButton"] > button[title="bm"]{
+    background:transparent!important;border:none!important;
+    padding:0!important;font-size:0.75rem!important;
+    color:#4b5563!important;min-height:0!important;height:auto!important;
+    line-height:1!important;
+}
+
+/* ── Econ horizontal scroll ── */
+.econ-scroll{display:flex;gap:10px;overflow-x:auto;padding:4px 2px 10px;
+             scrollbar-width:thin;scrollbar-color:rgba(139,92,246,0.25) transparent;}
+.econ-scroll::-webkit-scrollbar{height:4px;}
+.econ-scroll::-webkit-scrollbar-thumb{background:rgba(139,92,246,0.25);border-radius:2px;}
+.eh-card{
+    flex-shrink:0;width:138px;background:#0f0f2a;
+    border:1px solid rgba(139,92,246,0.13);border-radius:10px;
+    padding:0.65rem 0.75rem;
+}
+.eh-imp{font-size:0.7rem;margin-bottom:3px;}
+.eh-title{font-size:0.75rem;font-weight:600;color:#f0f0ff;line-height:1.3;
+          margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;
+          -webkit-box-orient:vertical;overflow:hidden;}
+.eh-date{font-size:0.6rem;color:#8b5cf6;font-weight:600;
+         font-family:'JetBrains Mono',monospace;margin-bottom:3px;}
+.eh-vals{font-size:0.6rem;color:#6b7280;}
+.eh-vals strong{color:#10b981;}
+
+/* ── Sector heatmap ── */
+.sec-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1rem;}
+.sec-cell{border-radius:10px;padding:0.7rem 0.85rem;text-align:center;transition:transform 0.2s;}
+.sec-cell:hover{transform:scale(1.03);}
+.sec-n{font-size:0.76rem;font-weight:600;color:#f0f0ff;margin-bottom:2px;}
+.sec-c{font-size:1rem;font-weight:800;font-family:'JetBrains Mono',monospace;}
+.sec-l{font-size:0.57rem;color:rgba(255,255,255,0.35);margin-top:1px;}
+
+/* ── Bookmark section ── */
+.bm-card{background:#0f0f2a;border:1px solid rgba(245,158,11,0.18);
+         border-left:3px solid #f59e0b;border-radius:8px;
+         padding:0.6rem 0.85rem;margin-bottom:0.35rem;}
+.bm-card a{font-size:0.81rem;color:#f0f0ff;text-decoration:none;}
+.bm-card a:hover{color:#f59e0b;}
+.bm-src{font-size:0.64rem;color:#6b7280;margin-top:2px;}
+
+/* ── Section label ── */
+.slbl{font-size:0.65rem;font-weight:700;color:#8b5cf6;text-transform:uppercase;
+      letter-spacing:0.1em;margin:1.1rem 0 0.6rem;border-left:3px solid #8b5cf6;padding-left:8px;}
+
+/* ── Tabs glass style ── */
+.stTabs [data-baseweb="tab-list"]{
+    background:#111130;border-radius:10px;padding:3px;gap:2px;
+    border:1px solid rgba(139,92,246,0.1);
+}
+.stTabs [data-baseweb="tab"]{
+    background:transparent!important;border-radius:8px!important;
+    color:#6b7280!important;font-size:0.76rem!important;
+    font-weight:500!important;padding:5px 13px!important;border:none!important;
+}
+.stTabs [aria-selected="true"]{
+    background:rgba(139,92,246,0.2)!important;color:#f0f0ff!important;
+    font-weight:600!important;
+}
+.stTabs [data-baseweb="tab-highlight"]{display:none!important;}
+.stTabs [data-baseweb="tab-border"]{display:none!important;}
+
+/* ── Load more button ── */
+div[data-testid="stButton"] > button[kind="secondary"]{
+    background:rgba(139,92,246,0.08)!important;
+    border:1px solid rgba(139,92,246,0.2)!important;
+    border-radius:20px!important;color:#c4b5fd!important;
+    font-size:0.78rem!important;padding:6px 20px!important;
+}
+div[data-testid="stButton"] > button[kind="secondary"]:hover{
+    background:rgba(139,92,246,0.18)!important;
+    border-color:rgba(139,92,246,0.45)!important;color:#f0f0ff!important;
+}
+</style>""", unsafe_allow_html=True)
 
 
 # ── Section renderers ─────────────────────────────────────────────────────────
 
-def render_market_ticker(mkt_data):
-    if not mkt_data:
+def render_carousel(articles):
+    top3 = articles[:3]
+    if not top3:
         return
-    items = ""
-    for d in mkt_data:
-        price, pct, prefix, label = d["price"], d["pct"], d["prefix"], d["label"]
-        if price <= 0:
-            continue
-        if prefix == "%":
-            p_str = f"{price:.3f}%"
-        elif prefix == "₹":
-            p_str = f"₹{price:,.2f}"
-        else:
-            p_str = f"${price:,.2f}"
-        cls  = "tick-up" if pct >= 0 else "tick-down"
-        sign = "▲" if pct >= 0 else "▼"
-        items += (
-            f'<span class="ticker-item">'
-            f'<span class="ticker-label">{label}</span>'
-            f'<span class="ticker-val">{p_str}</span>'
-            f'<span class="{cls}">{sign} {abs(pct):.2f}%</span>'
-            f'</span>'
+    slides = ""
+    for a in top3:
+        sc = SOURCE_COLORS.get(a["source"], "#8b5cf6")
+        rt = rel_time(a.get("pub_dt"))
+        slides += (
+            f'<div class="car-slide">'
+            f'<div class="car-headline"><a href="{a["url"]}" target="_blank">{a["title"]}</a></div>'
+            f'<div class="car-meta">'
+            f'<span style="color:{sc};font-weight:600;">{a["source"]}</span>'
+            f'{"&nbsp;·&nbsp;" + rt if rt else ""}'
+            f'</div></div>'
         )
-    if not items:
-        return
-    ts = _now_ist().strftime("%I:%M %p IST")
     st.markdown(
-        f'<div class="ticker-wrap">{items}'
-        f'<span class="ticker-ts">⟳ {ts} · auto-refresh 5 min</span>'
+        f'<div class="car-wrap">'
+        f'<div class="car-label"><div class="car-dot-live"></div>Breaking News</div>'
+        f'{slides}'
+        f'<div class="car-dots"><div class="c-dot"></div><div class="c-dot"></div><div class="c-dot"></div></div>'
         f'</div>',
         unsafe_allow_html=True,
     )
 
 
-def render_econ_calendar(events):
-    st.markdown('<div class="section-title">Economic Calendar — This Week</div>', unsafe_allow_html=True)
+def render_mood_card(sent):
+    sc, bull, bear = sent["score"], sent["bull"], sent["bear"]
+    mood, mc = sent["mood"], sent["mood_color"]
+    sec       = sent["top_sector"]
+    total     = bull + bear
 
-    cdown, nxt_e = _next_event_countdown(events)
-    if cdown and nxt_e:
+    if   sc >= 60: txt = f"Markets showing <strong style='color:{mc}'>{mood.lower()}</strong> sentiment · {bull} positive vs {bear} negative signals · {sec} sector most active"
+    elif sc <= 40: txt = f"Markets showing <strong style='color:{mc}'>{mood.lower()}</strong> sentiment · {bear} negative vs {bull} positive signals · {sec} sector under pressure"
+    else:          txt = f"Markets <strong style='color:{mc}'>mixed</strong> · {bull} positive vs {bear} negative signals · {sec} sector most active · Watch key levels"
+
+    st.markdown(
+        f'<div class="mood-card">'
+        f'<div class="mood-hdr">📊 Auto Market Summary</div>'
+        f'<div class="mood-txt">{txt}</div>'
+        f'<div class="mood-bar-bg">'
+        f'<div class="mood-fill" style="width:{sc:.0f}%;height:100%;"></div>'
+        f'<div class="mood-pin" style="left:{sc:.0f}%;background:{mc};color:{mc};box-shadow:0 0 8px {mc};"></div>'
+        f'</div>'
+        f'<div class="mood-lbl"><span>◀ Bearish</span><span>Neutral</span><span>Bullish ▶</span></div>'
+        f'<div class="mood-nums">'
+        f'<span style="color:{mc};font-weight:700;">{mood}</span>&nbsp;·&nbsp;'
+        f'<span style="color:#10b981;">▲ {bull} bullish</span>&nbsp;·&nbsp;'
+        f'<span style="color:#ef4444;">▼ {bear} bearish</span>&nbsp;·&nbsp;'
+        f'{total} signals'
+        f'</div></div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_stats_strip(articles, sent):
+    total    = len(articles)
+    top_src  = sent["top_source"]
+    co_kws   = {
+        "Reliance": ["reliance"], "HDFC": ["hdfc bank"], "TCS": ["tcs"],
+        "Infosys": ["infosys"], "SBI": ["sbi "], "ICICI": ["icici"],
+        "Nifty": ["nifty"], "RBI": ["rbi "],
+    }
+    co_cnt = Counter()
+    for a in articles:
+        t = a["title"].lower()
+        for co, kws in co_kws.items():
+            if any(k in t for k in kws):
+                co_cnt[co] += 1
+    top_co   = co_cnt.most_common(1)[0][0] if co_cnt else "—"
+    bull_col = "#10b981" if sent["score"] >= 50 else "#ef4444"
+
+    st.markdown(
+        f'<div class="stats-strip">'
+        f'<div class="stat-cell"><div class="stat-v">{total}</div><div class="stat-l">Headlines</div></div>'
+        f'<div class="stat-cell"><div class="stat-v" style="font-size:0.82rem;">{top_src.split()[0]}</div><div class="stat-l">Top Source</div></div>'
+        f'<div class="stat-cell"><div class="stat-v" style="font-size:0.88rem;">{top_co}</div><div class="stat-l">Most Mentioned</div></div>'
+        f'<div class="stat-cell"><div class="stat-v" style="color:{bull_col};">{sent["score"]:.0f}%</div><div class="stat-l">Bullish Score</div></div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def render_trending(articles):
+    topics = get_trending(articles, n=8)
+    if not topics:
+        return
+    pills = "".join(f'<span class="t-pill">#{w.title()}</span>' for w in topics)
+    st.markdown(f'<div class="slbl">🔥 Trending Topics</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="trend-wrap">{pills}</div>', unsafe_allow_html=True)
+
+
+def render_news_grid(articles, cat_key="all"):
+    if "bookmarks" not in st.session_state:
+        st.session_state["bookmarks"] = []
+
+    show_key = f"show_all_{cat_key}"
+    if show_key not in st.session_state:
+        st.session_state[show_key] = False
+
+    display = articles if st.session_state[show_key] else articles[:12]
+
+    if not display:
         st.markdown(
-            f'<div class="countdown-box">'
-            f'<div style="font-size:0.68rem;color:#6b7280;margin-bottom:3px;">Next High-Impact Event</div>'
-            f'<div style="font-size:1rem;font-weight:700;color:#8b5cf6;">'
-            f'{nxt_e.get("title","")} <span style="color:#6b7280;font-size:0.72rem;">({nxt_e.get("country","")})</span></div>'
-            f'<div style="font-size:1.5rem;font-weight:800;color:#10b981;margin:4px 0;">{cdown}</div>'
-            f'<div style="font-size:0.68rem;color:#6b7280;">🔴 High Impact · times in IST</div>'
-            f'</div>',
+            '<div style="color:#6b7280;font-size:0.82rem;padding:0.8rem 0;">'
+            'No articles found for this filter.</div>',
             unsafe_allow_html=True,
         )
+        return
 
+    bm_urls = {b["url"] for b in st.session_state["bookmarks"]}
+
+    for row_start in range(0, len(display), 3):
+        batch = display[row_start:row_start + 3]
+        cols  = st.columns(3)
+        for col, a in zip(cols, batch):
+            with col:
+                sc   = SOURCE_COLORS.get(a["source"], "#8b5cf6")
+                rt   = rel_time(a.get("pub_dt"))
+                sdot = article_sentiment(a)
+                is_bm = a["url"] in bm_urls
+                src_short = a["source"].split()[0]
+
+                st.markdown(
+                    f'<div class="nc">'
+                    f'<div class="nc-hl"><a href="{a["url"]}" target="_blank">{a["title"]}</a></div>'
+                    f'<div class="nc-foot">'
+                    f'<div class="nc-sdot" style="background:{sdot};box-shadow:0 0 4px {sdot};"></div>'
+                    f'<span class="nc-src" style="background:{sc}20;color:{sc};">{src_short}</span>'
+                    f'<span class="nc-ts">{rt}</span>'
+                    f'</div></div>',
+                    unsafe_allow_html=True,
+                )
+                bm_lbl = "🔖" if is_bm else "🔗"
+                if st.button(bm_lbl, key=f"bm_{cat_key}_{a['url'][-28:]}", help="bm"):
+                    if a["url"] in bm_urls:
+                        st.session_state["bookmarks"] = [
+                            b for b in st.session_state["bookmarks"] if b["url"] != a["url"]
+                        ]
+                    else:
+                        st.session_state["bookmarks"].append(a)
+                    st.rerun()
+
+    remaining = len(articles) - 12
+    if not st.session_state[show_key] and remaining > 0:
+        _, mc, _ = st.columns([2, 1, 2])
+        with mc:
+            if st.button(f"Load {remaining} more ↓", key=f"load_{cat_key}", use_container_width=True):
+                st.session_state[show_key] = True
+                st.rerun()
+    elif st.session_state[show_key] and remaining > 0:
+        _, mc, _ = st.columns([2, 1, 2])
+        with mc:
+            if st.button("Show less ↑", key=f"less_{cat_key}", use_container_width=True):
+                st.session_state[show_key] = False
+                st.rerun()
+
+
+def render_econ_horizontal(events):
+    st.markdown('<div class="slbl">📅 Economic Calendar — This Week</div>', unsafe_allow_html=True)
     if not events:
         st.markdown(
-            '<div style="color:#6b7280;font-size:0.82rem;padding:0.6rem 0;">'
-            'Calendar data unavailable. '
-            '<a href="https://www.forexfactory.com/calendar" target="_blank" style="color:#8b5cf6;">'
-            'View on Forex Factory ↗</a></div>',
+            '<div style="color:#6b7280;font-size:0.8rem;">'
+            'Calendar unavailable. <a href="https://www.forexfactory.com/calendar" '
+            'target="_blank" style="color:#8b5cf6;">Forex Factory ↗</a></div>',
             unsafe_allow_html=True,
         )
         return
 
-    now = _now_ist()
-    shown = 0
-    for e in events[:25]:
+    show_full = st.session_state.get("econ_full", False)
+    pool      = events if show_full else events[:7]
+    now       = _now()
+
+    cards = ""
+    for e in pool:
         impact  = e.get("impact", "")
-        title   = e.get("title", "")
-        country = e.get("country", "")
-        prev    = e.get("previous", "")
-        fore    = e.get("forecast", "")
-        actual  = e.get("actual", "")
-        d = _parse_ff_date(e.get("date", ""))
+        d       = _parse_ff_date(e.get("date", ""))
         if not d:
             continue
-        shown += 1
-        is_past  = d < now
-        dot_cls  = "econ-red" if impact == "High" else "econ-yellow"
-        icon     = "🔴" if impact == "High" else "🟡"
-        date_str = d.strftime("%a %d %b, %I:%M %p")
-        detail   = ""
-        if actual:
-            detail = f'Actual: <strong style="color:#10b981">{actual}</strong>'
-        elif fore:
-            detail = f"Forecast: {fore}"
-        if prev:
-            detail += f" &nbsp;|&nbsp; Prev: {prev}"
-        opacity = "0.45" if is_past else "1"
-        st.markdown(
-            f'<div class="econ-card" style="opacity:{opacity};">'
-            f'<div class="econ-dot {dot_cls}"></div>'
-            f'<div style="flex:1;min-width:0;">'
-            f'<div class="econ-event">{icon} {title} '
-            f'<span style="color:#6b7280;font-size:0.7rem;">({country})</span></div>'
-            f'<div class="econ-meta">{detail}</div>'
+        try:
+            is_past = d < now
+        except Exception:
+            is_past = False
+        dot      = "🔴" if impact == "High" else "🟡"
+        date_str = d.strftime("%d %b %H:%M")
+        actual   = e.get("actual", "")
+        fore     = e.get("forecast", "—")
+        prev_v   = e.get("previous", "—")
+        val_html = (f'<strong>{actual}</strong>' if actual
+                    else f'F:{fore} P:{prev_v}')
+        op = "0.42" if is_past else "1"
+        cards += (
+            f'<div class="eh-card" style="opacity:{op};">'
+            f'<div class="eh-imp">{dot} <span style="font-size:0.58rem;color:#6b7280;">{e.get("country","")}</span></div>'
+            f'<div class="eh-title">{e.get("title","")}</div>'
+            f'<div class="eh-date">{date_str} IST</div>'
+            f'<div class="eh-vals">{val_html}</div>'
             f'</div>'
-            f'<div class="econ-date">{date_str}</div>'
+        )
+
+    st.markdown(f'<div class="econ-scroll">{cards}</div>', unsafe_allow_html=True)
+    lbl = f"Show all {len(events)} events ▸" if not show_full else "Show less ▴"
+    if st.button(lbl, key="econ_tog"):
+        st.session_state["econ_full"] = not show_full
+        st.rerun()
+
+
+def render_sector_heatmap(articles):
+    st.markdown('<div class="slbl">🏭 Sector Heatmap</div>', unsafe_allow_html=True)
+    counts = {s: 0 for s in SECTORS}
+    for a in articles:
+        t = _text(a)
+        for sec, kws in SECTORS.items():
+            if any(k in t for k in kws):
+                counts[sec] += 1
+    mx = max(counts.values()) if any(counts.values()) else 1
+    cells = ""
+    for sec, cnt in counts.items():
+        base  = SECTOR_PALETTE.get(sec, "#8b5cf6")
+        rgb   = _hex_rgb(base)
+        inten = cnt / mx
+        bg    = f"rgba({rgb},{0.05 + inten * 0.35:.2f})"
+        bord  = f"rgba({rgb},{0.08 + inten * 0.38:.2f})"
+        col   = base if inten > 0.05 else "#374151"
+        cells += (
+            f'<div class="sec-cell" style="background:{bg};border:1px solid {bord};">'
+            f'<div class="sec-n" style="color:{col};">{sec}</div>'
+            f'<div class="sec-c" style="color:{base};">{cnt}</div>'
+            f'<div class="sec-l">mentions</div>'
+            f'</div>'
+        )
+    st.markdown(f'<div class="sec-grid">{cells}</div>', unsafe_allow_html=True)
+
+
+def render_bookmarks():
+    bms = st.session_state.get("bookmarks", [])
+    if not bms:
+        return
+    st.markdown('<div class="slbl">🔖 Bookmarks</div>', unsafe_allow_html=True)
+    for b in bms:
+        st.markdown(
+            f'<div class="bm-card">'
+            f'<a href="{b["url"]}" target="_blank">{b["title"]}</a>'
+            f'<div class="bm-src">{b["source"]}</div>'
             f'</div>',
             unsafe_allow_html=True,
         )
-    if shown == 0:
-        st.markdown('<div style="color:#6b7280;font-size:0.82rem;">No High/Medium events found this week.</div>', unsafe_allow_html=True)
+    if st.button("✕ Clear all bookmarks", key="clr_bm"):
+        st.session_state["bookmarks"] = []
+        st.rerun()
 
 
-def render_rbi_sebi(articles):
-    st.markdown('<div class="section-title">RBI / SEBI Watch</div>', unsafe_allow_html=True)
-    filtered = [
-        a for a in articles
-        if any(k in (a["title"] + " " + a.get("summary", "")).lower() for k in RBI_SEBI_KWS)
-    ]
-    if not filtered:
-        st.markdown(
-            '<div style="color:#6b7280;font-size:0.82rem;padding:0.5rem 0;">'
-            'No RBI/SEBI headlines right now. Check back later.</div>',
-            unsafe_allow_html=True,
-        )
-        return
-    for a in filtered[:8]:
-        t = a["title"].lower()
-        if any(k in t for k in ["rbi", "reserve bank", "repo", "monetary", "mpc"]):
-            badge = '<span class="rbi-badge">RBI</span>'
-        elif any(k in t for k in ["sebi", "securities board"]):
-            badge = '<span class="sebi-badge">SEBI</span>'
-        else:
-            badge = '<span class="pol-badge">POLICY</span>'
-        st.markdown(
-            f'<div class="news-card" style="border-left-color:#ef4444;">'
-            f'<div class="news-title">{badge}'
-            f'<a href="{a["url"]}" target="_blank">{a["title"]}</a></div>'
-            f'<div class="news-meta"><span class="source-badge">{a["source"]}</span>{a["pub"]}</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
+# ── Page ──────────────────────────────────────────────────────────────────────
 
+_css()
 
-def render_ipo_nfo(articles):
-    st.markdown('<div class="section-title">IPO & NFO Tracker</div>', unsafe_allow_html=True)
-    ipos = [a for a in articles if any(k in (a["title"] + " " + a.get("summary","")).lower() for k in IPO_KWS)]
-    nfos = [a for a in articles if any(k in (a["title"] + " " + a.get("summary","")).lower() for k in NFO_KWS)]
-
-    if not ipos and not nfos:
-        st.markdown(
-            '<div style="color:#6b7280;font-size:0.82rem;padding:0.5rem 0;">'
-            'No IPO/NFO news right now. '
-            '<a href="https://www.amfiindia.com/net-asset-value/nfo-detail-page" target="_blank" '
-            'style="color:#8b5cf6;">AMFI NFO page ↗</a> &nbsp;·&nbsp; '
-            '<a href="https://www.nseindia.com/market-data/upcoming-ipo" target="_blank" '
-            'style="color:#10b981;">NSE IPO page ↗</a></div>',
-            unsafe_allow_html=True,
-        )
-        return
-
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown('<div style="font-size:0.75rem;color:#10b981;font-weight:600;margin-bottom:6px;">IPOs</div>', unsafe_allow_html=True)
-        if ipos:
-            for a in ipos[:5]:
-                st.markdown(
-                    f'<div class="ipo-card">'
-                    f'<div style="font-size:0.84rem;font-weight:500;">'
-                    f'<a href="{a["url"]}" target="_blank" style="color:#f0f0ff;text-decoration:none;">{a["title"]}</a></div>'
-                    f'<div style="font-size:0.7rem;color:#6b7280;margin-top:2px;">'
-                    f'<span class="source-badge">{a["source"]}</span>{a["pub"]}</div>'
-                    f'</div>',
-                    unsafe_allow_html=True,
-                )
-        else:
-            st.markdown('<div style="color:#6b7280;font-size:0.8rem;">No IPO news right now.</div>', unsafe_allow_html=True)
-
-    with c2:
-        st.markdown('<div style="font-size:0.75rem;color:#8b5cf6;font-weight:600;margin-bottom:6px;">NFOs (New Fund Offers)</div>', unsafe_allow_html=True)
-        if nfos:
-            for a in nfos[:5]:
-                st.markdown(
-                    f'<div class="nfo-card">'
-                    f'<div style="font-size:0.84rem;font-weight:500;">'
-                    f'<a href="{a["url"]}" target="_blank" style="color:#f0f0ff;text-decoration:none;">{a["title"]}</a></div>'
-                    f'<div style="font-size:0.7rem;color:#6b7280;margin-top:2px;">'
-                    f'<span class="source-badge">{a["source"]}</span>{a["pub"]}</div>'
-                    f'</div>',
-                    unsafe_allow_html=True,
-                )
-        else:
-            st.markdown(
-                '<div style="color:#6b7280;font-size:0.8rem;">No NFO news right now. '
-                '<a href="https://www.amfiindia.com/net-asset-value/nfo-detail-page" '
-                'target="_blank" style="color:#8b5cf6;">Check AMFI ↗</a></div>',
-                unsafe_allow_html=True,
-            )
-
-
-def render_earnings(articles):
-    st.markdown('<div class="section-title">Earnings Calendar — Company Results</div>', unsafe_allow_html=True)
-    filtered = [
-        a for a in articles
-        if any(k in (a["title"] + " " + a.get("summary", "")).lower() for k in EARN_KWS)
-    ]
-    if not filtered:
-        st.markdown(
-            '<div style="color:#6b7280;font-size:0.82rem;padding:0.4rem 0;">'
-            'No earnings news right now. '
-            '<a href="https://www.nseindia.com/market-data/upcoming-results" target="_blank" '
-            'style="color:#f59e0b;">NSE Upcoming Results ↗</a></div>',
-            unsafe_allow_html=True,
-        )
-        return
-    for a in filtered[:10]:
-        st.markdown(
-            f'<div class="earn-card">'
-            f'<div style="font-size:0.84rem;font-weight:500;">'
-            f'<a href="{a["url"]}" target="_blank" style="color:#f0f0ff;text-decoration:none;">{a["title"]}</a></div>'
-            f'<div style="font-size:0.7rem;color:#6b7280;margin-top:2px;">'
-            f'<span class="source-badge">{a["source"]}</span>{a["pub"]}</div>'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-
-
-def render_weekly_preview(events, articles):
-    now = _now_ist()
-    week_start = now - timedelta(days=now.weekday())
-    week_end   = week_start + timedelta(days=4)
-
-    # High-impact events this week
-    event_lines = ""
-    for e in events:
-        if e.get("impact") != "High":
-            continue
-        d = _parse_ff_date(e.get("date", ""))
-        if d:
-            past = "~~" if d < now else ""
-            event_lines += (
-                f'<div class="week-item">🗓️ <strong>{e.get("title","")} '
-                f'({e.get("country","")})</strong> — {d.strftime("%a %d %b, %I:%M %p IST")}</div>'
-            )
-
-    if not event_lines:
-        event_lines = '<div class="week-item" style="color:#374151;">No major events data — calendar may be loading.</div>'
-
-    # F&O expiry: last Thursday of this month
-    import calendar as _cal
-    last_day = _cal.monthrange(now.year, now.month)[1]
-    expiry_day = max(
-        d for d in range(1, last_day + 1)
-        if datetime(now.year, now.month, d).weekday() == 3
-    )
-    expiry_str = datetime(now.year, now.month, expiry_day).strftime("%d %b %Y")
-
-    earn_count = sum(1 for a in articles
-                     if any(k in a["title"].lower() for k in EARN_KWS))
-    ipo_count  = sum(1 for a in articles
-                     if any(k in a["title"].lower() for k in IPO_KWS))
-
+# Header
+h1, h2 = st.columns([10, 1])
+with h1:
     st.markdown(
-        f'<div class="week-card">'
-        f'<div class="week-title">📅 This Week in Markets &nbsp;·&nbsp; '
-        f'<span style="font-size:0.8rem;font-weight:400;color:#6b7280;">'
-        f'{week_start.strftime("%d %b")} – {week_end.strftime("%d %b %Y")}</span></div>'
-        f'{event_lines}'
-        f'<div style="border-top:1px solid rgba(139,92,246,0.1);margin:8px 0;"></div>'
-        f'<div class="week-item">📊 <strong>F&O Monthly Expiry:</strong> {expiry_str}</div>'
-        f'<div class="week-item">📰 <strong>Earnings in news:</strong> {earn_count} articles</div>'
-        f'<div class="week-item">🏢 <strong>IPO news:</strong> {ipo_count} articles</div>'
-        f'<div style="margin-top:8px;">'
-        f'<a href="https://www.nseindia.com/market-data/upcoming-results" target="_blank" '
-        f'style="color:#8b5cf6;font-size:0.75rem;">NSE Results ↗</a>'
-        f' &nbsp;·&nbsp; '
-        f'<a href="https://www.amfiindia.com/net-asset-value/nfo-detail-page" target="_blank" '
-        f'style="color:#8b5cf6;font-size:0.75rem;">AMFI NFOs ↗</a>'
-        f' &nbsp;·&nbsp; '
-        f'<a href="https://www.forexfactory.com/calendar" target="_blank" '
-        f'style="color:#8b5cf6;font-size:0.75rem;">Full Calendar ↗</a>'
-        f'</div>'
-        f'</div>',
+        '<div style="font-size:1.5rem;font-weight:800;color:#f0f0ff;margin-bottom:0.1rem;">📰 News & Pulse</div>'
+        '<div style="font-size:0.78rem;color:#4b5563;margin-bottom:0.7rem;">'
+        'Live market intelligence · 8 RSS sources · keyword-powered · zero API keys</div>',
         unsafe_allow_html=True,
     )
-
-
-def render_news_card(a):
-    return (
-        f'<div class="news-card">'
-        f'<div class="news-title"><a href="{a["url"]}" target="_blank">{a["title"]}</a></div>'
-        f'<div class="news-meta"><span class="source-badge">{a["source"]}</span>{a["pub"]}</div>'
-        f'</div>'
-    )
-
-
-# ── PAGE ──────────────────────────────────────────────────────────────────────
-st.markdown('<div class="mkt-header">📰 Financial News Hub</div>', unsafe_allow_html=True)
-st.markdown(
-    '<div class="mkt-sub">Live markets · Economic calendar · RBI/SEBI · '
-    'IPO/NFO · Earnings · 8 sources · auto-refresh</div>',
-    unsafe_allow_html=True,
-)
-
-# Refresh button
-hd, ref = st.columns([9, 1])
-with ref:
-    if st.button("↻ Refresh", use_container_width=True):
+with h2:
+    if st.button("↻", help="Refresh"):
         st.cache_data.clear()
         st.rerun()
 
-# ── Fetch data ────────────────────────────────────────────────────────────────
-with st.spinner("Loading market data & headlines…"):
-    mkt_data     = fetch_market_data()
+# Fetch
+with st.spinner("Loading headlines…"):
+    all_articles = fetch_rss(max_per_feed=12)
     econ_events  = fetch_econ_calendar()
-    all_articles = fetch_rss(max_per_feed=10)
 
-# 1. Global Market Pulse ticker (top)
-render_market_ticker(mkt_data)
+sent    = analyze_sentiment(all_articles)
+sources = ["All"] + [s for s, _ in RSS_FEEDS]
 
-# 2. Weekly Market Preview
-with st.expander("📅 This Week in Markets", expanded=True):
-    render_weekly_preview(econ_events, all_articles)
+# 1. Breaking News Carousel
+render_carousel(all_articles)
 
-# 3. Economic Calendar | RBI/SEBI Watch
-col_econ, col_reg = st.columns([1.3, 1])
-with col_econ:
-    render_econ_calendar(econ_events)
-with col_reg:
-    render_rbi_sebi(all_articles)
-    render_ipo_nfo(all_articles)
+# 2. Mood + Stats | Sector heatmap
+left, right = st.columns([3, 2])
+with left:
+    render_mood_card(sent)
+    render_stats_strip(all_articles, sent)
+with right:
+    render_sector_heatmap(all_articles)
+    render_econ_horizontal(econ_events)
 
-# 4. Main news feed + sidebar
-main_col, side_col = st.columns([2, 1])
+# 3. Trending topics
+render_trending(all_articles)
 
-with main_col:
-    st.markdown('<div class="section-title">Top Headlines</div>', unsafe_allow_html=True)
-    sel_filter = st.radio(
-        "Filter:", list(FILTERS.keys()),
-        horizontal=True, label_visibility="collapsed",
-    )
-    articles = filter_articles(all_articles, sel_filter)
-    st.markdown(
-        f'<div style="font-size:0.72rem;color:#6b7280;margin-bottom:0.6rem;">'
-        f'{len(articles)} headlines · {sel_filter} · {len(RSS_FEEDS)} sources</div>',
-        unsafe_allow_html=True,
-    )
-    if not articles:
-        st.info("No articles found for this filter. Try 'All' or hit Refresh.")
-    else:
-        for a in articles[:20]:
-            st.markdown(render_news_card(a), unsafe_allow_html=True)
+# 4. Source filter pills
+st.markdown('<div class="slbl">Sources</div>', unsafe_allow_html=True)
+src_counts = Counter(a["source"] for a in all_articles)
+src_labels = ["All"] + [f"{s}  {src_counts.get(s,0)}" for s, _ in RSS_FEEDS]
+sel_src = st.radio("src", src_labels, horizontal=True, label_visibility="collapsed")
+active_src = "" if sel_src == "All" else sel_src.rsplit("  ", 1)[0]
 
-with side_col:
-    # AI Summary
-    st.markdown('<div class="section-title">AI Market Summary</div>', unsafe_allow_html=True)
-    api_key = ""
-    try:
-        api_key = st.secrets.get("ANTHROPIC_API_KEY", "")
-    except Exception:
-        api_key = os.getenv("ANTHROPIC_API_KEY", "")
+# 5. Category tabs + news grid
+st.markdown('<div class="slbl">Headlines</div>', unsafe_allow_html=True)
+tabs = st.tabs(list(CATEGORIES.keys()))
+for tab, (cat, kws) in zip(tabs, CATEGORIES.items()):
+    with tab:
+        filtered = all_articles
+        if active_src:
+            filtered = [a for a in filtered if a["source"] == active_src]
+        if kws:
+            filtered = [a for a in filtered
+                        if any(k in _text(a) for k in kws)]
+        cat_key  = re.sub(r"\W+", "_", cat.lower())
+        render_news_grid(filtered, cat_key=cat_key)
 
-    if st.button("✦ Summarise Today's Market", use_container_width=True):
-        if not api_key:
-            st.warning("Add ANTHROPIC_API_KEY to .streamlit/secrets.toml to enable AI summaries.")
-        else:
-            with st.spinner("Asking Claude…"):
-                st.session_state["ai_summary"] = get_ai_summary(
-                    [a["title"] for a in all_articles[:8]], api_key
-                )
-
-    if st.session_state.get("ai_summary"):
-        st.markdown(
-            f'<div class="ai-box">'
-            f'<div class="ai-label">✦ Claude\'s Analysis</div>'
-            f'{st.session_state["ai_summary"]}'
-            f'</div>',
-            unsafe_allow_html=True,
-        )
-
-    # Source breakdown
-    st.markdown('<div class="section-title">News Sources</div>', unsafe_allow_html=True)
-    for source, _ in RSS_FEEDS:
-        count = sum(1 for a in all_articles if a["source"] == source)
-        bar_w = int(count / max(1, max(
-            sum(1 for a in all_articles if a["source"] == s) for s, _ in RSS_FEEDS
-        )) * 100)
-        st.markdown(
-            f'<div style="padding:4px 0;border-bottom:1px solid rgba(139,92,246,0.07);">'
-            f'<div style="display:flex;justify-content:space-between;font-size:0.76rem;">'
-            f'<span style="color:#9ca3af">{source}</span>'
-            f'<span style="color:#8b5cf6;font-weight:600">{count}</span></div>'
-            f'<div style="height:2px;background:rgba(139,92,246,0.08);border-radius:2px;margin-top:3px;">'
-            f'<div style="width:{bar_w}%;height:100%;background:#8b5cf6;border-radius:2px;"></div>'
-            f'</div></div>',
-            unsafe_allow_html=True,
-        )
-
-    ts = _now_ist().strftime("%I:%M %p IST")
-    st.markdown(
-        f'<div style="margin-top:1rem;font-size:0.68rem;color:#374151;text-align:center;">'
-        f'Fetched at {ts} · headlines cache 30 min · market data 5 min</div>',
-        unsafe_allow_html=True,
-    )
-
-# 5. Earnings Calendar
-render_earnings(all_articles)
+# 6. Bookmarks
+render_bookmarks()
 
 # Footer
 st.markdown(
-    '<div style="text-align:center;padding:2rem 0 1rem;color:#374151;font-size:0.7rem;">'
-    'News: public RSS feeds · Calendar: Forex Factory · Market data: Yahoo Finance · '
-    'No paid API required · SipCheck v2.0'
+    '<div style="text-align:center;padding:1.5rem 0 0.3rem;color:#374151;font-size:0.67rem;">'
+    'Data: 8 public RSS feeds · Calendar: Forex Factory free API · '
+    'No paid API key required · auto-refreshes every 30 min · SipCheck v3.0'
     '</div>',
     unsafe_allow_html=True,
 )
