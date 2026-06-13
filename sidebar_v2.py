@@ -17,11 +17,15 @@ import streamlit as st
 NAV = [
     ("🏠   SipCheck Home",   "dashboard.py"),
     ("📈  Live Markets",     "pages/01_Markets.py"),
-    ("🏦  MF Hub",           "pages/02_Mutual_Funds.py"),
     ("📰  News & Pulse",     "pages/04_News.py"),
     ("🎯  Goal Tracker",     "pages/05_Goals.py"),
     ("👨‍👩‍👧  Family Wealth",    "pages/06_Family_Planner.py"),
     ("📊  MF Report Pro",    "pages/07_MF_Report.py"),
+]
+
+# Pages that are under development — shown in nav but with a Coming Soon badge
+NAV_WIP = [
+    ("🏦  MF Hub",  "pages/02_Mutual_Funds.py"),
 ]
 
 
@@ -53,6 +57,35 @@ def render_sidebar():
         for label, path in NAV:
             if os.path.exists(path):
                 st.page_link(path, label=label, use_container_width=True)
+
+        # WIP items — grayed out with Coming Soon badge, still navigable
+        st.markdown("""<style>
+        .wip-nav-item {
+            display:flex; align-items:center; justify-content:space-between;
+            padding:0.45rem 0.75rem; border-radius:8px; margin-bottom:2px;
+            background:rgba(139,92,246,0.04);
+            border:1px solid rgba(139,92,246,0.08);
+            cursor:pointer; text-decoration:none; width:100%; box-sizing:border-box;
+        }
+        .wip-nav-item:hover { background:rgba(139,92,246,0.09); }
+        .wip-nav-label { font-size:0.85rem; color:#4b5563; font-weight:500; }
+        .wip-badge {
+            font-size:0.58rem; font-weight:700; letter-spacing:0.05em;
+            background:rgba(245,158,11,0.15); color:#f59e0b;
+            padding:1px 6px; border-radius:6px; white-space:nowrap;
+        }
+        </style>""", unsafe_allow_html=True)
+
+        for label, path in NAV_WIP:
+            if os.path.exists(path):
+                st.page_link(path, label=f"{label}", use_container_width=True)
+                st.markdown(
+                    f'<div style="margin-top:-8px;margin-bottom:4px;padding:0 0.75rem;">'
+                    f'<span style="font-size:0.62rem;color:#f59e0b;background:rgba(245,158,11,0.12);'
+                    f'padding:1px 7px;border-radius:6px;font-weight:700;letter-spacing:0.04em;">'
+                    f'🔧 Coming Soon</span></div>',
+                    unsafe_allow_html=True,
+                )
 
         st.markdown(
             """<div style="margin-top:1.2rem;padding-top:0.9rem;border-top:1px solid rgba(139,92,246,0.15);font-size:0.62rem;color:#374151;letter-spacing:0.06em;">Your data never leaves your device.</div>""",
