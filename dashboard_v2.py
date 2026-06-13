@@ -511,22 +511,25 @@ def render_overview(data, holdings, use_live, live_total, nav_date, hits):
     cL, cM, cR = st.columns([1.5, 1, 1])
     with cL:
         section("Wealth Journey")
-        df = pd.DataFrame([{"fund": h["scheme"][:22],
-                            "Invested": h.get("invested", 0),
-                            "Current":  h.get("live_value", h.get("value", 0))} for h in holdings])
-        fig = go.Figure()
-        fig.add_trace(go.Bar(x=df["fund"], y=df["Invested"], name="Invested",
-            marker_color="rgba(139,92,246,0.45)",
-            hovertemplate="₹%{y:,.0f}<extra>invested</extra>"))
-        fig.add_trace(go.Bar(x=df["fund"], y=df["Current"], name="Current",
-            marker=dict(color=df["Current"],
-                        colorscale=[[0, CYAN], [1, MINT]], showscale=False),
-            hovertemplate="₹%{y:,.0f}<extra>current</extra>"))
-        fig.update_layout(**PLOT, height=300, barmode="group",
-            legend=dict(orientation="h", y=1.14, bgcolor="rgba(0,0,0,0)"),
-            xaxis=dict(tickangle=-30, gridcolor="rgba(0,0,0,0)", tickfont=dict(size=8.5)),
-            yaxis=dict(gridcolor="rgba(139,92,246,0.08)", tickprefix="₹", separatethousands=True))
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        if holdings:
+            df = pd.DataFrame([{"fund": h["scheme"][:22],
+                                "Invested": h.get("invested", 0),
+                                "Current":  h.get("live_value", h.get("value", 0))} for h in holdings])
+            fig = go.Figure()
+            fig.add_trace(go.Bar(x=df["fund"], y=df["Invested"], name="Invested",
+                marker_color="rgba(139,92,246,0.45)",
+                hovertemplate="₹%{y:,.0f}<extra>invested</extra>"))
+            fig.add_trace(go.Bar(x=df["fund"], y=df["Current"], name="Current",
+                marker=dict(color=df["Current"],
+                            colorscale=[[0, CYAN], [1, MINT]], showscale=False),
+                hovertemplate="₹%{y:,.0f}<extra>current</extra>"))
+            fig.update_layout(**PLOT, height=300, barmode="group",
+                legend=dict(orientation="h", y=1.14, bgcolor="rgba(0,0,0,0)"),
+                xaxis=dict(tickangle=-30, gridcolor="rgba(0,0,0,0)", tickfont=dict(size=8.5)),
+                yaxis=dict(gridcolor="rgba(139,92,246,0.08)", tickprefix="₹", separatethousands=True))
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+        else:
+            st.caption("No active holdings to chart.")
     with cM:
         section("Category Mix")
         alloc = data.get("alloc_values", {})
