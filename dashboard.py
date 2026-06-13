@@ -389,22 +389,35 @@ def next_due_date(dom: int) -> date:
 
 
 def calc_xirr(transactions, current_value, valuation_date_str):
+    # classify_transaction is defined below; forward ref is fine at call time
+    _BUY  = {"SIP", "Lumpsum Purchase", "STP In", "Switch In",
+              "Demat Transfer In", "Transmission In"}
+    _SELL = {"Redemption", "SWP", "STP Out", "Switch Out",
+             "Demat Transfer Out", "Transmission Out"}
+
     dates, amounts = [], []
     for tx in transactions:
         try:
-            dt = to_date(tx.get("date"))
-            amt = float(tx.get("amount", 0.0))
-            if amt > 0:
-                dates.append(dt)
-                amounts.append(-amt)
+            dt  = to_date(tx.get("date"))
+            amt = abs(float(tx.get("amount") or 0.0))
+            if amt <= 0:
+                continue
+            cls = classify_transaction(tx)
+            if cls in _BUY:
+                dates.append(dt);  amounts.append(-amt)   # cash out (invested)
+            elif cls in _SELL:
+                dates.append(dt);  amounts.append(+amt)   # cash back (partial redemption)
+            # reversals / dividends / bonus / other: skip — they net out
         except Exception:
             continue
+
     if current_value > 0:
         try:
             dates.append(to_date(valuation_date_str))
-            amounts.append(current_value)
+            amounts.append(float(current_value))
         except Exception:
             pass
+
     if len(amounts) >= 2 and sum(amounts) != 0:
         try:
             rate = xirr(dates, amounts)
@@ -720,23 +733,38 @@ def generate_html(d, live_data=None):
 SIP_TX_KEYS = ["SIP", "SYSTEMATIC", "RECURRING", "AUTO DEBIT", "E-DEBIT", "ECS", "MANDATE"]
 
 TX_META = {
-    "SIP":                  {"icon": "🔁", "color": "#63b3ed",  "group": "inflow"},
-    "Lumpsum Purchase":     {"icon": "💰", "color": "#9f7aea",  "group": "inflow"},
-    "STP In":               {"icon": "⚡️", "color": "#68d391",  "group": "inflow"},
-    "Switch In":            {"icon": "🔀", "color": "#4fd1c5",  "group": "inflow"},
-    "STP Out":              {"icon": "⬇️", "color": "#f6ad55",  "group": "outflow"},
-    "Switch Out":           {"icon": "🔀", "color": "#ed8936",  "group": "outflow"},
-    "SWP":                  {"icon": "💸", "color": "#fc8181",  "group": "outflow"},
-    "Redemption":           {"icon": "🏦", "color": "#fc8181",  "group": "outflow"},
-    "SIP Reversal":         {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
-    "STP In Reversal":      {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
-    "STP Out Reversal":     {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
-    "Switch In Reversal":   {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
-    "Switch Out Reversal":  {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
-    "SWP Reversal":         {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
-    "Redemption Reversal":  {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
-    "Reversal / Rejection": {"icon": "✖",  "color": "#fc8181",  "group": "reversal"},
-    "Other":                {"icon": "○",  "color": "#718096",  "group": "other"},
+    # ── Inflows ──────────────────────────────────────────────────────
+    "SIP":                       {"icon": "🔁", "color": "#63b3ed",  "group": "inflow"},
+    "Lumpsum Purchase":          {"icon": "💰", "color": "#9f7aea",  "group": "inflow"},
+    "STP In":                    {"icon": "⚡️", "color": "#68d391",  "group": "inflow"},
+    "Switch In":                 {"icon": "🔀", "color": "#4fd1c5",  "group": "inflow"},
+    "Demat Transfer In":         {"icon": "📥", "color": "#4fd1c5",  "group": "inflow"},
+    "Transmission In":           {"icon": "🏛️", "color": "#68d391",  "group": "inflow"},
+    # ── Outflows ─────────────────────────────────────────────────────
+    "STP Out":                   {"icon": "⬇️", "color": "#f6ad55",  "group": "outflow"},
+    "Switch Out":                {"icon": "🔀", "color": "#ed8936",  "group": "outflow"},
+    "SWP":                       {"icon": "💸", "color": "#fc8181",  "group": "outflow"},
+    "Redemption":                {"icon": "🏦", "color": "#fc8181",  "group": "outflow"},
+    "Demat Transfer Out":        {"icon": "📤", "color": "#ed8936",  "group": "outflow"},
+    "Transmission Out":          {"icon": "🏛️", "color": "#f6ad55",  "group": "outflow"},
+    # ── Reversals ────────────────────────────────────────────────────
+    "SIP Reversal":              {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "Lumpsum Purchase Reversal": {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "STP In Reversal":           {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "STP Out Reversal":          {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "Switch In Reversal":        {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "Switch Out Reversal":       {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "SWP Reversal":              {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "Redemption Reversal":       {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "Demat Transfer In Reversal":{"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "Demat Transfer Out Reversal":{"icon":"↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "Transmission In Reversal":  {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "Transmission Out Reversal": {"icon": "↩️", "color": "#fbb6ce",  "group": "reversal"},
+    "Reversal / Rejection":      {"icon": "✖",  "color": "#fc8181",  "group": "reversal"},
+    # ── Other ────────────────────────────────────────────────────────
+    "Dividend Payout":           {"icon": "💵", "color": "#68d391",  "group": "other"},
+    "Bonus":                     {"icon": "🎁", "color": "#68d391",  "group": "other"},
+    "Other":                     {"icon": "○",  "color": "#718096",  "group": "other"},
 }
 
 SPECIAL_TX_TYPES = [t for t in TX_META if t not in ("SIP", "Lumpsum Purchase", "Other")]
@@ -752,33 +780,86 @@ def classify_transaction(tx):
     description = str(tx.get("description", "")).upper()
     combined    = txn_type + " " + description
 
+    # Reversal keywords — avoid "RETURN" (too broad, matches fund names) and
+    # "CANCEL" (matches "CANCELLATION OF ALLOTMENT" in demat transactions)
     is_reversal_kw = any(k in combined for k in [
         "REVERSAL", "REVERSED", "REJECTION", "REJECTED",
-        "BOUNCE", "BOUNCED", "INSUFFICIENT", "FAILED",
-        "RETURN", "CANCELLED", "CANCEL",
+        "BOUNCE", "BOUNCED", "INSUFFICIENT", "FAILED", "CANCELLED",
+        "DISHONOUR", "DISHONOURE",
     ])
 
+    # Demat / off-market — check before STP to avoid "TRANSFER" keyword collision
+    is_demat_out = any(k in combined for k in [
+        "DEMAT TRANSFER OUT", "DEMAT DEBIT", "DP DEBIT", "OFF MARKET DEBIT"])
+    is_demat_in  = (not is_demat_out) and any(k in combined for k in [
+        "DEMAT TRANSFER IN", "DEMAT CREDIT", "DP CREDIT",
+        "OFF MARKET CREDIT", "OFF MARKET TRANSFER"])
+
+    # Transmission (legal unit transfer, no cash consideration)
+    is_trans_out = any(k in combined for k in ["TRANSMISSION OUT", "TRANSMISSION DEBIT"])
+    is_trans_in  = (not is_trans_out) and "TRANSMISSION" in combined
+
+    # STP / Switch
     is_stp_out    = "STP" in combined and ("OUT" in combined or "TRANSFER OUT" in combined)
-    is_stp_in     = "STP" in combined and ("IN" in combined or "TRANSFER IN" in combined) and not is_stp_out
+    is_stp_in     = "STP" in combined and not is_stp_out
     is_switch_out = "SWITCH" in combined and "OUT" in combined
-    is_switch_in  = "SWITCH" in combined and "IN" in combined and not is_switch_out
-    is_swp        = "SWP" in combined or "SYSTEMATIC WITHDRAWAL" in combined
-    is_sip_kw     = any(k in combined for k in SIP_TX_KEYS)
-    is_redemption = any(k in combined for k in ["REDEMPTION", "PAYOUT", "WITHDRAWAL"]) and not is_swp
-    is_purchase   = any(k in combined for k in ["PURCHASE", "LUMPSUM", "NFO", "NEW FUND", "REINVEST", "DIVIDEND REINVEST"])
+    is_switch_in  = "SWITCH" in combined and "IN"  in combined and not is_switch_out
 
-    if is_stp_out:      base = "STP Out"
-    elif is_stp_in:     base = "STP In"
-    elif is_switch_out: base = "Switch Out"
-    elif is_switch_in:  base = "Switch In"
-    elif is_swp:        base = "SWP"
-    elif is_redemption: base = "Redemption"
-    elif is_sip_kw:     base = "SIP"
-    elif is_purchase:   base = "Lumpsum Purchase"
-    else:               base = "Other"
+    # SWP (check before redemption — "SYSTEMATIC WITHDRAWAL" matches WITHDRAWAL)
+    is_swp = "SWP" in combined or "SYSTEMATIC WITHDRAWAL" in combined
 
-    OUTFLOW_BASES = {"Redemption", "STP Out", "Switch Out", "SWP"}
-    INFLOW_BASES  = {"SIP", "Lumpsum Purchase", "STP In", "Switch In"}
+    # Dividend / IDCW payout — check BEFORE redemption because "PAYOUT" appears in both
+    is_dividend = (
+        any(k in combined for k in ["DIVIDEND", "IDCW", "INCOME DISTRIBUTION"])
+        and "REINVEST" not in combined
+        and "REINVESTMENT" not in combined
+    )
+
+    # Redemption (exclude SWP and dividend payout already handled above)
+    is_redemption = (
+        any(k in combined for k in ["REDEMPTION", "PAYOUT", "WITHDRAWAL"])
+        and not is_swp and not is_dividend
+    )
+
+    # SIP
+    is_sip_kw = any(k in combined for k in SIP_TX_KEYS)
+
+    # Lumpsum purchase (SUBSCRIPTION / ALLOTMENT added for NFO and DP allotments)
+    is_purchase = any(k in combined for k in [
+        "PURCHASE", "LUMPSUM", "NFO", "NEW FUND",
+        "SUBSCRIPTION", "ALLOTMENT",
+        "REINVEST", "DIVIDEND REINVEST",
+    ])
+
+    # Bonus units
+    is_bonus = "BONUS" in combined and "REINVEST" not in combined
+
+    # ── Priority chain ───────────────────────────────────────────────
+    if   is_demat_out:    base = "Demat Transfer Out"
+    elif is_demat_in:     base = "Demat Transfer In"
+    elif is_trans_out:    base = "Transmission Out"
+    elif is_trans_in:     base = "Transmission In"
+    elif is_stp_out:      base = "STP Out"
+    elif is_stp_in:       base = "STP In"
+    elif is_switch_out:   base = "Switch Out"
+    elif is_switch_in:    base = "Switch In"
+    elif is_swp:          base = "SWP"
+    elif is_dividend:     base = "Dividend Payout"
+    elif is_redemption:   base = "Redemption"
+    elif is_sip_kw:       base = "SIP"
+    elif is_purchase:     base = "Lumpsum Purchase"
+    elif is_bonus:        base = "Bonus"
+    else:                 base = "Other"
+
+    # Dividend, Bonus, Other never produce reversal variants
+    if base in {"Dividend Payout", "Bonus", "Other"}:
+        return base
+
+    # ── Reversal detection by unit sign ─────────────────────────────
+    OUTFLOW_BASES = {"Redemption", "STP Out", "Switch Out", "SWP",
+                     "Demat Transfer Out", "Transmission Out"}
+    INFLOW_BASES  = {"SIP", "Lumpsum Purchase", "STP In", "Switch In",
+                     "Demat Transfer In", "Transmission In"}
 
     if base in OUTFLOW_BASES:
         is_reversal = (raw_units > 0) or is_reversal_kw
@@ -787,10 +868,8 @@ def classify_transaction(tx):
     else:
         is_reversal = is_reversal_kw
 
-    if is_reversal and base != "Other":
+    if is_reversal:
         return base + " Reversal"
-    elif is_reversal:
-        return "Reversal / Rejection"
     return base
 
 
@@ -802,10 +881,16 @@ def account_transactions(transactions):
     invested = sip_invested = lumpsum_invested = redeemed_amount = 0.0
     special_txs = []
 
-    BUY_CLASSES      = {"SIP", "Lumpsum Purchase", "STP In",  "Switch In"}
-    SELL_CLASSES     = {"Redemption", "SWP", "STP Out", "Switch Out"}
-    REV_BUY_CLASSES  = {"SIP Reversal", "STP In Reversal", "Switch In Reversal"}
-    REV_SELL_CLASSES = {"Redemption Reversal", "SWP Reversal", "STP Out Reversal", "Switch Out Reversal"}
+    BUY_CLASSES      = {"SIP", "Lumpsum Purchase", "STP In", "Switch In",
+                        "Demat Transfer In", "Transmission In"}
+    SELL_CLASSES     = {"Redemption", "SWP", "STP Out", "Switch Out",
+                        "Demat Transfer Out", "Transmission Out"}
+    REV_BUY_CLASSES  = {"SIP Reversal", "Lumpsum Purchase Reversal",
+                        "STP In Reversal", "Switch In Reversal",
+                        "Demat Transfer In Reversal", "Transmission In Reversal"}
+    REV_SELL_CLASSES = {"Redemption Reversal", "SWP Reversal",
+                        "STP Out Reversal", "Switch Out Reversal",
+                        "Demat Transfer Out Reversal", "Transmission Out Reversal"}
 
     for tx in transactions:
         amount    = abs(float(tx.get("amount") or 0.0))
@@ -864,7 +949,7 @@ def detect_sip_mandates(sip_transactions, scheme_name, units, valuation_date_str
         m = _re.search(r"(\d+)/(\d+)", desc)
         if m:
             total = int(m.group(2))
-            return f"LONG_{amount}_{multi_flag}" if total > 100 else f"{total}_{multi_flag}"
+            return f"LONG_{amount}_{multi_flag}" if total > 100 else f"{total}_{amount}_{multi_flag}"
         return f"AMT_{amount}_{multi_flag}"
 
     mandate_groups = {}
@@ -1019,7 +1104,9 @@ def process(raw):
                 category = "Debt Funds"
 
             transactions = scheme.get("transactions", [])
-            result["tx_map"][scheme_name] = transactions
+            result["tx_map"][scheme_name] = [
+                {**t, "_cls": classify_transaction(t)} for t in transactions
+            ]
 
             # ── Accounting ──────────────────────────────────────────
             acct             = account_transactions(transactions)

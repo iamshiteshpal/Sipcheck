@@ -1004,10 +1004,12 @@ def render_transactions_v2(data, legacy_fn=None):
 
     # ── Investing Heatmap ──────────────────────────────────────────
     section("Investing Heatmap · month by month")
+    _BUY_CLS = {"SIP", "Lumpsum Purchase", "STP In", "Switch In",
+                "Demat Transfer In", "Transmission In"}
     monthly = {}
     for scheme, t in all_tx:
-        ttype = str(_g(t, "type", "txn_type", default="")).upper()
-        if "PURCHASE" not in ttype and "SIP" not in ttype and "INVEST" not in ttype:
+        _cls = t.get("_cls") or str(_g(t, "type", "txn_type", default=""))
+        if _cls not in _BUY_CLS:
             continue
         d   = _parse_date(_g(t, "date", "txn_date", default=""))
         amt = float(_g(t, "amount", "amt", default=0) or 0)
@@ -1048,8 +1050,9 @@ def render_transactions_v2(data, legacy_fn=None):
     schemes = sorted({s for s, _ in all_tx if s})
     sel = st.selectbox("Select Scheme", schemes, key="v2_tx_scheme")
     txs  = [t for s, t in all_tx if s == sel]
-    buys = [t for t in txs if "PURCHASE" in str(_g(t, "type", "txn_type", default="")).upper()
-            or "SIP" in str(_g(t, "type", "txn_type", default="")).upper()]
+    buys = [t for t in txs
+            if (t.get("_cls") or str(_g(t, "type", "txn_type", default="")))
+               in _BUY_CLS]
     book  = sum(float(_g(t, "amount", "amt", default=0) or 0) for t in buys)
     units = sum(float(_g(t, "units", default=0) or 0) for t in buys)
     k1, k2, k3 = st.columns(3)
