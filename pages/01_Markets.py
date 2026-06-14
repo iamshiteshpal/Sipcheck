@@ -1,746 +1,1000 @@
+# pages/01_Markets.py — SipCheck Premium Market Intelligence v2.0
 import streamlit as st
 import yfinance as yf
 import pandas as pd
-from datetime import datetime
+import requests
 import pytz
+import math
 import streamlit.components.v1 as components
-import plotly.graph_objects as go
-
-def get_market_status():
-    ist = pytz.timezone('Asia/Kolkata')
-    now = datetime.now(ist)
-    weekday = now.weekday()
-    time_val = now.hour * 60 + now.minute
-    nse_open = weekday < 5 and (9*60+15) <= time_val <= (15*60+30)
-    us_open = weekday < 5 and (19*60+30) <= time_val <= (2*60+24*60)
-    return {
-        "nse": ("● NSE Open", "#20C997") if nse_open else ("● NSE Closed", "#FF4D4D"),
-        "us": ("● US Open", "#20C997") if us_open else ("● US Closed", "#6B7280"),
-        "crypto": ("● 24/7 Live", "#20C997")
-    }
-
-status = get_market_status()
+from datetime import datetime
 
 st.set_page_config(page_title="Markets — SipCheck", page_icon="📈", layout="wide")
 from sidebar_v2 import render_sidebar
 render_sidebar()
+from ui_theme import inject_theme
+inject_theme()
+
+# ── Design tokens ─────────────────────────────────────────────────────────
+VL  = "#8b5cf6"
+CY  = "#22d3ee"
+MN  = "#34d399"
+EM  = "#f87171"
+AM  = "#fbbf24"
+INK = "#f0f0ff"
+MUT = "#8b93a7"
+GL  = "rgba(17,17,48,0.6)"
+BR  = "rgba(139,92,246,0.18)"
+
+# ── Extra styles ──────────────────────────────────────────────────────────
+st.markdown(f"""
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;600;700&display=swap');
+#MainMenu,footer{{visibility:hidden;}}
+.mkt-sec{{display:flex;align-items:center;gap:10px;margin:1.6rem 0 0.8rem;}}
+.mkt-sec .dot{{width:7px;height:7px;border-radius:2px;background:{VL};
+               box-shadow:0 0 10px {VL};transform:rotate(45deg);flex-shrink:0;}}
+.mkt-sec .lbl{{font-family:'Space Grotesk',sans-serif;font-size:0.75rem;font-weight:700;
+               color:{INK};text-transform:uppercase;letter-spacing:0.14em;}}
+.mkt-sec .ln{{flex:1;height:1px;background:linear-gradient(90deg,{BR},transparent);}}
+.g{{background:{GL};border:1px solid {BR};border-radius:16px;backdrop-filter:blur(14px);}}
+.num{{font-family:'JetBrains Mono',monospace;font-feature-settings:'zero';}}
+/* Index ticker strip */
+.idx-strip{{display:flex;overflow-x:auto;gap:0;background:rgba(7,7,20,0.9);
+            border-top:1px solid {BR};border-bottom:1px solid {BR};padding:4px 0;}}
+.idx-cell{{padding:5px 20px;border-right:1px solid rgba(139,92,246,0.12);min-width:130px;flex-shrink:0;}}
+/* Sector tile */
+.sec-tile{{border-radius:12px;padding:0.7rem 0.9rem;text-align:center;transition:transform .2s;cursor:default;}}
+.sec-tile:hover{{transform:scale(1.04);}}
+/* FII/DII bar */
+.flow-bar{{height:10px;border-radius:5px;overflow:hidden;background:rgba(255,255,255,0.06);}}
+/* Mover card */
+.mv-card{{border-radius:12px;padding:8px 12px;margin-bottom:5px;display:flex;
+          align-items:center;justify-content:space-between;font-size:.8rem;}}
+/* Market stats pill */
+.stat-pill{{display:inline-flex;flex-direction:column;align-items:center;
+            padding:0.6rem 1rem;border-radius:12px;background:{GL};
+            border:1px solid {BR};min-width:90px;}}
+/* Gauge ring */
+@keyframes fadeIn{{from{{opacity:0;transform:translateY(8px);}}to{{opacity:1;transform:none;}}}}
+.rise-in{{animation:fadeIn .5s ease both;}}
+</style>
+""", unsafe_allow_html=True)
 
 
-# ==========================================
-# 1. DATA FETCHING & INDICATOR MATH
-# ==========================================
-@st.cache_data(ttl=60, show_spinner=False)
-def fetch_market_data(ticker, period="1y"):
+# ─────────────────────────────────────────────────────────────────────────
+# DATA FETCHING
+# ─────────────────────────────────────────────────────────────────────────
+
+NIFTY50 = [
+    "RELIANCE.NS","TCS.NS","HDFCBANK.NS","BHARTIARTL.NS","ICICIBANK.NS",
+    "INFY.NS","KOTAKBANK.NS","SBIN.NS","HINDUNILVR.NS","ITC.NS",
+    "LT.NS","AXISBANK.NS","BAJFINANCE.NS","MARUTI.NS","TITAN.NS",
+    "ASIANPAINT.NS","SUNPHARMA.NS","WIPRO.NS","ONGC.NS","NTPC.NS",
+    "NESTLEIND.NS","INDUSINDBK.NS","TATAMOTORS.NS","JSWSTEEL.NS","COALINDIA.NS",
+    "POWERGRID.NS","TECHM.NS","HCLTECH.NS","CIPLA.NS","DRREDDY.NS",
+]
+
+SECTOR_MAP = {
+    "Banking": ("^CNXBANK",   "🏦"),
+    "IT":      ("^CNXIT",     "💻"),
+    "Pharma":  ("^CNXPHARMA", "💊"),
+    "Auto":    ("^CNXAUTO",   "🚗"),
+    "FMCG":    ("^CNXFMCG",   "🛒"),
+    "Energy":  ("^CNXENERGY", "⚡"),
+    "Metal":   ("^CNXMETAL",  "🔩"),
+    "Realty":  ("^CNXREALTY", "🏗️"),
+}
+
+INDEX_LIST = [
+    ("Nifty 50",   "^NSEI",    VL),
+    ("Sensex",     "^BSESN",   CY),
+    ("Bank Nifty", "^NSEBANK", MN),
+    ("Nifty IT",   "^CNXIT",   AM),
+]
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def fetch_breadth_movers():
+    adv = dec = unch = 0
+    movers: list[dict] = []
     try:
-        df = yf.Ticker(ticker).history(period=period)
-        if df.empty: return None
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
-        return df
+        raw = yf.download(NIFTY50, period="2d", progress=False, auto_adjust=True)
+        closes = raw["Close"] if isinstance(raw.columns, pd.MultiIndex) else raw
+        for sym in closes.columns:
+            try:
+                s = closes[sym].dropna()
+                if len(s) < 2:
+                    continue
+                chg = float((s.iloc[-1] - s.iloc[-2]) / s.iloc[-2] * 100)
+                name = str(sym).replace(".NS", "")
+                movers.append({"name": name, "chg": chg, "price": float(s.iloc[-1])})
+                if chg > 0.05:
+                    adv += 1
+                elif chg < -0.05:
+                    dec += 1
+                else:
+                    unch += 1
+            except Exception:
+                pass
     except Exception:
-        return None
+        pass
+    movers.sort(key=lambda x: x["chg"], reverse=True)
+    return adv, dec, unch, movers
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def fetch_sectors():
+    out = []
+    for name, (sym, icon) in SECTOR_MAP.items():
+        try:
+            df = yf.Ticker(sym).history(period="2d")
+            if df.empty or len(df) < 2:
+                out.append({"name": name, "icon": icon, "chg": 0.0, "ok": False})
+                continue
+            chg = float((df["Close"].iloc[-1] - df["Close"].iloc[-2]) / df["Close"].iloc[-2] * 100)
+            out.append({"name": name, "icon": icon, "chg": chg, "ok": True})
+        except Exception:
+            out.append({"name": name, "icon": icon, "chg": 0.0, "ok": False})
+    return out
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def fetch_indices():
+    out = []
+    for name, sym, color in INDEX_LIST:
+        try:
+            df = yf.Ticker(sym).history(period="7d")
+            if df.empty or len(df) < 2:
+                out.append({"name": name, "color": color, "price": 0, "chg": 0, "spark": []})
+                continue
+            price = float(df["Close"].iloc[-1])
+            prev  = float(df["Close"].iloc[-2])
+            chg   = (price - prev) / prev * 100
+            spark = df["Close"].tail(5).tolist()
+            out.append({"name": name, "color": color, "price": price, "chg": chg, "spark": spark})
+        except Exception:
+            out.append({"name": name, "color": color, "price": 0, "chg": 0, "spark": []})
+    return out
+
+
+@st.cache_data(ttl=600, show_spinner=False)
+def fetch_vix():
+    try:
+        df = yf.Ticker("^INDIAVIX").history(period="2d")
+        if df.empty or len(df) < 2:
+            return None, None
+        v    = float(df["Close"].iloc[-1])
+        prev = float(df["Close"].iloc[-2])
+        return v, (v - prev) / prev * 100
+    except Exception:
+        return None, None
+
+
+@st.cache_data(ttl=300, show_spinner=False)
+def fetch_ticker_strip():
+    items = [
+        ("NIFTY 50", "^NSEI"), ("SENSEX", "^BSESN"),
+        ("BANK NIFTY", "^NSEBANK"), ("NIFTY IT", "^CNXIT"), ("NIFTY MID", "^NSEMDCP50"),
+    ]
+    out = []
+    for label, sym in items:
+        try:
+            df = yf.Ticker(sym).history(period="2d")
+            if df.empty or len(df) < 2:
+                continue
+            price = float(df["Close"].iloc[-1])
+            prev  = float(df["Close"].iloc[-2])
+            chg   = (price - prev) / prev * 100
+            out.append((label, price, chg))
+        except Exception:
+            pass
+    return out
+
+
+@st.cache_data(ttl=3600, show_spinner=False)
+def fetch_fii_dii():
+    try:
+        sess = requests.Session()
+        hdr  = {
+            "User-Agent": ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                           "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"),
+            "Accept":          "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.9",
+            "Referer":         "https://www.nseindia.com/",
+        }
+        sess.get("https://www.nseindia.com", headers=hdr, timeout=8)
+        r    = sess.get("https://www.nseindia.com/api/fiidiiTradeReact",
+                        headers=hdr, timeout=8)
+        data = r.json()
+        if not data:
+            return None
+        fii  = next((d for d in data if "FII"    in d.get("category","").upper()), None)
+        dii  = next((d for d in data if "DII"    in d.get("category","").upper()), None)
+        if fii and dii:
+            def _f(x):
+                return float(str(x).replace(",","").replace(" ","") or 0)
+            return {
+                "fii_buy":  _f(fii.get("buyValue",  0)),
+                "fii_sell": _f(fii.get("sellValue", 0)),
+                "fii_net":  _f(fii.get("netValue",  0)),
+                "dii_buy":  _f(dii.get("buyValue",  0)),
+                "dii_sell": _f(dii.get("sellValue", 0)),
+                "dii_net":  _f(dii.get("netValue",  0)),
+                "date":     data[0].get("date", "previous trading day"),
+            }
+    except Exception:
+        pass
+    return None
+
 
 @st.cache_data(ttl=60, show_spinner=False)
-def get_latest_metrics(ticker):
-    df = fetch_market_data(ticker, period="5d")
-    if df is None: return 0.0, 0.0
+def fetch_two(sym):
     try:
-        last_close = df['Close'].iloc[-1]
-        prev_close = df['Close'].iloc[-2] if len(df) > 1 else last_close
-        pct_change = ((last_close - prev_close) / prev_close) * 100
-        return float(last_close), float(pct_change)
+        df = yf.Ticker(sym).history(period="5d")
+        if df is None or df.empty:
+            return 0.0, 0.0
+        p = float(df["Close"].iloc[-1])
+        q = float(df["Close"].iloc[-2]) if len(df) > 1 else p
+        return p, (p - q) / q * 100
     except Exception:
         return 0.0, 0.0
 
-def calculate_technical_summary(full_df, display_df):
-    if full_df is None or len(full_df) < 30: return None
-    
-    close_full = full_df['Close']
-    
-    # RSI Calculation
-    delta = close_full.diff()
-    gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
-    loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
-    rs = gain / loss
-    rsi_series = 100 - (100 / (1 + rs))
-    
-    # MACD Calculation
-    exp1 = close_full.ewm(span=12, adjust=False).mean()
-    exp2 = close_full.ewm(span=26, adjust=False).mean()
-    macd_series = exp1 - exp2
-    signal_series = macd_series.ewm(span=9, adjust=False).mean()
-    macd_hist = macd_series - signal_series
-    
-    # Slice to display timeframe
-    close_display = display_df['Close']
-    display_rsi = rsi_series.loc[display_df.index]
-    display_macd = macd_series.loc[display_df.index]
-    display_signal = signal_series.loc[display_df.index]
-    display_hist = macd_hist.loc[display_df.index]
-    
-    return {
-        "rsi_latest": display_rsi.iloc[-1], 
-        "macd_latest": display_macd.iloc[-1],
-        "high": close_display.max(), "low": close_display.min(),
-        "history": display_df.tail(3)[['Close']].copy(),
-        "rsi_series": display_rsi,
-        "macd_series": display_macd,
-        "signal_series": display_signal,
-        "hist_series": display_hist
-    }
 
-# ==========================================
-# 2. NEON CYBERPUNK UI (Glassmorphism)
-# ==========================================
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+# ── Helpers ────────────────────────────────────────────────────────────────
 
-#MainMenu {visibility:hidden;} footer {visibility:hidden;}
+def _H(s: str) -> str:
+    return " ".join(line.strip() for line in s.splitlines() if line.strip())
 
-/* Deep Space Background */
-.stApp { background: #0B0914; color: #E2E8F0; font-family: 'Inter', sans-serif !important; }
-section[data-testid="stSidebar"] { background: #0B0914; border-right: 1px solid rgba(168, 85, 247, 0.2); }
-.block-container { padding: 0rem 2rem 2rem 2rem; max-width: 100%; }
 
-/* Glassmorphism KPI Cards */
-.kpi-card-custom { 
-    background: rgba(30, 25, 45, 0.6); 
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(168, 85, 247, 0.2); 
-    border-radius: 12px; 
-    padding: 18px 20px; 
-    transition: all 0.3s ease; 
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
-    min-height: 110px;
-    position: relative;
-    overflow: hidden;
-}
-.kpi-card-custom::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: var(--card-accent, #A855F7);
-    border-radius: 12px 12px 0 0;
-}
-.kpi-card-custom:hover { 
-    border-color: #A855F7; 
-    box-shadow: 0 0 20px rgba(168, 85, 247, 0.4); 
-    transform: translateY(-2px);
-}
-.kpi-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;}
-.kpi-lbl { font-size: 0.8rem; color: #94A3B8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;}
-.kpi-val { font-size: 1.6rem; font-weight: 700; color: #F8FAFC; margin-bottom: 4px; font-family: 'Inter', sans-serif;}
+def spark_svg(prices: list, w: int = 90, h: int = 32) -> str:
+    if len(prices) < 2:
+        return ""
+    mn, mx = min(prices), max(prices)
+    rng    = mx - mn or 1
+    pts    = [(i / (len(prices)-1) * w,
+               (h-6) - (p-mn)/rng*(h-10) + 3) for i, p in enumerate(prices)]
+    poly   = " ".join(f"{x:.1f},{y:.1f}" for x, y in pts)
+    fill   = f"0,{h} " + poly + f" {w},{h}"
+    up     = prices[-1] >= prices[0]
+    sc     = MN if up else EM
+    fc     = "rgba(52,211,153,.12)" if up else "rgba(248,113,113,.12)"
+    return (f'<svg width="{w}" height="{h}" viewBox="0 0 {w} {h}" '
+            f'style="overflow:visible;">'
+            f'<polygon points="{fill}" fill="{fc}"/>'
+            f'<polyline points="{poly}" fill="none" stroke="{sc}" '
+            f'stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>'
+            f'</svg>')
 
-/* Neon Badges */
-.badge-up { background: rgba(32, 201, 151, 0.15); color: #20C997; border: 1px solid rgba(32, 201, 151, 0.3); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; display: inline-block;}
-.badge-down { background: rgba(255, 77, 77, 0.15); color: #FF4D4D; border: 1px solid rgba(255, 77, 77, 0.3); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; display: inline-block;}
-.badge-neutral { background: rgba(168, 85, 247, 0.15); color: #D8B4FE; border: 1px solid rgba(168, 85, 247, 0.3); padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; display: inline-block;}
 
-/* Glowing Section Labels */
-.section-accent {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: #94A3B8;
-    margin: 1.5rem 0 0.75rem 0;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    display: flex;
-    align-items: center;
-    gap: 10px;
-}
-.section-accent::after {
-    content: '';
-    flex: 1;
-    height: 1px;
-    background: rgba(168,85,247,0.15);
-}
+def sec_label(title: str):
+    st.markdown(
+        f'<div class="mkt-sec"><span class="dot"></span>'
+        f'<span class="lbl">{title}</span><span class="ln"></span></div>',
+        unsafe_allow_html=True,
+    )
 
-/* Custom Cyber Button */
-.stButton>button { border: 1px solid rgba(168, 85, 247, 0.5) !important; background: rgba(30, 25, 45, 0.8) !important; color: #D8B4FE !important; font-weight: 500 !important; border-radius: 8px !important; transition: all 0.3s; box-shadow: 0 0 10px rgba(168, 85, 247, 0.1); }
-.stButton>button:hover { border-color: #A855F7 !important; color: #FFF !important; box-shadow: 0 0 15px rgba(168, 85, 247, 0.6); }
 
-/* Tech Panel Custom CSS */
-.tech-panel { background: rgba(30, 25, 45, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(168, 85, 247, 0.2); border-radius: 12px; padding: 20px; height: 100%; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);}
-.tech-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(168, 85, 247, 0.15); padding: 12px 0; }
-.tech-row:last-child { border-bottom: none; }
-.tech-label { color: #94A3B8; font-size: 0.85rem; font-weight: 500; }
-.tech-val { color: #F8FAFC; font-weight: 600; font-size: 0.95rem;}
+def _cr(v: float) -> str:
+    return f"₹{abs(v):,.0f} Cr"
 
-/* Tabs Styling */
-.stTabs [data-baseweb="tab-list"] { background-color: rgba(30, 25, 45, 0.4); border-radius: 8px; padding: 5px; gap: 10px; }
-.stTabs [data-baseweb="tab"] { color: #94A3B8; font-weight: 600; border-radius: 6px; padding: 8px 16px; }
-.stTabs [aria-selected="true"] { background-color: rgba(168, 85, 247, 0.2) !important; color: #D8B4FE !important; border-bottom: 2px solid #A855F7 !important;}
 
-/* Pulse animation */
-@keyframes pulse-dot {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.85); }
-}
-.pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
-</style>
-""", unsafe_allow_html=True)
+def market_status_ist():
+    ist = pytz.timezone("Asia/Kolkata")
+    now = datetime.now(ist)
+    t   = now.hour * 60 + now.minute
+    wd  = now.weekday()
+    nse = wd < 5 and 9*60+15 <= t <= 15*60+30
+    us  = wd < 5 and (t >= 19*60+30 or t <= 2*60)
+    return nse, us, now
 
-def render_kpi(label, value_str, pct_change,
-               border_color="#A855F7", ticker=None):
-    arrow = "▲" if pct_change >= 0 else "▼"
-    badge_bg = "rgba(32,201,151,0.15)" if pct_change >= 0 else "rgba(255,77,77,0.15)"
-    badge_fg = "#20C997" if pct_change >= 0 else "#FF4D4D"
-    badge_bd = "rgba(32,201,151,0.3)" if pct_change >= 0 else "rgba(255,77,77,0.3)"
 
-    detail_html = ""
-    if ticker:
-        try:
-            t = yf.Ticker(ticker)
-            fi = t.fast_info
-            vol = fi.three_month_average_volume or 0
-            high52 = fi.year_high or 0
-            low52 = fi.year_low or 0
-            hist = t.history(period="8d")
-            week_chg = 0
-            if len(hist) >= 6:
-                week_chg = ((float(hist['Close'].iloc[-1]) - float(hist['Close'].iloc[-6])) /
-                            float(hist['Close'].iloc[-6]) * 100)
-            vol_str = (f"{vol/1e7:.1f}Cr" if vol > 1e7 else f"{vol/1e5:.1f}L" if vol > 1e5 else str(int(vol)))
-            wc = "#20C997" if week_chg >= 0 else "#FF4D4D"
-            wa = "▲" if week_chg >= 0 else "▼"
-            sc = "#20C997" if pct_change >= 0 else "#FF4D4D"
-            st_text = "BULLISH" if pct_change >= 0 else "BEARISH"
-            row = "display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(168,85,247,0.15);"
-            detail_html = (
-                f"<div style='font-size:11px;font-weight:700;color:#D8B4FE;margin-bottom:8px;'>{label}</div>"
-                f"<div style='{row}'><span style='font-size:10px;color:#94A3B8;'>52W High</span><span style='font-size:11px;color:#20C997;font-weight:600;'>{high52:,.2f}</span></div>"
-                f"<div style='{row}'><span style='font-size:10px;color:#94A3B8;'>52W Low</span><span style='font-size:11px;color:#FF4D4D;font-weight:600;'>{low52:,.2f}</span></div>"
-                f"<div style='{row}'><span style='font-size:10px;color:#94A3B8;'>Week chg</span><span style='font-size:11px;color:{wc};font-weight:600;'>{wa} {abs(week_chg):.2f}%</span></div>"
-                f"<div style='display:flex;justify-content:space-between;padding:4px 0;'><span style='font-size:10px;color:#94A3B8;'>Avg Vol</span><span style='font-size:11px;color:#F8FAFC;font-weight:600;'>{vol_str}</span></div>"
-                f"<div style='margin-top:8px;padding:5px 8px;border-radius:6px;background:rgba(168,85,247,0.1);border:1px solid rgba(168,85,247,0.2);'>"
-                f"<span style='font-size:9px;color:#94A3B8;'>SIGNAL &middot; </span>"
-                f"<span style='font-size:10px;font-weight:700;color:{sc};'>{st_text} TODAY</span></div>"
-            )
-        except Exception:
-            detail_html = "<div style='color:#94A3B8;font-size:11px;padding:10px 0;text-align:center;'>Loading details...</div>"
+# ═════════════════════════════════════════════════════════════════════════
+# PAGE BEGINS
+# ═════════════════════════════════════════════════════════════════════════
 
-    components.html(f"""
-<style>
-body{{margin:0;padding:0;background:transparent;overflow:hidden;font-family:Inter,sans-serif;}}
-.fc{{perspective:1000px;height:128px;cursor:pointer;}}
-.fi{{position:relative;width:100%;height:100%;transition:transform 0.55s cubic-bezier(0.4,0,0.2,1);transform-style:preserve-3d;}}
-.fc.flipped .fi{{transform:rotateY(180deg);}}
-.ff,.fb{{position:absolute;width:100%;height:100%;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:12px;padding:14px 16px;border:1px solid rgba(168,85,247,0.2);border-top:2px solid {border_color};background:rgba(30,25,45,0.97);box-sizing:border-box;}}
-.fb{{transform:rotateY(180deg);background:rgba(20,15,40,0.99);}}
-</style>
-<div class="fc" onclick="this.classList.toggle('flipped')" title="Click to see details">
-<div class="fi">
-<div class="ff">
-<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-<span style="font-size:9px;font-weight:700;color:#94A3B8;letter-spacing:0.08em;">{label}</span>
-<div style="width:6px;height:6px;border-radius:50%;background:{border_color};box-shadow:0 0 5px {border_color};"></div>
-</div>
-<div style="font-size:1.35rem;font-weight:700;color:#F8FAFC;margin-bottom:6px;font-family:monospace;">{value_str}</div>
-<div style="background:{badge_bg};color:{badge_fg};border:1px solid {badge_bd};padding:3px 8px;border-radius:6px;font-size:0.78rem;font-weight:600;display:inline-block;">{arrow} {abs(pct_change):.2f}%</div>
-<div style="font-size:9px;color:#4B5563;margin-top:6px;">&#8635; click for details</div>
-</div>
-<div class="fb">{detail_html}</div>
-</div>
-</div>
-""", height=140)
+nse_open, us_open, now_ist = market_status_ist()
 
-# ==========================================
-# 3. INDIAN INDICES BAR + TRADINGVIEW TICKER TAPE
-# ==========================================
-@st.cache_data(ttl=300, show_spinner=False)
-def get_indian_bar_data():
-    indices = {
-        "NIFTY 50": "^NSEI",
-        "SENSEX": "^BSESN",
-        "BANK NIFTY": "^NSEBANK",
-        "NIFTY IT": "^CNXIT",
-        "NIFTY MID": "^NSEMDCP50",
-    }
-    items = []
-    for name, sym in indices.items():
-        try:
-            df = yf.Ticker(sym).history(period="2d")
-            if df.empty:
-                continue
-            price = float(df['Close'].iloc[-1])
-            prev = float(df['Close'].iloc[-2]) if len(df)>1 else price
-            chg = ((price-prev)/prev*100) if prev else 0
-            items.append((name, price, chg))
-        except:
-            continue
-    return items
+# ── NSE Ticker strip ──────────────────────────────────────────────────────
+strip_data = fetch_ticker_strip()
+if strip_data:
+    cells = "".join(
+        f'<div class="idx-cell">'
+        f'<div style="font-size:9px;font-weight:700;color:{MUT};letter-spacing:.1em;">{n}</div>'
+        f'<div class="num" style="font-size:13px;font-weight:700;color:{INK};margin:2px 0;">{p:,.2f}</div>'
+        f'<div style="font-size:11px;font-weight:600;color:{"#34d399" if c>=0 else "#f87171"};">'
+        f'{"▲" if c>=0 else "▼"} {abs(c):.2f}%</div></div>'
+        for n, p, c in strip_data
+    )
+    components.html(
+        f'<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">'
+        f'<style>*{{margin:0;padding:0;box-sizing:border-box;}}'
+        f'.idx-strip{{display:flex;overflow-x:auto;background:rgba(7,7,20,.95);'
+        f'border-top:1px solid rgba(139,92,246,.2);border-bottom:1px solid rgba(139,92,246,.2);padding:4px 0;}}'
+        f'.idx-cell{{padding:5px 18px;border-right:1px solid rgba(139,92,246,.12);min-width:130px;flex-shrink:0;}}'
+        f'.num{{font-family:"JetBrains Mono",monospace;}}</style>'
+        f'<div class="idx-strip">'
+        f'<div style="padding:0 14px;display:flex;align-items:center;border-right:1px solid rgba(139,92,246,.25);margin-right:4px;">'
+        f'<span style="font-size:10px;font-weight:800;color:#8b5cf6;letter-spacing:.15em;">🇮🇳 NSE</span></div>'
+        f'{cells}'
+        f'<div style="padding:0 14px;display:flex;align-items:center;font-size:9px;color:#4b5563;white-space:nowrap;">'
+        f'via yfinance · 15-min delay</div></div>',
+        height=60,
+    )
 
-indian_items = get_indian_bar_data()
-
-if indian_items:
-    cells = ""
-    for name, price, chg in indian_items:
-        color = "#20C997" if chg >= 0 else "#FF4D4D"
-        arrow = "▲" if chg >= 0 else "▼"
-        cells += f"""
-        <div style="display:flex;flex-direction:column;
-        padding:6px 20px;border-right:1px solid rgba(168,85,247,0.15);
-        min-width:140px;">
-            <span style="font-size:9px;font-weight:700;color:#94A3B8;
-            letter-spacing:0.1em;">{name}</span>
-            <span style="font-size:14px;font-weight:700;color:#F8FAFC;
-            font-family:monospace;margin:2px 0;">
-            {price:,.2f}</span>
-            <span style="font-size:11px;font-weight:600;color:{color};">
-            {arrow} {abs(chg):.2f}%</span>
-        </div>"""
-
-    components.html(f"""
-    <div style="background:rgba(11,9,20,0.95);
-    border-bottom:1px solid rgba(168,85,247,0.2);
-    border-top:1px solid rgba(168,85,247,0.2);
-    padding:4px 0;display:flex;align-items:center;
-    overflow-x:auto;white-space:nowrap;width:100%;">
-        <div style="display:flex;align-items:center;
-        padding:0 16px;border-right:1px solid rgba(168,85,247,0.3);
-        margin-right:4px;min-width:70px;">
-            <span style="font-size:10px;font-weight:800;
-            color:#A855F7;letter-spacing:0.15em;">🇮🇳 NSE</span>
-        </div>
-        {cells}
-        <div style="padding:0 16px;font-size:9px;color:#4B5563;
-        white-space:nowrap;">
-            via yfinance · 15min delay
-        </div>
-    </div>
-    """, height=62)
-
-ticker_tape_html = """
+# ── Global ticker tape ────────────────────────────────────────────────────
+components.html("""
 <div class="tradingview-widget-container">
 <div class="tradingview-widget-container__widget"></div>
-<script type="text/javascript" src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
-{
-  "symbols": [
-    {"proName":"FOREXCOM:NSXUSD","title":"Nasdaq 100"},
-    {"proName":"FOREXCOM:SPXUSD","title":"S&P 500"},
-    {"proName":"OANDA:XAUUSD","title":"Gold"},
-    {"proName":"BITSTAMP:BTCUSD","title":"Bitcoin"},
-    {"proName":"FX_IDC:USDINR","title":"USD/INR"}
-  ],
-  "showSymbolLogo": true,
-  "colorTheme": "dark",
-  "isTransparent": true,
-  "locale": "in"
-}
-</script></div>
-"""
-components.html(ticker_tape_html, height=55)
+<script type="text/javascript"
+  src="https://s3.tradingview.com/external-embedding/embed-widget-ticker-tape.js" async>
+{"symbols":[
+  {"proName":"FOREXCOM:SPXUSD","title":"S&P 500"},
+  {"proName":"FOREXCOM:NSXUSD","title":"Nasdaq 100"},
+  {"proName":"OANDA:XAUUSD","title":"Gold"},
+  {"proName":"BITSTAMP:BTCUSD","title":"Bitcoin"},
+  {"proName":"FX_IDC:USDINR","title":"USD/INR"}
+],"showSymbolLogo":true,"colorTheme":"dark","isTransparent":true,"locale":"in"}
+</script></div>""", height=55)
 
-# Page Header
-st.markdown('<div style="margin-top: 15px;"></div>', unsafe_allow_html=True)
-col1, col2 = st.columns([0.88, 0.12])
-with col1:
-    st.markdown('<div style="font-size:2.2rem; font-weight:800; color:#F8FAFC; font-family:\'Inter\', sans-serif; line-height:1.15;">Live Markets</div><div style="font-size:0.7rem; font-weight:600; color:#A855F7; letter-spacing:0.18em; text-transform:uppercase; margin-top:2px; margin-bottom:4px;">Intelligence Dashboard</div>', unsafe_allow_html=True)
-    st.markdown(f'<div style="font-size:0.85rem; color:#94A3B8; margin-bottom:1rem;">PORTFOLIO INTELLIGENCE &nbsp;·&nbsp; <span class="pulse-dot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#20C997;box-shadow:0 0 6px #20C997;vertical-align:middle;margin-right:4px;"></span> LIVE</div>', unsafe_allow_html=True)
-with col2:
-    if st.button("↻ Resync Node", use_container_width=True):
+# ── Page header ───────────────────────────────────────────────────────────
+st.markdown("<div style='height:10px'></div>", unsafe_allow_html=True)
+hcol, bcol = st.columns([5, 1])
+with hcol:
+    st.markdown(
+        f'<div style="font-family:\'Space Grotesk\',sans-serif;font-size:2rem;font-weight:800;'
+        f'background:linear-gradient(90deg,{INK} 30%,{VL} 70%,{CY});'
+        f'-webkit-background-clip:text;background-clip:text;color:transparent;line-height:1.1;">Live Markets</div>'
+        f'<div style="font-size:0.68rem;color:{MUT};letter-spacing:.18em;text-transform:uppercase;margin-top:2px;">'
+        f'Premium Market Intelligence · via yfinance</div>',
+        unsafe_allow_html=True,
+    )
+with bcol:
+    if st.button("↻  Resync", use_container_width=True, key="resync"):
         st.cache_data.clear()
         st.rerun()
 
-nse_label, nse_color = status["nse"]
-us_label, us_color = status["us"]
-st.markdown(f"""
-<div style="display:flex;align-items:center;gap:20px;margin-bottom:1.2rem;padding:8px 16px;
-background:rgba(30,25,45,0.5);border-radius:8px;border:1px solid rgba(168,85,247,0.15);">
-    <span style="font-size:0.72rem;font-weight:600;color:{nse_color};letter-spacing:0.06em;">{nse_label}</span>
-    <span style="font-size:0.72rem;font-weight:600;color:{us_color};letter-spacing:0.06em;">{us_label}</span>
-    <span style="font-size:0.72rem;font-weight:600;color:#20C997;letter-spacing:0.06em;">{status["crypto"][0]}</span>
-    <span style="margin-left:auto;font-size:0.68rem;color:#4B5563;">
-        Last sync: {datetime.now(pytz.timezone('Asia/Kolkata')).strftime('%I:%M %p IST')}
-    </span>
-</div>
-""", unsafe_allow_html=True)
+# Status bar
+nse_col = MN if nse_open else EM
+us_col  = MN if us_open  else MUT
+st.markdown(
+    f'<div style="display:flex;align-items:center;gap:20px;margin:.6rem 0 .2rem;'
+    f'padding:7px 16px;background:{GL};border-radius:10px;border:1px solid {BR};">'
+    f'<span style="font-size:.72rem;font-weight:700;color:{nse_col};">● NSE {"Open" if nse_open else "Closed"}</span>'
+    f'<span style="font-size:.72rem;font-weight:700;color:{us_col};">● US {"Open" if us_open else "Closed"}</span>'
+    f'<span style="font-size:.72rem;font-weight:700;color:{MN};">● Crypto 24/7</span>'
+    f'<span style="margin-left:auto;font-size:.66rem;color:{MUT};">'
+    f'Last sync: {now_ist.strftime("%I:%M %p IST")}</span></div>',
+    unsafe_allow_html=True,
+)
 
-# ==========================================
-# 4. DASHBOARD CARDS
-# ==========================================
-st.markdown('<div class="section-accent">Market Indices</div>', unsafe_allow_html=True)
-c1, c2, c3, c4 = st.columns(4)
-nifty_p, nifty_c = get_latest_metrics("^NSEI")
-sensex_p, sensex_c = get_latest_metrics("^BSESN")
-bank_p, bank_c = get_latest_metrics("^NSEBANK")
-nasdaq_p, nasdaq_c = get_latest_metrics("^IXIC")
 
-with c1: render_kpi("Nifty 50", f"{nifty_p:,.2f}", nifty_c, "#3B82F6", "^NSEI")
-with c2: render_kpi("Sensex", f"{sensex_p:,.2f}", sensex_c, "#3B82F6", "^BSESN")
-with c3: render_kpi("Bank Nifty", f"{bank_p:,.2f}", bank_c, "#3B82F6", "^NSEBANK")
-with c4: render_kpi("Nasdaq", f"{nasdaq_p:,.2f}", nasdaq_c, "#8B5CF6", "^IXIC")
+# ═════════════════════════════════════════════════════════════════════════
+# 1. MARKET PULSE
+# ═════════════════════════════════════════════════════════════════════════
+sec_label("Market Pulse")
 
-st.markdown('<div class="section-accent">Commodities & Crypto</div>', unsafe_allow_html=True)
-c1, c2, c3, c4 = st.columns(4)
-gold_p, gold_c = get_latest_metrics("GC=F")
-crude_p, crude_c = get_latest_metrics("CL=F")
-usdinr_p, usdinr_c = get_latest_metrics("INR=X")
-btc_p, btc_c = get_latest_metrics("BTC-USD")
+with st.spinner("Loading market breadth…"):
+    adv, dec, unch, movers = fetch_breadth_movers()
 
-with c1: render_kpi("Gold (USD/oz)", f"${gold_p:,.2f}", gold_c, "#F59E0B", "GC=F")
-with c2: render_kpi("Crude Oil", f"${crude_p:,.2f}", crude_c, "#F59E0B", "CL=F")
-with c3: render_kpi("USD/INR", f"₹{usdinr_p:,.4f}", usdinr_c, "#10B981", "INR=X")
-with c4: render_kpi("Bitcoin", f"${btc_p:,.2f}", btc_c, "#F97316", "BTC-USD")
+total   = adv + dec + unch or 1
+bull_p  = adv / total * 100
+bear_p  = dec / total * 100
 
-# ==========================================
-# 5. TECHNICAL INTELLIGENCE PANEL
-# ==========================================
-st.markdown('<div class="section-accent">Technical Intelligence</div>', unsafe_allow_html=True)
-
-CHART_ASSETS = {
-    "Nifty 50": "^NSEI", "Bank Nifty": "^NSEBANK", "Sensex": "^BSESN",
-    "S&P 500": "^GSPC", "Nasdaq": "^IXIC", "Dow Jones": "^DJI",
-    "Gold": "GC=F", "Crude Oil": "CL=F",
-    "Bitcoin": "BTC-USD", "Ethereum": "ETH-USD", "USD/INR": "INR=X"
-}
-PERIOD_MAP = {"1 Week": 5, "1 Month": 21, "3 Months": 63, "6 Months": 126, "1 Year": 252}
-
-c_asset, c_tf, c_empty = st.columns([0.25, 0.2, 0.55])
-with c_asset:
-    selected_asset = st.selectbox("Select Asset", list(CHART_ASSETS.keys()), label_visibility="collapsed")
-with c_tf:
-    selected_period = st.selectbox("Timeframe", list(PERIOD_MAP.keys()), index=2, label_visibility="collapsed")
-
-chart_ticker = CHART_ASSETS[selected_asset]
-display_days = PERIOD_MAP[selected_period]
-full_data = fetch_market_data(chart_ticker, period="1y")
-
-if full_data is not None and not full_data.empty:
-    display_data = full_data.tail(display_days)
-    tech_stats = calculate_technical_summary(full_data, display_data)
-    
-    col_chart, col_stats = st.columns([0.65, 0.35])
-    
-    INDIAN_ASSETS = ["Nifty 50", "Bank Nifty", "Sensex", "Nifty IT"]
-
-    TV_SYMBOL_MAP = {
-        "S&P 500": "FOREXCOM:SPXUSD",
-        "Nasdaq": "FOREXCOM:NSXUSD",
-        "Dow Jones": "FOREXCOM:DJI",
-        "Gold": "OANDA:XAUUSD",
-        "Crude Oil": "OANDA:BCOUSD",
-        "Bitcoin": "BITSTAMP:BTCUSD",
-        "Ethereum": "BITSTAMP:ETHUSD",
-        "USD/INR": "FX_IDC:USDINR",
-        "EUR/INR": "FX_IDC:EURINR",
-    }
-    TF_MAP = {
-        "1 Week": "W",
-        "1 Month": "M",
-        "3 Months": "3M",
-        "6 Months": "6M",
-        "1 Year": "12M",
-    }
-
-    with col_chart:
-        if selected_asset in INDIAN_ASSETS:
-            if full_data is not None and not full_data.empty:
-                fig = go.Figure()
-                fig.add_trace(go.Candlestick(
-                    x=display_data.index,
-                    open=display_data['Open'],
-                    high=display_data['High'],
-                    low=display_data['Low'],
-                    close=display_data['Close'],
-                    increasing_line_color='#20C997',
-                    decreasing_line_color='#FF4D4D',
-                    increasing_fillcolor='rgba(32,201,151,0.3)',
-                    decreasing_fillcolor='rgba(255,77,77,0.3)',
-                    name=selected_asset
-                ))
-                ema20_line = display_data['Close'].ewm(span=20).mean()
-                fig.add_trace(go.Scatter(
-                    x=display_data.index, y=ema20_line,
-                    line=dict(color='#A855F7', width=1.5, dash='dot'),
-                    name='EMA 20'
-                ))
-                ema50_line = display_data['Close'].ewm(span=50).mean()
-                fig.add_trace(go.Scatter(
-                    x=display_data.index, y=ema50_line,
-                    line=dict(color='#F59E0B', width=1.5, dash='dot'),
-                    name='EMA 50'
-                ))
-                fig.update_layout(
-                    height=500,
-                    margin=dict(l=0, r=0, t=30, b=0),
-                    paper_bgcolor='rgba(11,9,20,1)',
-                    plot_bgcolor='rgba(15,12,25,1)',
-                    font=dict(color='#94A3B8', family='Inter'),
-                    xaxis=dict(showgrid=False, zeroline=False,
-                               rangeslider=dict(visible=False), color='#4B5563'),
-                    yaxis=dict(showgrid=True, gridcolor='rgba(168,85,247,0.08)',
-                               side='right', zeroline=False, color='#4B5563'),
-                    legend=dict(bgcolor='rgba(30,25,45,0.8)',
-                                bordercolor='rgba(168,85,247,0.2)',
-                                borderwidth=1, font=dict(size=11)),
-                    hovermode='x unified',
-                    hoverlabel=dict(bgcolor='rgba(30,25,45,0.95)',
-                                   bordercolor='rgba(168,85,247,0.3)',
-                                   font=dict(color='#F8FAFC', size=11))
-                )
-                st.markdown(
-                    f'<div style="font-size:10px;color:#6B7280;margin-bottom:4px;display:flex;align-items:center;gap:8px;">'
-                    f'<span style="color:#A855F7;">&#9679;</span>'
-                    f'{selected_asset} &middot; {selected_period} &middot; Candlestick + EMA 20/50'
-                    f'<span style="margin-left:auto;color:#4B5563;">via yfinance &middot; 15min delay</span>'
-                    f'</div>', unsafe_allow_html=True
-                )
-                st.plotly_chart(fig, use_container_width=True)
-        else:
-            tv_sym = TV_SYMBOL_MAP.get(selected_asset, "FOREXCOM:SPXUSD")
-            tv_tf = TF_MAP.get(selected_period, "3M")
-            cid = "tv_" + tv_sym.replace(":", "_").replace("/", "_")
-            st.components.v1.html(f"""
-<div id="{cid}" style="height:500px;border-radius:12px;overflow:hidden;border:1px solid rgba(168,85,247,0.15);"></div>
-<script src="https://s3.tradingview.com/tv.js"></script>
-<script>
-new TradingView.widget({{
-  "autosize": true,
-  "symbol": "{tv_sym}",
-  "interval": "{tv_tf}",
-  "timezone": "Asia/Kolkata",
-  "theme": "dark",
-  "style": "1",
-  "locale": "in",
-  "toolbar_bg": "#0B0914",
-  "enable_publishing": false,
-  "withdateranges": true,
-  "hide_side_toolbar": false,
-  "allow_symbol_change": false,
-  "studies": ["RSI@tv-basicstudies","MACD@tv-basicstudies","MAExp@tv-basicstudies"],
-  "container_id": "{cid}",
-  "width": "100%",
-  "height": 500,
-  "backgroundColor": "rgba(11,9,20,1)",
-  "gridColor": "rgba(168,85,247,0.06)"
-}});
-</script>
-""", height=520)
-
-    # --- RIGHT PANEL (CLEANED UP & STREAMLINED) ---    
-    with col_stats:
-        if tech_stats:
-            rsi_val = tech_stats['rsi_latest']
-            macd_val = tech_stats['macd_latest']
-            prefix = "₹" if "Nifty" in selected_asset or "Sensex" in selected_asset or "INR" in selected_asset else "$"
-            
-            # Smart text classes for badges
-            if rsi_val > 70:
-                rsi_badge, rsi_text = "badge-down", "OVERBOUGHT"
-            elif rsi_val < 30:
-                rsi_badge, rsi_text = "badge-up", "OVERSOLD"
-            else:
-                rsi_badge, rsi_text = "badge-neutral", "NEUTRAL"
-                
-            macd_badge, macd_text = ("badge-up", "BULLISH") if macd_val > 0 else ("badge-down", "BEARISH")
-            
-            html_panel = (
-                f"<div class='tech-panel'>"
-                f"<div style='color:#F8FAFC; font-weight:800; font-size:1.3rem; margin-bottom:20px; font-family:Inter;'>{selected_asset}</div>"
-                
-                # Indicators
-                f"<div style='margin-bottom: 25px; padding-bottom: 15px; border-bottom: 1px solid rgba(168, 85, 247, 0.15);'>"
-                f"<div style='display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;'>"
-                f"<span class='tech-label'>RSI (14)</span>"
-                f"<div style='text-align:right;'><span class='tech-val' style='font-size:1.1rem; margin-right:8px;'>{rsi_val:.1f}</span><span class='{rsi_badge}'>{rsi_text}</span></div>"
-                f"</div>"
-                f"<div style='display:flex; justify-content:space-between; align-items:center;'>"
-                f"<span class='tech-label'>MACD Line</span>"
-                f"<div style='text-align:right;'><span class='tech-val' style='font-size:1.1rem; margin-right:8px;'>{macd_val:.2f}</span><span class='{macd_badge}'>{macd_text}</span></div>"
-                f"</div>"
-                f"</div>"
-                
-                # Price Stats
-                f"<div class='tech-row'><span class='tech-label'>Period High</span><span class='tech-val'>{prefix}{tech_stats['high']:,.2f}</span></div>"
-                f"<div class='tech-row'><span class='tech-label'>Period Low</span><span class='tech-val'>{prefix}{tech_stats['low']:,.2f}</span></div>"
-                
-                # Recent Closes
-                f"<div style='margin-top: 25px; margin-bottom: 10px;'><span style='color:#A855F7; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;'>Recent Closes</span></div>"
-            )
-            
-            for date, row in tech_stats['history'][::-1].iterrows():
-                dt_str = date.strftime('%d %b')
-                html_panel += f"<div class='tech-row' style='padding: 8px 0; border:none;'><span class='tech-label'>{dt_str}</span><span class='tech-val' style='font-size:0.95rem;'>{prefix}{row['Close']:,.2f}</span></div>"
-                
-            html_panel += "</div>"
-            st.markdown(html_panel, unsafe_allow_html=True)
+if bull_p >= 58:
+    sentiment, sent_color, sent_emoji = "BULLISH",  MN, "🟢"
+elif bear_p >= 58:
+    sentiment, sent_color, sent_emoji = "BEARISH",  EM, "🔴"
 else:
-    st.error(f"Market data is currently unavailable for {selected_asset}.")
+    sentiment, sent_color, sent_emoji = "NEUTRAL",  AM, "🟡"
 
-# ==========================================
-# 6. AI INTELLIGENCE PANEL
-# ==========================================
-st.markdown('<div class="section-accent">AI Intelligence</div>', unsafe_allow_html=True)
+# Gauge needle angle: -80 (bearish) → 0 (neutral) → +80 (bullish)
+needle_deg = (bull_p - bear_p) * 0.8
+needle_deg = max(-82, min(82, needle_deg))
 
-mode_col, _ = st.columns([0.3, 0.7])
-with mode_col:
-    ai_mode = st.radio("", ["Easy Mode", "Advanced Mode"],
-                       horizontal=True, key="ai_mode",
-                       label_visibility="collapsed")
+# Build SVG gauge
+needle_rad = math.radians(needle_deg - 90)
+nx = 100 + math.cos(needle_rad) * 62
+ny = 95  - math.sin(needle_rad) * 62
 
-if full_data is not None and tech_stats:
-    closes = full_data['Close']
-    curr = float(closes.iloc[-1])
-    prev = float(closes.iloc[-2])
-    ema20 = float(closes.ewm(span=20).mean().iloc[-1])
-    ema50 = float(closes.ewm(span=50).mean().iloc[-1])
-    rsi_v = float(tech_stats['rsi_latest'])
-    macd_v = float(tech_stats['macd_latest'])
-    sig_v = float(tech_stats['signal_series'].iloc[-1])
+gauge_svg = _H(f"""
+<svg width="200" height="110" viewBox="0 0 200 110" style="display:block;margin:0 auto;">
+  <defs>
+    <linearGradient id="gArc" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#f87171"/>
+      <stop offset="50%"  stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#34d399"/>
+    </linearGradient>
+  </defs>
+  <!-- background arc -->
+  <path d="M 18,95 A 82,82 0 0,1 182,95"
+        fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="14" stroke-linecap="round"/>
+  <!-- coloured arc -->
+  <path d="M 18,95 A 82,82 0 0,1 182,95"
+        fill="none" stroke="url(#gArc)" stroke-width="14" stroke-linecap="round" opacity="0.75"/>
+  <!-- zone ticks -->
+  <line x1="18"  y1="95" x2="24"  y2="95"  stroke="{EM}" stroke-width="2"/>
+  <line x1="182" y1="95" x2="176" y2="95"  stroke="{MN}" stroke-width="2"/>
+  <line x1="100" y1="13" x2="100" y2="20"  stroke="{AM}" stroke-width="2"/>
+  <!-- needle -->
+  <line x1="100" y1="95" x2="{nx:.1f}" y2="{ny:.1f}"
+        stroke="{INK}" stroke-width="2.5" stroke-linecap="round"
+        style="filter:drop-shadow(0 0 4px {sent_color})"/>
+  <circle cx="100" cy="95" r="5" fill="{sent_color}" style="filter:drop-shadow(0 0 6px {sent_color})"/>
+  <!-- labels -->
+  <text x="12"  y="108" fill="{EM}" font-size="8" font-family="Inter,sans-serif" font-weight="700">BEAR</text>
+  <text x="155" y="108" fill="{MN}" font-size="8" font-family="Inter,sans-serif" font-weight="700">BULL</text>
+</svg>
+""")
 
+pc1, pc2, pc3 = st.columns([1, 1.4, 1])
+
+with pc1:
+    st.markdown(
+        _H(f"""
+        <div class="g rise-in" style="padding:1.2rem;text-align:center;height:100%;min-height:200px;
+             display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <div style="font-size:.65rem;color:{MUT};text-transform:uppercase;letter-spacing:.14em;margin-bottom:.5rem;">
+            Market Sentiment
+          </div>
+          {gauge_svg}
+          <div style="font-size:1.6rem;font-weight:800;color:{sent_color};letter-spacing:.08em;margin-top:.3rem;">
+            {sent_emoji} {sentiment}
+          </div>
+          <div style="font-size:.72rem;color:{MUT};margin-top:.2rem;">
+            {bull_p:.0f}% stocks advancing
+          </div>
+          <div style="font-size:.6rem;color:#374151;margin-top:.4rem;">Nifty 50 · via yfinance</div>
+        </div>"""),
+        unsafe_allow_html=True,
+    )
+
+with pc2:
+    st.markdown(
+        _H(f"""
+        <div class="g rise-in" style="padding:1.4rem;height:100%;min-height:200px;display:flex;
+             flex-direction:column;justify-content:space-between;">
+          <div style="font-size:.65rem;color:{MUT};text-transform:uppercase;letter-spacing:.14em;
+               margin-bottom:.8rem;">Advance / Decline Ratio</div>
+
+          <!-- A/D bar -->
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:.72rem;
+                 color:{MUT};margin-bottom:5px;">
+              <span style="color:{MN};font-weight:700;">▲ {adv} Advances</span>
+              <span style="color:{EM};font-weight:700;">{dec} Declines ▼</span>
+            </div>
+            <div style="height:14px;border-radius:7px;overflow:hidden;
+                 background:rgba(255,255,255,0.05);">
+              <div style="height:100%;width:{bull_p:.1f}%;border-radius:7px;
+                   background:linear-gradient(90deg,{MN},{CY});
+                   box-shadow:0 0 8px {MN}44;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:.68rem;
+                 color:{MUT};margin-top:4px;">
+              <span>{bull_p:.1f}%</span>
+              <span>{bear_p:.1f}%</span>
+            </div>
+          </div>
+
+          <!-- Breadth grid -->
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:.8rem;">
+            <div style="text-align:center;padding:.6rem .4rem;border-radius:10px;
+                 background:rgba(52,211,153,.08);border:1px solid rgba(52,211,153,.18);">
+              <div class="num" style="font-size:1.3rem;font-weight:700;color:{MN};">{adv}</div>
+              <div style="font-size:.6rem;color:{MUT};margin-top:2px;">UP</div>
+            </div>
+            <div style="text-align:center;padding:.6rem .4rem;border-radius:10px;
+                 background:rgba(248,113,113,.08);border:1px solid rgba(248,113,113,.18);">
+              <div class="num" style="font-size:1.3rem;font-weight:700;color:{EM};">{dec}</div>
+              <div style="font-size:.6rem;color:{MUT};margin-top:2px;">DOWN</div>
+            </div>
+            <div style="text-align:center;padding:.6rem .4rem;border-radius:10px;
+                 background:rgba(139,92,246,.08);border:1px solid rgba(139,92,246,.18);">
+              <div class="num" style="font-size:1.3rem;font-weight:700;color:{VL};">{unch}</div>
+              <div style="font-size:.6rem;color:{MUT};margin-top:2px;">FLAT</div>
+            </div>
+          </div>
+          <div style="font-size:.6rem;color:#374151;margin-top:.6rem;">
+            Nifty 50 subset · previous close · via yfinance
+          </div>
+        </div>"""),
+        unsafe_allow_html=True,
+    )
+
+with pc3:
+    vix_val, vix_chg = fetch_vix()
+    vix_txt   = f"{vix_val:.2f}" if vix_val else "—"
+    vix_color = EM if (vix_val or 0) > 20 else AM if (vix_val or 0) > 15 else MN
+    vix_label = "HIGH FEAR" if (vix_val or 0) > 20 else "CAUTION" if (vix_val or 0) > 15 else "LOW FEAR"
+
+    indices_data = fetch_indices()
+    nifty_d = next((x for x in indices_data if "Nifty 50" in x["name"]), None)
+    mkt_chg = nifty_d["chg"] if nifty_d else 0
+
+    st.markdown(
+        _H(f"""
+        <div class="g rise-in" style="padding:1.4rem;height:100%;min-height:200px;
+             display:flex;flex-direction:column;justify-content:space-between;">
+          <div style="font-size:.65rem;color:{MUT};text-transform:uppercase;
+               letter-spacing:.14em;margin-bottom:.6rem;">Market Stats</div>
+
+          <!-- VIX -->
+          <div style="padding:.7rem 1rem;border-radius:12px;
+               background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.15);
+               margin-bottom:.6rem;">
+            <div style="font-size:.65rem;color:{MUT};margin-bottom:2px;">India VIX · Fear Index</div>
+            <div style="display:flex;align-items:baseline;gap:8px;">
+              <span class="num" style="font-size:1.8rem;font-weight:700;color:{vix_color};">{vix_txt}</span>
+              <span style="font-size:.7rem;font-weight:700;color:{vix_color};">{vix_label}</span>
+            </div>
+            <div style="font-size:.65rem;color:{MUT};margin-top:2px;">via yfinance (^INDIAVIX)</div>
+          </div>
+
+          <!-- Market today -->
+          <div style="padding:.7rem 1rem;border-radius:12px;
+               background:rgba(139,92,246,.07);border:1px solid {BR};margin-bottom:.6rem;">
+            <div style="font-size:.65rem;color:{MUT};margin-bottom:2px;">Nifty 50 Today</div>
+            <div class="num" style="font-size:1.5rem;font-weight:700;
+                 color:{"#34d399" if mkt_chg>=0 else "#f87171"};">
+              {"▲" if mkt_chg>=0 else "▼"} {abs(mkt_chg):.2f}%
+            </div>
+          </div>
+
+          <!-- 52W note -->
+          <div style="padding:.55rem .9rem;border-radius:10px;
+               background:rgba(34,211,238,.05);border:1px solid rgba(34,211,238,.12);
+               font-size:.7rem;color:{MUT};line-height:1.5;">
+            📅 52W Hi/Lo count computed from holdings XIRR data in your portfolio.
+          </div>
+        </div>"""),
+        unsafe_allow_html=True,
+    )
+
+
+# ═════════════════════════════════════════════════════════════════════════
+# 2. INDEX SNAPSHOT with Sparklines
+# ═════════════════════════════════════════════════════════════════════════
+sec_label("Index Snapshot")
+
+indices_data = fetch_indices()
+icols = st.columns(4)
+for col, idx in zip(icols, indices_data):
+    spark = spark_svg(idx["spark"])
+    chg_c = MN if idx["chg"] >= 0 else EM
+    with col:
+        st.markdown(
+            _H(f"""
+            <div class="g" style="padding:1rem 1.1rem;border-top:3px solid {idx['color']};">
+              <div style="font-size:.68rem;color:{MUT};font-weight:700;
+                   text-transform:uppercase;letter-spacing:.1em;margin-bottom:.4rem;">
+                {idx['name']}
+              </div>
+              <div class="num" style="font-size:1.4rem;font-weight:700;color:{INK};">
+                {idx['price']:,.2f}
+              </div>
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.3rem;">
+                <span style="font-size:.8rem;font-weight:700;color:{chg_c};">
+                  {"▲" if idx['chg']>=0 else "▼"} {abs(idx['chg']):.2f}%
+                </span>
+                {spark}
+              </div>
+              <div style="font-size:.6rem;color:#374151;margin-top:.4rem;">via yfinance · 5d sparkline</div>
+            </div>"""),
+            unsafe_allow_html=True,
+        )
+
+
+# ═════════════════════════════════════════════════════════════════════════
+# 3. SECTOR HEATMAP
+# ═════════════════════════════════════════════════════════════════════════
+sec_label("Sector Heatmap · NSE Indices via yfinance")
+
+sector_data = fetch_sectors()
+
+# Build 4x2 heatmap grid
+def sector_tile_html(s: dict) -> str:
+    chg     = s["chg"]
+    ok      = s.get("ok", True)
+    mag     = min(abs(chg) / 3, 1)   # 0–1 intensity
+    if not ok or chg == 0:
+        bg = "rgba(55,65,81,0.5)"
+        bd = "rgba(107,114,128,0.3)"
+        tc = MUT
+    elif chg > 0:
+        bg = f"rgba(52,211,153,{0.08 + mag*0.25:.2f})"
+        bd = f"rgba(52,211,153,{0.2 + mag*0.3:.2f})"
+        tc = MN
+    else:
+        bg = f"rgba(248,113,113,{0.08 + mag*0.25:.2f})"
+        bd = f"rgba(248,113,113,{0.2 + mag*0.3:.2f})"
+        tc = EM
+    sign = "▲" if chg > 0 else ("▼" if chg < 0 else "–")
+    chg_str = f"{sign} {abs(chg):.2f}%" if ok else "N/A"
+    return _H(f"""
+    <div style="background:{bg};border:1px solid {bd};border-radius:14px;
+         padding:.85rem .7rem;text-align:center;transition:transform .2s;min-height:80px;">
+      <div style="font-size:1.3rem;margin-bottom:.2rem;">{s['icon']}</div>
+      <div style="font-size:.72rem;font-weight:700;color:{INK};margin-bottom:.2rem;">{s['name']}</div>
+      <div class="num" style="font-size:.95rem;font-weight:700;color:{tc};">{chg_str}</div>
+    </div>""")
+
+row1_html = "".join(sector_tile_html(s) for s in sector_data[:4])
+row2_html = "".join(sector_tile_html(s) for s in sector_data[4:])
+
+for row_html in [row1_html, row2_html]:
+    st.markdown(
+        f'<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:10px;">'
+        f'{row_html}</div>',
+        unsafe_allow_html=True,
+    )
+st.caption("NSE sector indices: ^CNXBANK · ^CNXIT · ^CNXPHARMA · ^CNXAUTO · ^CNXFMCG · ^CNXENERGY · ^CNXMETAL · ^CNXREALTY")
+
+
+# ═════════════════════════════════════════════════════════════════════════
+# 4. FII / DII ACTIVITY
+# ═════════════════════════════════════════════════════════════════════════
+sec_label("FII / DII Activity · Previous Trading Day")
+
+fii_dii = fetch_fii_dii()
+
+if fii_dii:
+    fd    = fii_dii
+    fd_date = fd.get("date", "previous trading day")
+
+    fii_net_c = MN if fd["fii_net"] >= 0 else EM
+    dii_net_c = MN if fd["dii_net"] >= 0 else EM
+    fii_sign  = "▲ Net Buy" if fd["fii_net"] >= 0 else "▼ Net Sell"
+    dii_sign  = "▲ Net Buy" if fd["dii_net"] >= 0 else "▼ Net Sell"
+
+    max_flow = max(fd["fii_buy"], fd["fii_sell"], fd["dii_buy"], fd["dii_sell"], 1)
+
+    def bar_pct(v):
+        return min(v / max_flow * 100, 100)
+
+    fc1, fc2 = st.columns(2)
+    with fc1:
+        st.markdown(
+            _H(f"""
+            <div class="g" style="padding:1.2rem 1.4rem;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+                <div>
+                  <div style="font-size:.68rem;color:{MUT};text-transform:uppercase;
+                       letter-spacing:.12em;">FII / FPI Activity</div>
+                  <div style="font-size:.62rem;color:#374151;margin-top:2px;">
+                    Foreign Institutional Investors · {fd_date}
+                  </div>
+                </div>
+                <div style="font-size:1.1rem;font-weight:800;color:{fii_net_c};">
+                  {fii_sign}<br>
+                  <span class="num" style="font-size:.9rem;">{_cr(fd["fii_net"])}</span>
+                </div>
+              </div>
+              <!-- Buy bar -->
+              <div style="margin-bottom:.6rem;">
+                <div style="display:flex;justify-content:space-between;font-size:.7rem;color:{MUT};margin-bottom:3px;">
+                  <span>Buy</span><span class="num" style="color:{MN};">{_cr(fd["fii_buy"])}</span>
+                </div>
+                <div style="height:8px;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.06);">
+                  <div style="height:100%;width:{bar_pct(fd['fii_buy']):.0f}%;
+                       background:linear-gradient(90deg,{MN},{CY});border-radius:4px;"></div>
+                </div>
+              </div>
+              <!-- Sell bar -->
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:.7rem;color:{MUT};margin-bottom:3px;">
+                  <span>Sell</span><span class="num" style="color:{EM};">{_cr(fd["fii_sell"])}</span>
+                </div>
+                <div style="height:8px;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.06);">
+                  <div style="height:100%;width:{bar_pct(fd['fii_sell']):.0f}%;
+                       background:linear-gradient(90deg,{EM},{AM});border-radius:4px;"></div>
+                </div>
+              </div>
+            </div>"""),
+            unsafe_allow_html=True,
+        )
+    with fc2:
+        st.markdown(
+            _H(f"""
+            <div class="g" style="padding:1.2rem 1.4rem;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+                <div>
+                  <div style="font-size:.68rem;color:{MUT};text-transform:uppercase;
+                       letter-spacing:.12em;">DII Activity</div>
+                  <div style="font-size:.62rem;color:#374151;margin-top:2px;">
+                    Domestic Institutional Investors · {fd_date}
+                  </div>
+                </div>
+                <div style="font-size:1.1rem;font-weight:800;color:{dii_net_c};">
+                  {dii_sign}<br>
+                  <span class="num" style="font-size:.9rem;">{_cr(fd["dii_net"])}</span>
+                </div>
+              </div>
+              <div style="margin-bottom:.6rem;">
+                <div style="display:flex;justify-content:space-between;font-size:.7rem;color:{MUT};margin-bottom:3px;">
+                  <span>Buy</span><span class="num" style="color:{MN};">{_cr(fd["dii_buy"])}</span>
+                </div>
+                <div style="height:8px;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.06);">
+                  <div style="height:100%;width:{bar_pct(fd['dii_buy']):.0f}%;
+                       background:linear-gradient(90deg,{MN},{CY});border-radius:4px;"></div>
+                </div>
+              </div>
+              <div>
+                <div style="display:flex;justify-content:space-between;font-size:.7rem;color:{MUT};margin-bottom:3px;">
+                  <span>Sell</span><span class="num" style="color:{EM};">{_cr(fd["dii_sell"])}</span>
+                </div>
+                <div style="height:8px;border-radius:4px;overflow:hidden;background:rgba(255,255,255,.06);">
+                  <div style="height:100%;width:{bar_pct(fd['dii_sell']):.0f}%;
+                       background:linear-gradient(90deg,{EM},{AM});border-radius:4px;"></div>
+                </div>
+              </div>
+            </div>"""),
+            unsafe_allow_html=True,
+        )
+    st.caption("Source: NSE India API · nseindia.com/api/fiidiiTradeReact · previous trading session")
+else:
+    st.markdown(
+        _H(f"""
+        <div class="g" style="padding:1.2rem 1.6rem;display:flex;align-items:center;gap:16px;">
+          <div style="font-size:2rem;">📡</div>
+          <div>
+            <div style="font-size:.85rem;font-weight:600;color:{INK};">FII/DII data temporarily unavailable</div>
+            <div style="font-size:.75rem;color:{MUT};margin-top:4px;">
+              NSE API requires a session cookie. Check live data at
+              <a href="https://www.nseindia.com/market-data/live-market-statistics" target="_blank"
+                 style="color:{CY};">nseindia.com</a>
+            </div>
+          </div>
+        </div>"""),
+        unsafe_allow_html=True,
+    )
+
+
+# ═════════════════════════════════════════════════════════════════════════
+# 5. TOP MOVERS
+# ═════════════════════════════════════════════════════════════════════════
+sec_label("Top Movers · Nifty 50 · Previous Close")
+
+gainers = [m for m in movers if m["chg"] > 0][:5]
+losers  = [m for m in reversed(movers) if m["chg"] < 0][:5]
+
+mc1, mc2 = st.columns(2)
+with mc1:
+    st.markdown(f'<div style="font-size:.72rem;font-weight:700;color:{MN};text-transform:uppercase;'
+                f'letter-spacing:.12em;margin-bottom:.5rem;">🟢 Top Gainers</div>',
+                unsafe_allow_html=True)
+    if gainers:
+        for g in gainers:
+            st.markdown(
+                _H(f"""
+                <div style="display:flex;align-items:center;justify-content:space-between;
+                     padding:9px 14px;border-radius:10px;margin-bottom:5px;
+                     background:rgba(52,211,153,.07);border:1px solid rgba(52,211,153,.18);">
+                  <span style="font-size:.82rem;font-weight:600;color:{INK};
+                        font-family:'JetBrains Mono',monospace;">{g['name']}</span>
+                  <div style="text-align:right;">
+                    <span class="num" style="font-size:.9rem;font-weight:700;color:{MN};">
+                      ▲ {g['chg']:.2f}%
+                    </span>
+                    <div class="num" style="font-size:.65rem;color:{MUT};">₹{g['price']:,.1f}</div>
+                  </div>
+                </div>"""),
+                unsafe_allow_html=True,
+            )
+    else:
+        st.caption("No data available.")
+
+with mc2:
+    st.markdown(f'<div style="font-size:.72rem;font-weight:700;color:{EM};text-transform:uppercase;'
+                f'letter-spacing:.12em;margin-bottom:.5rem;">🔴 Top Losers</div>',
+                unsafe_allow_html=True)
+    if losers:
+        for lo in losers:
+            st.markdown(
+                _H(f"""
+                <div style="display:flex;align-items:center;justify-content:space-between;
+                     padding:9px 14px;border-radius:10px;margin-bottom:5px;
+                     background:rgba(248,113,113,.07);border:1px solid rgba(248,113,113,.18);">
+                  <span style="font-size:.82rem;font-weight:600;color:{INK};
+                        font-family:'JetBrains Mono',monospace;">{lo['name']}</span>
+                  <div style="text-align:right;">
+                    <span class="num" style="font-size:.9rem;font-weight:700;color:{EM};">
+                      ▼ {abs(lo['chg']):.2f}%
+                    </span>
+                    <div class="num" style="font-size:.65rem;color:{MUT};">₹{lo['price']:,.1f}</div>
+                  </div>
+                </div>"""),
+                unsafe_allow_html=True,
+            )
+    else:
+        st.caption("No data available.")
+
+st.caption("Nifty 50 constituents · vs previous close · via yfinance · 15-min delay")
+
+
+# ═════════════════════════════════════════════════════════════════════════
+# 6. EXISTING: INDICES + COMMODITIES FLIP CARDS
+# ═════════════════════════════════════════════════════════════════════════
+
+def render_flip_kpi(label, value_str, pct_change, accent="#8b5cf6"):
+    arrow    = "▲" if pct_change >= 0 else "▼"
+    b_bg = "rgba(52,211,153,.15)" if pct_change >= 0 else "rgba(248,113,113,.15)"
+    b_fg = MN if pct_change >= 0 else EM
+    b_bd = "rgba(52,211,153,.3)"  if pct_change >= 0 else "rgba(248,113,113,.3)"
+    components.html(f"""
+<style>
+body{{margin:0;padding:0;background:transparent;overflow:hidden;font-family:Inter,sans-serif;}}
+.fc{{perspective:1000px;height:112px;}}
+.fi{{position:relative;width:100%;height:100%;transition:transform .5s cubic-bezier(.4,0,.2,1);transform-style:preserve-3d;}}
+.fc:hover .fi{{transform:rotateY(10deg);}}
+.ff{{position:absolute;width:100%;height:100%;backface-visibility:hidden;border-radius:12px;
+     padding:14px 16px;border:1px solid rgba(139,92,246,.18);border-top:2px solid {accent};
+     background:rgba(17,17,48,.6);box-sizing:border-box;backdrop-filter:blur(14px);}}
+</style>
+<div class="fc">
+<div class="fi">
+<div class="ff">
+  <div style="font-size:9px;font-weight:700;color:#8b93a7;letter-spacing:.08em;">{label}</div>
+  <div style="font-size:1.35rem;font-weight:700;color:#f0f0ff;margin:6px 0;font-family:monospace;">{value_str}</div>
+  <div style="background:{b_bg};color:{b_fg};border:1px solid {b_bd};padding:3px 9px;
+       border-radius:6px;font-size:.78rem;font-weight:700;display:inline-block;">
+    {arrow} {abs(pct_change):.2f}%
+  </div>
+  <div style="font-size:9px;color:#374151;margin-top:5px;">via yfinance</div>
+</div>
+</div>
+</div>""", height=124)
+
+
+sec_label("Global Indices")
+c1, c2, c3, c4 = st.columns(4)
+nifty_p, nifty_c   = fetch_two("^NSEI")
+sensex_p, sensex_c = fetch_two("^BSESN")
+bank_p,   bank_c   = fetch_two("^NSEBANK")
+nasdaq_p, nasdaq_c = fetch_two("^IXIC")
+with c1: render_flip_kpi("Nifty 50",   f"{nifty_p:,.2f}",  nifty_c,  VL)
+with c2: render_flip_kpi("Sensex",     f"{sensex_p:,.2f}", sensex_c, CY)
+with c3: render_flip_kpi("Bank Nifty", f"{bank_p:,.2f}",   bank_c,   MN)
+with c4: render_flip_kpi("Nasdaq",     f"{nasdaq_p:,.2f}", nasdaq_c, VL)
+
+sec_label("Commodities & Currencies")
+c1, c2, c3, c4 = st.columns(4)
+gold_p,  gold_c  = fetch_two("GC=F")
+crude_p, crude_c = fetch_two("CL=F")
+inr_p,   inr_c   = fetch_two("INR=X")
+btc_p,   btc_c   = fetch_two("BTC-USD")
+with c1: render_flip_kpi("Gold (USD/oz)", f"${gold_p:,.2f}",  gold_c,  AM)
+with c2: render_flip_kpi("Crude Oil",     f"${crude_p:,.2f}", crude_c, AM)
+with c3: render_flip_kpi("USD/INR",       f"₹{inr_p:,.4f}",  inr_c,   MN)
+with c4: render_flip_kpi("Bitcoin",       f"${btc_p:,.0f}",   btc_c,   EM)
+
+
+# ═════════════════════════════════════════════════════════════════════════
+# 7. AI INTELLIGENCE (kept from original)
+# ═════════════════════════════════════════════════════════════════════════
+sec_label("AI Intelligence · Nifty 50 Technical Read")
+
+@st.cache_data(ttl=300, show_spinner=False)
+def _nifty_tech():
+    try:
+        df = yf.Ticker("^NSEI").history(period="1y")
+        if df is None or df.empty or len(df) < 30:
+            return None
+        c = df["Close"]
+        # RSI
+        d   = c.diff()
+        g   = d.where(d>0,0).rolling(14).mean()
+        ls  = (-d.where(d<0,0)).rolling(14).mean()
+        rsi = float((100 - 100/(1+g/ls)).iloc[-1])
+        # EMA
+        e20 = float(c.ewm(span=20).mean().iloc[-1])
+        e50 = float(c.ewm(span=50).mean().iloc[-1])
+        # MACD
+        macd = float((c.ewm(span=12).mean() - c.ewm(span=26).mean()).iloc[-1])
+        sig  = float((c.ewm(span=12).mean() - c.ewm(span=26).mean()).ewm(span=9).mean().iloc[-1])
+        curr = float(c.iloc[-1])
+        prev = float(c.iloc[-2])
+        return {"rsi": rsi, "e20": e20, "e50": e50, "macd": macd, "sig": sig,
+                "curr": curr, "prev": prev}
+    except Exception:
+        return None
+
+tech = _nifty_tech()
+if tech:
     score = 0
-    if curr > ema20: score += 25
-    if curr > ema50: score += 25
-    if rsi_v > 50: score += 20
-    if macd_v > sig_v: score += 20
-    if curr > prev: score += 10
+    if tech["curr"] > tech["e20"]: score += 25
+    if tech["curr"] > tech["e50"]: score += 25
+    if tech["rsi"] > 50:           score += 20
+    if tech["macd"] > tech["sig"]: score += 20
+    if tech["curr"] > tech["prev"]:score += 10
 
     verdict = "BULLISH" if score >= 65 else "BEARISH" if score <= 35 else "NEUTRAL"
-    vc  = "#20C997" if verdict == "BULLISH" else "#FF4D4D" if verdict == "BEARISH" else "#D8B4FE"
-    vbg = "rgba(32,201,151,0.08)" if verdict == "BULLISH" else "rgba(255,77,77,0.08)" if verdict == "BEARISH" else "rgba(168,85,247,0.08)"
-    vb  = "rgba(32,201,151,0.25)" if verdict == "BULLISH" else "rgba(255,77,77,0.25)" if verdict == "BEARISH" else "rgba(168,85,247,0.25)"
+    vc  = MN if verdict=="BULLISH" else EM if verdict=="BEARISH" else AM
+    vbg = f"rgba(52,211,153,.08)" if verdict=="BULLISH" else \
+          f"rgba(248,113,113,.08)" if verdict=="BEARISH" else f"rgba(251,191,36,.08)"
 
-    prefix = "₹" if any(x in selected_asset for x in ["Nifty","Sensex","INR"]) else "$" if any(x in selected_asset for x in ["Gold","Oil","Bitcoin","Ethereum","S&P","Nasdaq","Dow"]) else ""
+    rsi_c  = EM if tech["rsi"]>70 else MN if tech["rsi"]<30 else VL
+    rsi_lbl = "Overbought" if tech["rsi"]>70 else "Oversold" if tech["rsi"]<30 else "Neutral"
 
-    rsi_txt = "Overbought — may cool soon" if rsi_v > 70 else "Oversold — bounce possible" if rsi_v < 30 else "Healthy range"
-    rsi_c   = "#FF4D4D" if rsi_v > 70 else "#20C997" if rsi_v < 30 else "#D8B4FE"
-    trend_txt = "above" if curr > ema20 else "below"
-    macd_txt  = "Positive — momentum building" if macd_v > sig_v else "Negative — watch carefully"
-    macd_c    = "#20C997" if macd_v > sig_v else "#FF4D4D"
+    a1, a2, a3, a4 = st.columns(4)
+    with a1:
+        st.markdown(
+            _H(f"""<div style="background:{vbg};border:1px solid rgba(139,92,246,.2);
+              border-radius:14px;padding:1.2rem;text-align:center;">
+              <div style="font-size:.65rem;color:{MUT};text-transform:uppercase;
+                   letter-spacing:.12em;margin-bottom:.5rem;">AI Verdict · Nifty 50</div>
+              <div style="font-size:1.7rem;font-weight:800;color:{vc};margin-bottom:.3rem;">{verdict}</div>
+              <div style="font-size:.72rem;color:{MUT};margin-bottom:.8rem;">Score: {score}/100</div>
+              <div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px;">
+                <div style="height:100%;width:{score}%;background:{vc};border-radius:3px;
+                     box-shadow:0 0 8px {vc}66;"></div></div>
+            </div>"""),
+            unsafe_allow_html=True,
+        )
+    with a2:
+        c20c = MN if tech["curr"] > tech["e20"] else EM
+        c50c = MN if tech["curr"] > tech["e50"] else EM
+        st.markdown(
+            _H(f"""<div class="g" style="padding:1.2rem;height:100%;">
+              <div style="font-size:.65rem;color:{MUT};text-transform:uppercase;
+                   letter-spacing:.12em;margin-bottom:1rem;">Trend (EMA)</div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:.8rem;">
+                <span style="font-size:.78rem;color:{MUT};">vs EMA 20</span>
+                <span style="font-size:.8rem;font-weight:700;color:{c20c};">
+                  {"▲ Above" if tech['curr']>tech['e20'] else "▼ Below"}
+                </span>
+              </div>
+              <div style="display:flex;justify-content:space-between;">
+                <span style="font-size:.78rem;color:{MUT};">vs EMA 50</span>
+                <span style="font-size:.8rem;font-weight:700;color:{c50c};">
+                  {"▲ Above" if tech['curr']>tech['e50'] else "▼ Below"}
+                </span>
+              </div>
+              <div style="margin-top:1rem;font-size:.72rem;color:{MUT};">
+                EMA20 ₹{tech['e20']:,.0f} · EMA50 ₹{tech['e50']:,.0f}
+              </div>
+            </div>"""),
+            unsafe_allow_html=True,
+        )
+    with a3:
+        st.markdown(
+            _H(f"""<div class="g" style="padding:1.2rem;text-align:center;height:100%;">
+              <div style="font-size:.65rem;color:{MUT};text-transform:uppercase;
+                   letter-spacing:.12em;margin-bottom:.5rem;">Momentum (RSI 14)</div>
+              <div class="num" style="font-size:2rem;font-weight:700;color:{rsi_c};
+                   margin-bottom:.2rem;">{tech['rsi']:.1f}</div>
+              <div style="font-size:.75rem;color:{rsi_c};margin-bottom:.8rem;">{rsi_lbl}</div>
+              <div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px;">
+                <div style="height:100%;width:{min(tech['rsi'],100):.0f}%;
+                     background:{rsi_c};border-radius:3px;"></div></div>
+            </div>"""),
+            unsafe_allow_html=True,
+        )
+    with a4:
+        macd_c = MN if tech["macd"] > tech["sig"] else EM
+        macd_l = "Positive momentum" if tech["macd"] > tech["sig"] else "Negative momentum"
+        st.markdown(
+            _H(f"""<div class="g" style="padding:1.2rem;height:100%;">
+              <div style="font-size:.65rem;color:{MUT};text-transform:uppercase;
+                   letter-spacing:.12em;margin-bottom:1rem;">MACD Signal</div>
+              <div class="num" style="font-size:1.6rem;font-weight:700;
+                   color:{macd_c};margin-bottom:.3rem;">{tech['macd']:+.1f}</div>
+              <div style="font-size:.75rem;color:{macd_c};margin-bottom:.8rem;">{macd_l}</div>
+              <div style="font-size:.72rem;color:{MUT};">
+                Signal: {tech['sig']:+.1f}<br>
+                Price: ₹{tech['curr']:,.2f}
+              </div>
+            </div>"""),
+            unsafe_allow_html=True,
+        )
+else:
+    st.caption("Technical data unavailable — check connection.")
 
-    if ai_mode == "Easy Mode":
-        c1, c2, c3, c4 = st.columns(4)
-
-        with c1:
-            st.markdown(f"""
-            <div style="background:{vbg};border:1px solid {vb};border-radius:12px;
-            padding:20px;text-align:center;height:100%;">
-                <div style="font-size:0.65rem;font-weight:700;color:#94A3B8;
-                letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">AI VERDICT</div>
-                <div style="font-size:1.8rem;font-weight:800;color:{vc};margin-bottom:6px;">{verdict}</div>
-                <div style="font-size:0.75rem;color:#94A3B8;margin-bottom:12px;">Confidence: {score}/100</div>
-                <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;">
-                    <div style="height:4px;width:{score}%;background:{vc};border-radius:2px;"></div>
-                </div>
-            </div>""", unsafe_allow_html=True)
-
-        with c2:
-            above20 = curr > ema20
-            above50 = curr > ema50
-            c20 = "#20C997" if above20 else "#FF4D4D"
-            c50 = "#20C997" if above50 else "#FF4D4D"
-            st.markdown(f"""
-            <div style="background:rgba(30,25,45,0.6);border:1px solid rgba(168,85,247,0.2);
-            border-radius:12px;padding:20px;height:100%;">
-                <div style="font-size:0.65rem;font-weight:700;color:#94A3B8;
-                letter-spacing:0.12em;text-transform:uppercase;margin-bottom:16px;">TREND</div>
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-                    <span style="font-size:0.8rem;color:#94A3B8;">Price vs EMA 20</span>
-                    <span style="font-size:0.8rem;font-weight:700;color:{c20};">{'▲ Above' if above20 else '▼ Below'}</span>
-                </div>
-                <div style="display:flex;justify-content:space-between;align-items:center;">
-                    <span style="font-size:0.8rem;color:#94A3B8;">Price vs EMA 50</span>
-                    <span style="font-size:0.8rem;font-weight:700;color:{c50};">{'▲ Above' if above50 else '▼ Below'}</span>
-                </div>
-            </div>""", unsafe_allow_html=True)
-
-        with c3:
-            st.markdown(f"""
-            <div style="background:rgba(30,25,45,0.6);border:1px solid rgba(168,85,247,0.2);
-            border-radius:12px;padding:20px;text-align:center;height:100%;">
-                <div style="font-size:0.65rem;font-weight:700;color:#94A3B8;
-                letter-spacing:0.12em;text-transform:uppercase;margin-bottom:8px;">MOMENTUM (RSI)</div>
-                <div style="font-size:2rem;font-weight:800;color:{rsi_c};margin-bottom:4px;">{rsi_v:.1f}</div>
-                <div style="font-size:0.75rem;color:{rsi_c};margin-bottom:12px;">{rsi_txt}</div>
-                <div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;">
-                    <div style="height:4px;width:{min(rsi_v, 100):.0f}%;background:{rsi_c};border-radius:2px;"></div>
-                </div>
-            </div>""", unsafe_allow_html=True)
-
-        with c4:
-            st.markdown(f"""
-            <div style="background:rgba(30,25,45,0.6);border:1px solid rgba(168,85,247,0.2);
-            border-radius:12px;padding:20px;height:100%;">
-                <div style="font-size:0.65rem;font-weight:700;color:#94A3B8;
-                letter-spacing:0.12em;text-transform:uppercase;margin-bottom:12px;">PLAIN ENGLISH</div>
-                <div style="font-size:0.82rem;color:#CBD5E1;line-height:1.7;">
-                    <p style="margin:0 0 8px 0;">{selected_asset} is trading
-                    <strong style="color:#F8FAFC;">{trend_txt}</strong>
-                    its 20-day average.</p>
-                    <p style="margin:0 0 8px 0;">RSI at {rsi_v:.0f} — {rsi_txt.lower()}.</p>
-                    <p style="margin:0;">MACD: {macd_txt}.</p>
-                </div>
-            </div>""", unsafe_allow_html=True)
-
-    else:
-        a1, a2, a3 = st.columns(3)
-        overall = "Strong Buy" if score >= 80 else "Buy" if score >= 60 else "Strong Sell" if score <= 20 else "Sell" if score <= 40 else "Neutral"
-        oc = "#20C997" if score >= 60 else "#FF4D4D" if score <= 40 else "#D8B4FE"
-
-        with a1:
-            st.markdown(f"""
-            <div style="background:rgba(30,25,45,0.6);border:1px solid rgba(168,85,247,0.2);
-            border-radius:12px;padding:20px;height:100%;">
-                <div style="font-size:0.65rem;font-weight:700;color:#94A3B8;
-                letter-spacing:0.12em;text-transform:uppercase;margin-bottom:16px;">OSCILLATORS</div>
-                <div style="margin-bottom:14px;">
-                    <div style="font-size:0.72rem;color:#94A3B8;margin-bottom:4px;">RSI (14)</div>
-                    <div style="font-size:1.5rem;font-weight:700;color:{rsi_c};">{rsi_v:.1f}</div>
-                </div>
-                <div style="margin-bottom:14px;">
-                    <div style="font-size:0.72rem;color:#94A3B8;margin-bottom:4px;">MACD</div>
-                    <div style="font-size:1.5rem;font-weight:700;color:{macd_c};">{macd_v:.2f}</div>
-                </div>
-                <div>
-                    <div style="font-size:0.72rem;color:#94A3B8;margin-bottom:4px;">Signal</div>
-                    <div style="font-size:1.5rem;font-weight:700;color:#D8B4FE;">{sig_v:.2f}</div>
-                </div>
-            </div>""", unsafe_allow_html=True)
-
-        with a2:
-            st.markdown(f"""
-            <div style="background:rgba(30,25,45,0.6);border:1px solid rgba(168,85,247,0.2);
-            border-radius:12px;padding:20px;height:100%;">
-                <div style="font-size:0.65rem;font-weight:700;color:#94A3B8;
-                letter-spacing:0.12em;text-transform:uppercase;margin-bottom:16px;">MOVING AVERAGES</div>
-                <div style="margin-bottom:14px;">
-                    <div style="font-size:0.72rem;color:#94A3B8;margin-bottom:4px;">EMA 20</div>
-                    <div style="font-size:1.5rem;font-weight:700;color:#F8FAFC;">{prefix}{ema20:,.2f}</div>
-                </div>
-                <div style="margin-bottom:14px;">
-                    <div style="font-size:0.72rem;color:#94A3B8;margin-bottom:4px;">EMA 50</div>
-                    <div style="font-size:1.5rem;font-weight:700;color:#F8FAFC;">{prefix}{ema50:,.2f}</div>
-                </div>
-                <div>
-                    <div style="font-size:0.72rem;color:#94A3B8;margin-bottom:4px;">Current</div>
-                    <div style="font-size:1.5rem;font-weight:700;color:#A855F7;">{prefix}{curr:,.2f}</div>
-                </div>
-            </div>""", unsafe_allow_html=True)
-
-        with a3:
-            st.markdown(f"""
-            <div style="background:rgba(30,25,45,0.6);border:1px solid rgba(168,85,247,0.2);
-            border-radius:12px;padding:20px;height:100%;">
-                <div style="font-size:0.65rem;font-weight:700;color:#94A3B8;
-                letter-spacing:0.12em;text-transform:uppercase;margin-bottom:16px;">SIGNAL SUMMARY</div>
-                <div style="margin-bottom:14px;">
-                    <div style="font-size:0.72rem;color:#94A3B8;margin-bottom:4px;">Overall</div>
-                    <div style="font-size:1.5rem;font-weight:700;color:{oc};">{overall}</div>
-                </div>
-                <div style="margin-bottom:14px;">
-                    <div style="font-size:0.72rem;color:#94A3B8;margin-bottom:4px;">Trend</div>
-                    <div style="font-size:1.5rem;font-weight:700;color:#F8FAFC;">{'Uptrend' if curr > ema50 else 'Downtrend'}</div>
-                </div>
-                <div>
-                    <div style="font-size:0.72rem;color:#94A3B8;margin-bottom:4px;">Momentum</div>
-                    <div style="font-size:1.5rem;font-weight:700;color:{'#20C997' if macd_v > sig_v else '#FF4D4D'};">{'Positive' if macd_v > sig_v else 'Negative'}</div>
-                </div>
-            </div>""", unsafe_allow_html=True)
+st.markdown(
+    f'<div style="margin-top:1.4rem;font-size:.65rem;color:#374151;'
+    f'padding:8px 14px;border-radius:8px;background:rgba(17,17,48,.4);">'
+    f'📊 Data sources: yfinance (NSE/BSE indices, commodities, crypto) · '
+    f'NSE India API (FII/DII flows) · '
+    f'All market data carries 15-min delay · '
+    f'Not financial advice.</div>',
+    unsafe_allow_html=True,
+)
