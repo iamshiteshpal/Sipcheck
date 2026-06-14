@@ -209,15 +209,27 @@ div[data-testid="stMetric"] {{ background:{C['glass']}; border:1px solid {C['bor
     .block-container {{ padding: 0.8rem 0.9rem 2rem !important; }}
     .pg-h {{ font-size: 1.3rem !important; }}
     .pg-s {{ font-size: 0.74rem !important; }}
-    .kpi-value {{ font-size: 1.15rem !important; }}
-    .kpi-label {{ font-size: 0.6rem !important; }}
-    .g-card {{ padding: 0.8rem 0.9rem; border-radius: 12px; }}
+
+    /* KPI cards — compact padding, smaller text */
+    .kpi-value {{ font-size: 1.05rem !important; }}
+    .kpi-label {{ font-size: 0.58rem !important; }}
+    .kpi-sub   {{ font-size: 0.66rem !important; margin-top: 3px !important; }}
+    .g-card {{ padding: 0.65rem 0.8rem !important; border-radius: 12px; }}
     .g-card:hover {{ transform: none; }}
     .g-card svg {{ width: 140px !important; height: 140px !important; }}
     .g-card > div:first-child {{ width: 140px !important; height: 140px !important; }}
+
+    /* Stack Streamlit columns vertically — one per row on mobile */
+    div[data-testid="stHorizontalBlock"] {{ flex-wrap: wrap !important; gap: 6px !important; }}
+    div[data-testid="stHorizontalBlock"] > div[data-testid="column"] {{
+        min-width: 100% !important; flex: none !important; width: 100% !important;
+    }}
+
+    .sec {{ margin: 1rem 0 0.6rem; }}
     .sec .t {{ font-size: 0.68rem !important; letter-spacing: 0.1em; }}
     .sip-grid {{ grid-template-columns: 1fr !important; }}
-    .sip-amt {{ font-size: 1.1rem !important; }}
+    .sip-card {{ padding: 0.7rem 0.85rem !important; }}
+    .sip-amt {{ font-size: 1.05rem !important; }}
     .stTabs [data-baseweb="tab-list"] {{
         overflow-x: auto !important; flex-wrap: nowrap !important;
         -webkit-overflow-scrolling: touch; padding: 4px;
@@ -236,9 +248,10 @@ div[data-testid="stMetric"] {{ background:{C['glass']}; border:1px solid {C['bor
 @media (max-width: 480px) {{
     .block-container {{ padding: 0.5rem 0.6rem 2rem !important; }}
     .pg-h {{ font-size: 1.1rem !important; }}
-    .kpi-value {{ font-size: 1rem !important; }}
-    .g-card {{ padding: 0.6rem 0.7rem; }}
-    .sip-card {{ padding: 0.8rem; }}
+    .kpi-value {{ font-size: 0.95rem !important; }}
+    .kpi-label {{ font-size: 0.55rem !important; }}
+    .g-card {{ padding: 0.5rem 0.65rem !important; }}
+    .sip-card {{ padding: 0.6rem 0.75rem !important; }}
 }}
 </style>
 """, unsafe_allow_html=True)

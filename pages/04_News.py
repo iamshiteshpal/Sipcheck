@@ -350,15 +350,16 @@ div[data-testid="stRadio"] > label{display:none!important;}
     background:#111130;border:1px solid rgba(139,92,246,0.1);
     border-radius:10px;padding:0.7rem 0.85rem;margin-bottom:0.4rem;
     transition:border-color 0.18s,box-shadow 0.18s,transform 0.18s;
-    min-height:70px;display:flex;flex-direction:column;justify-content:space-between;
+    display:flex;flex-direction:column;gap:6px;
+    word-wrap:break-word;overflow-wrap:break-word;overflow:visible;
 }
 .nc:hover{
     border-color:rgba(139,92,246,0.38);
     box-shadow:0 4px 18px rgba(139,92,246,0.13);
     transform:translateY(-1px);
 }
-.nc-hl{font-size:0.81rem;font-weight:500;color:#f0f0ff;line-height:1.42;
-        display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.nc-hl{font-size:0.81rem;font-weight:500;color:#f0f0ff;line-height:1.45;
+        word-wrap:break-word;overflow-wrap:break-word;white-space:normal;}
 .nc-hl a{color:#f0f0ff;text-decoration:none;}
 .nc-hl a:hover{color:#8b5cf6;}
 .nc-foot{display:flex;align-items:center;gap:5px;margin-top:5px;}
@@ -440,6 +441,33 @@ div[data-testid="stButton"] > button[kind="secondary"]{
 div[data-testid="stButton"] > button[kind="secondary"]:hover{
     background:rgba(139,92,246,0.18)!important;
     border-color:rgba(139,92,246,0.45)!important;color:#f0f0ff!important;
+}
+
+/* ── MOBILE RESPONSIVE ── */
+@media (max-width: 768px) {
+    .block-container{padding:0.6rem 0.8rem 2rem!important;}
+    /* Stats strip: 2 cols instead of 4 */
+    .stats-strip{grid-template-columns:repeat(2,1fr)!important;}
+    /* Sector heatmap: 2 cols instead of 4 */
+    .sec-grid{grid-template-columns:repeat(2,1fr)!important;}
+    /* Breaking news carousel: remove fixed min-height */
+    .car-wrap{min-height:auto!important;padding:0.7rem 1rem 2.2rem!important;}
+    /* News cards: tighter padding */
+    .nc{padding:0.55rem 0.7rem!important;}
+    .nc-hl{font-size:0.78rem!important;}
+    /* Stack ALL Streamlit columns vertically (news grid, mood+sectors, header) */
+    div[data-testid="stHorizontalBlock"]{flex-wrap:wrap!important;gap:5px!important;}
+    div[data-testid="stHorizontalBlock"]>div[data-testid="column"]{
+        min-width:100%!important;flex:none!important;width:100%!important;
+    }
+    /* Make econ calendar scroll cards slightly smaller */
+    .eh-card{width:120px!important;}
+    .stButton>button{min-height:44px;}
+}
+@media (max-width: 480px) {
+    .nc-hl{font-size:0.75rem!important;}
+    .stat-v{font-size:0.9rem!important;}
+    .mood-txt{font-size:0.78rem!important;}
 }
 </style>""", unsafe_allow_html=True)
 
