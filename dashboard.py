@@ -7,6 +7,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 import os
 import io
+import re
 import json
 import tempfile
 import datetime
@@ -873,6 +874,29 @@ def classify_transaction(tx):
     return base
 
 
+# Tx classes where the CAS description usually names the other side of the
+# switch/transfer (e.g. "Switch Out to XYZ Fund-Growth", "STP In from ABC Fund")
+COUNTER_SCHEME_CLASSES = {
+    "Switch In", "Switch Out", "Switch In Reversal", "Switch Out Reversal",
+    "STP In", "STP Out", "STP In Reversal", "STP Out Reversal",
+}
+
+
+def extract_counter_scheme(description: str) -> str:
+    """Pull the destination/source scheme name out of a switch/STP description line."""
+    if not description:
+        return ""
+    d = re.sub(r"\s+", " ", str(description)).strip()
+    m = re.search(r"\b(?:from|to|into)\s+(.+)$", d, re.IGNORECASE)
+    if not m:
+        return ""
+    counter = m.group(1).strip(" .-")
+    # Reject junk matches: too short, or purely numeric/date-like
+    if len(counter) < 4 or re.fullmatch(r"[\d/.,\s-]+", counter):
+        return ""
+    return counter
+
+
 # ─────────────────────────────────────────────
 # TRANSACTION ACCOUNTING
 # ─────────────────────────────────────────────
@@ -915,14 +939,17 @@ def account_transactions(transactions):
         elif tx_class in REV_SELL_CLASSES:
             redeemed_amount = max(0.0, redeemed_amount - amount)
 
+        description = tx.get("description", "")
         special_txs.append({
-            "date_obj":    tx_date,
-            "Date":        tx_date.strftime("%d %b %Y"),
-            "Type":        tx_class,
-            "Amount":      amount,
-            "Raw Amount":  float(tx.get("amount") or 0.0),
-            "Units":       raw_units,
-            "Description": tx.get("description", ""),
+            "date_obj":      tx_date,
+            "Date":          tx_date.strftime("%d %b %Y"),
+            "Type":          tx_class,
+            "Amount":        amount,
+            "Raw Amount":    float(tx.get("amount") or 0.0),
+            "Units":         raw_units,
+            "Description":   description,
+            "CounterScheme": (extract_counter_scheme(description)
+                               if tx_class in COUNTER_SCHEME_CLASSES else ""),
         })
 
     return {
@@ -1115,10 +1142,11 @@ def process(raw):
             lumpsum_invested = acct["lumpsum_invested"]
             redeemed_amount  = acct["redeemed_amount"]
 
-            # Enrich special txs with scheme + category
+            # Enrich special txs with scheme + category + folio
             for stx in acct["special_txs"]:
                 stx["Scheme"]   = clean_name(scheme_name)
                 stx["Category"] = category
+                stx["Folio"]    = str(folio.get("folio", "")).strip()
                 result["special_transactions"].append(stx)
 
             # Populate recent_redemptions from classified txs
@@ -1938,13 +1966,31 @@ def render_mf_analytics(data):
     all_stp = sorted(stp_in_txs + stp_out_txs, key=lambda x: x["date_obj"], reverse=True)
     stp_log = [
         {"date": t["Date"], "scheme": t["Scheme"][:32], "type": t["Type"],
-         "val": round(t["Amount"], 2), "units": round(abs(t.get("Units", 0)), 3)}
-        for t in all_stp[:10]
+         "val": round(t["Amount"], 2), "units": round(abs(t.get("Units", 0)), 3),
+         "counter": clean_name(t.get("CounterScheme", ""))[:32] if t.get("CounterScheme") else "",
+         "folio": t.get("Folio", "")}
+        for t in all_stp[:15]
     ]
     switch_log = [
         {"date": t["Date"], "scheme": t["Scheme"][:32], "type": t["Type"],
-         "val": round(t["Amount"], 2), "units": round(abs(t.get("Units", 0)), 3)}
-        for t in sorted(switch_txs, key=lambda x: x["date_obj"], reverse=True)[:10]
+         "val": round(t["Amount"], 2), "units": round(abs(t.get("Units", 0)), 3),
+         "counter": clean_name(t.get("CounterScheme", ""))[:32] if t.get("CounterScheme") else "",
+         "folio": t.get("Folio", "")}
+        for t in sorted(switch_txs, key=lambda x: x["date_obj"], reverse=True)[:15]
+    ]
+
+    # Aggregate switch flows by scheme pair (from "Switch Out" rows only, so each
+    # switch event — recorded once per leg in the CAS — is counted once, not twice)
+    flow_totals = defaultdict(lambda: {"amt": 0.0, "n": 0})
+    for t in switch_txs:
+        if t["Type"] != "Switch Out" or not t.get("CounterScheme"):
+            continue
+        key = (t["Scheme"][:30], clean_name(t["CounterScheme"])[:30])
+        flow_totals[key]["amt"] += t["Amount"]
+        flow_totals[key]["n"]   += 1
+    switch_flows = [
+        {"from": k[0], "to": k[1], "amt": round(v["amt"], 2), "count": v["n"]}
+        for k, v in sorted(flow_totals.items(), key=lambda kv: -kv[1]["amt"])[:8]
     ]
 
     swp_data = {
@@ -1957,6 +2003,8 @@ def render_mf_analytics(data):
         "totalSTPOut":   round(sum(t["Amount"] for t in stp_out_txs), 2),
         "stpCount":      len(stp_out_txs),
         "switchLog":     switch_log,
+        "switchFlows":   switch_flows,
+        "totalSwitched": round(sum(t["Amount"] for t in switch_txs if t["Type"] == "Switch Out"), 2),
     }
 
     # ── 6. Redemptions ─────────────────────────────────────────────────────
@@ -2083,16 +2131,39 @@ body{background:#07090f;color:#e2e8f0;font-family:'Inter','Segoe UI',sans-serif;
 @keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .tab-content.active>.*{animation:fadeUp .3s ease-out}
 @keyframes barGrow{from{transform:scaleY(0);transform-origin:bottom}to{transform:scaleY(1)}}
+
+/* ── PDF export ── */
+.tab-bar-wrap{position:sticky;top:0;z-index:50;background:#0c0f1a;border-bottom:1px solid #1e2235;display:flex;align-items:center;justify-content:space-between;padding-right:10px}
+.tab-bar-wrap .tab-bar{position:static;flex:1;min-width:0}
+.pdf-btn{background:rgba(99,179,237,.12);border:1px solid rgba(99,179,237,.35);color:#63b3ed;border-radius:8px;padding:7px 14px;font-size:11.5px;font-weight:700;cursor:pointer;white-space:nowrap;font-family:inherit;letter-spacing:.2px;flex-shrink:0;transition:background .2s}
+.pdf-btn:hover{background:rgba(99,179,237,.22)}
+.print-header{display:none}
+@media print{
+  .tab-bar-wrap{display:none !important}
+  .tab-content{display:none !important}
+  .tab-content.active{display:block !important}
+  .print-header{display:block !important;margin:0 16px 14px;padding-bottom:10px;border-bottom:1px solid #1e2235}
+  .print-header .ph-title{font-size:18px;font-weight:800;color:#e2e8f0}
+  .print-header .ph-sub{font-size:11px;color:#6b7280;margin-top:3px}
+}
 </style>
 </head>
 <body>
 
+<div class="print-header" id="print-header">
+  <div class="ph-title">SipCheck &middot; MF Analytics</div>
+  <div class="ph-sub" id="print-header-sub"></div>
+</div>
+
+<div class="tab-bar-wrap">
 <div class="tab-bar">
   <button class="tab-btn active" onclick="showTab('allocation',this)">Asset Allocation</button>
   <button class="tab-btn" onclick="showTab('lumpsum',this)">Lumpsum</button>
   <button class="tab-btn" onclick="showTab('sip',this)">SIP Health</button>
   <button class="tab-btn" onclick="showTab('swp',this)">SWP &amp; STP</button>
   <button class="tab-btn" onclick="showTab('redemptions',this)">Redemptions</button>
+</div>
+<button class="pdf-btn" onclick="exportTabPDF()">&#128196; Export PDF</button>
 </div>
 
 <!-- ── Allocation ── -->
@@ -2195,6 +2266,11 @@ body{background:#07090f;color:#e2e8f0;font-family:'Inter','Segoe UI',sans-serif;
         <div id="stp-empty-msg"></div>
       </div>
     </div>
+    <div class="card">
+      <div class="card-title">Switch Flow Summary</div>
+      <div class="card-sub">Total amount moved between scheme pairs, from CAS switch transactions</div>
+      <div id="switch-flow-summary"></div>
+    </div>
     <div class="grid-2">
       <div class="card">
         <div class="card-title">Switch Transactions</div>
@@ -2291,6 +2367,18 @@ function showTab(id,btn){
   btn.classList.add('active');
   document.getElementById('tab-'+id).classList.add('active');
   TABS[id]();
+}
+
+// Export the currently active tab as a PDF via the browser's native print dialog
+// (choose "Save as PDF" as the destination) — no server-side rendering needed.
+function exportTabPDF(){
+  const activeBtn=document.querySelector('.tab-btn.active');
+  const label=activeBtn?activeBtn.textContent.trim():'MF Analytics';
+  const now=new Date();
+  document.getElementById('print-header-sub').textContent=
+    `${label} &middot; Generated ${now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}`
+      .replace('&middot;','·');
+  window.print();
 }
 
 const TABS={};
@@ -2623,6 +2711,8 @@ TABS.swp=function(){
     {l:'SWP Transactions',    v:swp.swpCount+' txns', c:'#9ca3af', fmt:v=>v},
     {l:'Total STP Out',       v:swp.totalSTPOut,   c:'#f59e0b', fmt:fmtINRS},
     {l:'STP Transactions',    v:swp.stpCount+' txns', c:'#9ca3af', fmt:v=>v},
+    {l:'Total Switched',      v:swp.totalSwitched, c:'#8b5cf6', fmt:fmtINRS},
+    {l:'Scheme Pairs',        v:swp.switchFlows.length+' pairs', c:'#9ca3af', fmt:v=>v},
   ].map(k=>`<div class="kpi"><div class="kpi-label">${k.l}</div><div class="kpi-value" style="color:${k.c}">${k.fmt(k.v)}</div></div>`).join('');
 
   // SWP monthly bar
@@ -2673,33 +2763,56 @@ TABS.swp=function(){
     document.getElementById('stp-empty-msg').innerHTML=emptyHTML('No STP (Systematic Transfer Plan) transactions found.');
   }
 
-  // Switch log timeline
+  // Switch Flow Summary — aggregated scheme-to-scheme totals
+  document.getElementById('switch-flow-summary').innerHTML=(swp.switchFlows&&swp.switchFlows.length)
+    ? `<div class="table-wrap"><table class="data-table"><thead><tr>
+        <th>From Scheme</th><th></th><th>To Scheme</th><th>Total Switched</th><th>Switches</th>
+       </tr></thead><tbody>${swp.switchFlows.map(f=>`<tr>
+        <td style="color:#e2e8f0;font-weight:500">${f.from}</td>
+        <td style="color:#8b5cf6;text-align:center">&rarr;</td>
+        <td style="color:#e2e8f0;font-weight:500">${f.to}</td>
+        <td style="color:#8b5cf6;font-weight:700">${fmtINR(f.amt)}</td>
+        <td style="color:#9ca3af">${f.count}</td>
+      </tr>`).join('')}</tbody></table></div>`
+    : emptyHTML('No scheme-to-scheme switch flows found — switch descriptions in this CAS may not name the counter scheme.');
+
+  // Switch log timeline — shows which scheme the money moved from/to + folio
   document.getElementById('switch-log').innerHTML=swp.switchLog.length
     ? swp.switchLog.map((sw,i)=>{
         const isOut=sw.type==='Switch Out';
+        const from=isOut?sw.scheme:(sw.counter||'Another scheme (not named in CAS)');
+        const to  =isOut?(sw.counter||'Another scheme (not named in CAS)'):sw.scheme;
         return `<div class="timeline-item">
           <div class="timeline-dot" style="background:${isOut?'#ef4444':'#10b981'}"></div>
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
             <span class="muted" style="font-size:10.5px">${sw.date}</span>
             <span class="badge ${isOut?'badge-out':'badge-in'}">${isOut?'OUT':'IN'}</span>
+            ${sw.folio?`<span class="muted" style="font-size:10px">Folio ${sw.folio}</span>`:''}
           </div>
-          <div style="color:#e2e8f0;font-weight:600;font-size:12.5px;margin-bottom:3px">${sw.scheme}</div>
+          <div style="color:#e2e8f0;font-weight:600;font-size:12.5px;margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span>${from}</span><span style="color:#6b7280">&rarr;</span><span>${to}</span>
+          </div>
           <div class="secondary" style="font-size:11.5px">${sw.units>0?sw.units.toFixed(3)+' units &middot; ':''} ${fmtINR(sw.val)}</div>
         </div>`;
       }).join('')
     : emptyHTML('No switch transactions found in this portfolio.');
 
-  // STP log timeline
+  // STP log timeline — shows which scheme the money moved from/to + folio
   document.getElementById('stp-log').innerHTML=swp.stpLog.length
     ? swp.stpLog.map((t,i)=>{
         const isOut=t.type==='STP Out';
+        const from=isOut?t.scheme:(t.counter||'Another scheme (not named in CAS)');
+        const to  =isOut?(t.counter||'Another scheme (not named in CAS)'):t.scheme;
         return `<div class="timeline-item">
           <div class="timeline-dot" style="background:${isOut?'#f59e0b':'#10b981'}"></div>
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
             <span class="muted" style="font-size:10.5px">${t.date}</span>
             <span class="badge" style="background:rgba(245,158,11,.13);color:#f59e0b">${t.type}</span>
+            ${t.folio?`<span class="muted" style="font-size:10px">Folio ${t.folio}</span>`:''}
           </div>
-          <div style="color:#e2e8f0;font-weight:600;font-size:12.5px;margin-bottom:3px">${t.scheme}</div>
+          <div style="color:#e2e8f0;font-weight:600;font-size:12.5px;margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+            <span>${from}</span><span style="color:#6b7280">&rarr;</span><span>${to}</span>
+          </div>
           <div class="secondary" style="font-size:11.5px">${t.units>0?t.units.toFixed(3)+' units &middot; ':''} ${fmtINR(t.val)}</div>
         </div>`;
       }).join('')
