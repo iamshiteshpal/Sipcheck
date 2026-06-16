@@ -1979,19 +1979,37 @@ def render_mf_analytics(data):
         for t in sorted(switch_txs, key=lambda x: x["date_obj"], reverse=True)[:15]
     ]
 
-    # Aggregate switch flows by scheme pair (from "Switch Out" rows only, so each
-    # switch event — recorded once per leg in the CAS — is counted once, not twice)
-    flow_totals = defaultdict(lambda: {"amt": 0.0, "n": 0})
+    # Aggregate switch flows by scheme pair, tracking BOTH legs separately:
+    # the amount debited at the source (Switch Out) and the amount actually
+    # invested at the destination (Switch In). These often differ slightly —
+    # STT (on equity fund switch-out, taxed like a redemption) or exit load
+    # is deducted in between — so we show both rather than assuming parity.
+    out_totals = defaultdict(lambda: {"amt": 0.0, "n": 0})
+    in_totals  = defaultdict(lambda: {"amt": 0.0, "n": 0})
     for t in switch_txs:
-        if t["Type"] != "Switch Out" or not t.get("CounterScheme"):
+        if not t.get("CounterScheme"):
             continue
-        key = (t["Scheme"][:30], clean_name(t["CounterScheme"])[:30])
-        flow_totals[key]["amt"] += t["Amount"]
-        flow_totals[key]["n"]   += 1
-    switch_flows = [
-        {"from": k[0], "to": k[1], "amt": round(v["amt"], 2), "count": v["n"]}
-        for k, v in sorted(flow_totals.items(), key=lambda kv: -kv[1]["amt"])[:8]
-    ]
+        counter     = clean_name(t["CounterScheme"])[:30]
+        this_scheme = t["Scheme"][:30]
+        if t["Type"] == "Switch Out":
+            key = (this_scheme, counter)
+            out_totals[key]["amt"] += t["Amount"]
+            out_totals[key]["n"]   += 1
+        elif t["Type"] == "Switch In":
+            key = (counter, this_scheme)
+            in_totals[key]["amt"] += t["Amount"]
+            in_totals[key]["n"]   += 1
+
+    switch_flows = []
+    for key in set(out_totals) | set(in_totals):
+        o = out_totals.get(key, {"amt": 0.0, "n": 0})
+        i = in_totals.get(key,  {"amt": 0.0, "n": 0})
+        switch_flows.append({
+            "from":   key[0], "to": key[1],
+            "outAmt": round(o["amt"], 2), "inAmt": round(i["amt"], 2),
+            "count":  max(o["n"], i["n"]),
+        })
+    switch_flows = sorted(switch_flows, key=lambda f: -f["outAmt"])[:8]
 
     swp_data = {
         "wd":            wd_list,
@@ -2268,7 +2286,7 @@ body{background:#07090f;color:#e2e8f0;font-family:'Inter','Segoe UI',sans-serif;
     </div>
     <div class="card">
       <div class="card-title">Switch Flow Summary</div>
-      <div class="card-sub">Total amount moved between scheme pairs, from CAS switch transactions</div>
+      <div class="card-sub">Amount debited at source vs. invested at destination, per scheme pair</div>
       <div id="switch-flow-summary"></div>
     </div>
     <div class="grid-2">
@@ -2763,17 +2781,29 @@ TABS.swp=function(){
     document.getElementById('stp-empty-msg').innerHTML=emptyHTML('No STP (Systematic Transfer Plan) transactions found.');
   }
 
-  // Switch Flow Summary — aggregated scheme-to-scheme totals
+  // Switch Flow Summary — aggregated scheme-to-scheme totals.
+  // Out amount (debited at source) and In amount (credited at destination)
+  // are shown separately since they can differ — STT on equity switch-out
+  // or exit load is deducted in between, so the two legs rarely match exactly.
   document.getElementById('switch-flow-summary').innerHTML=(swp.switchFlows&&swp.switchFlows.length)
     ? `<div class="table-wrap"><table class="data-table"><thead><tr>
-        <th>From Scheme</th><th></th><th>To Scheme</th><th>Total Switched</th><th>Switches</th>
-       </tr></thead><tbody>${swp.switchFlows.map(f=>`<tr>
+        <th>From Scheme</th><th></th><th>To Scheme</th>
+        <th>Out (debited)</th><th>In (invested)</th><th>Diff</th><th>Switches</th>
+       </tr></thead><tbody>${swp.switchFlows.map(f=>{
+        const diff=f.outAmt-f.inAmt;
+        const diffTxt=Math.abs(diff)<1?'&mdash;':`<span style="color:#f59e0b">${fmtINR(diff)}</span>`;
+        return `<tr>
         <td style="color:#e2e8f0;font-weight:500">${f.from}</td>
         <td style="color:#8b5cf6;text-align:center">&rarr;</td>
         <td style="color:#e2e8f0;font-weight:500">${f.to}</td>
-        <td style="color:#8b5cf6;font-weight:700">${fmtINR(f.amt)}</td>
+        <td style="color:#ef4444;font-weight:700">${fmtINR(f.outAmt)}</td>
+        <td style="color:#10b981;font-weight:700">${f.inAmt>0?fmtINR(f.inAmt):'&mdash;'}</td>
+        <td>${diffTxt}</td>
         <td style="color:#9ca3af">${f.count}</td>
-      </tr>`).join('')}</tbody></table></div>`
+      </tr>`;}).join('')}</tbody></table></div>
+      <div class="secondary" style="font-size:10.5px;margin-top:8px">
+        Out &ne; In is normal — STT on equity switch-out or exit load is deducted before the amount lands in the new scheme.
+      </div>`
     : emptyHTML('No scheme-to-scheme switch flows found — switch descriptions in this CAS may not name the counter scheme.');
 
   // Switch log timeline — shows which scheme the money moved from/to + folio
