@@ -882,19 +882,31 @@ COUNTER_SCHEME_CLASSES = {
 }
 
 
+_COUNTER_SCHEME_PATTERNS = [
+    # "Switch-In - From HDFC Ultra Short Term Fund - Reg Gr", "Switch Out to XYZ Fund"
+    r"\b(?:from|to|into)\s+(.+)$",
+    # "Switch In : XYZ Fund", "Switch-Out- XYZ Fund-Growth" (no from/to word, just a separator)
+    r"\b(?:switch|stp)[\s-]*(?:in|out)\s*[:\-]\s*(.+)$",
+    # "Switch In(XYZ Fund)" or similar bracketed form
+    r"\b(?:switch|stp)[\s-]*(?:in|out)\s*\(([^)]+)\)",
+]
+
+
 def extract_counter_scheme(description: str) -> str:
     """Pull the destination/source scheme name out of a switch/STP description line."""
     if not description:
         return ""
     d = re.sub(r"\s+", " ", str(description)).strip()
-    m = re.search(r"\b(?:from|to|into)\s+(.+)$", d, re.IGNORECASE)
-    if not m:
-        return ""
-    counter = m.group(1).strip(" .-")
-    # Reject junk matches: too short, or purely numeric/date-like
-    if len(counter) < 4 or re.fullmatch(r"[\d/.,\s-]+", counter):
-        return ""
-    return counter
+    for pattern in _COUNTER_SCHEME_PATTERNS:
+        m = re.search(pattern, d, re.IGNORECASE)
+        if not m:
+            continue
+        counter = m.group(1).strip(" .-")
+        # Reject junk matches: too short, or purely numeric/date-like
+        if len(counter) < 4 or re.fullmatch(r"[\d/.,\s-]+", counter):
+            continue
+        return counter
+    return ""
 
 
 # ─────────────────────────────────────────────
@@ -1968,14 +1980,14 @@ def render_mf_analytics(data):
         {"date": t["Date"], "scheme": t["Scheme"][:32], "type": t["Type"],
          "val": round(t["Amount"], 2), "units": round(abs(t.get("Units", 0)), 3),
          "counter": clean_name(t.get("CounterScheme", ""))[:32] if t.get("CounterScheme") else "",
-         "folio": t.get("Folio", "")}
+         "folio": t.get("Folio", ""), "rawDesc": str(t.get("Description", ""))[:70]}
         for t in all_stp[:15]
     ]
     switch_log = [
         {"date": t["Date"], "scheme": t["Scheme"][:32], "type": t["Type"],
          "val": round(t["Amount"], 2), "units": round(abs(t.get("Units", 0)), 3),
          "counter": clean_name(t.get("CounterScheme", ""))[:32] if t.get("CounterScheme") else "",
-         "folio": t.get("Folio", "")}
+         "folio": t.get("Folio", ""), "rawDesc": str(t.get("Description", ""))[:70]}
         for t in sorted(switch_txs, key=lambda x: x["date_obj"], reverse=True)[:15]
     ]
 
@@ -2806,12 +2818,15 @@ TABS.swp=function(){
       </div>`
     : emptyHTML('No scheme-to-scheme switch flows found — switch descriptions in this CAS may not name the counter scheme.');
 
-  // Switch log timeline — shows which scheme the money moved from/to + folio
+  // Switch log timeline — shows which scheme the money moved from/to + folio.
+  // When the counter scheme couldn't be parsed, show the raw CAS line instead
+  // of a dead-end message, so it's still useful and the format gap is visible.
   document.getElementById('switch-log').innerHTML=swp.switchLog.length
     ? swp.switchLog.map((sw,i)=>{
         const isOut=sw.type==='Switch Out';
-        const from=isOut?sw.scheme:(sw.counter||'Another scheme (not named in CAS)');
-        const to  =isOut?(sw.counter||'Another scheme (not named in CAS)'):sw.scheme;
+        const known=!!sw.counter;
+        const from=isOut?sw.scheme:(sw.counter||'Other scheme');
+        const to  =isOut?(sw.counter||'Other scheme'):sw.scheme;
         return `<div class="timeline-item">
           <div class="timeline-dot" style="background:${isOut?'#ef4444':'#10b981'}"></div>
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
@@ -2822,6 +2837,7 @@ TABS.swp=function(){
           <div style="color:#e2e8f0;font-weight:600;font-size:12.5px;margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span>${from}</span><span style="color:#6b7280">&rarr;</span><span>${to}</span>
           </div>
+          ${!known&&sw.rawDesc?`<div class="muted" style="font-size:10px;margin-bottom:3px">CAS text: "${sw.rawDesc}"</div>`:''}
           <div class="secondary" style="font-size:11.5px">${sw.units>0?sw.units.toFixed(3)+' units &middot; ':''} ${fmtINR(sw.val)}</div>
         </div>`;
       }).join('')
@@ -2831,8 +2847,9 @@ TABS.swp=function(){
   document.getElementById('stp-log').innerHTML=swp.stpLog.length
     ? swp.stpLog.map((t,i)=>{
         const isOut=t.type==='STP Out';
-        const from=isOut?t.scheme:(t.counter||'Another scheme (not named in CAS)');
-        const to  =isOut?(t.counter||'Another scheme (not named in CAS)'):t.scheme;
+        const known=!!t.counter;
+        const from=isOut?t.scheme:(t.counter||'Other scheme');
+        const to  =isOut?(t.counter||'Other scheme'):t.scheme;
         return `<div class="timeline-item">
           <div class="timeline-dot" style="background:${isOut?'#f59e0b':'#10b981'}"></div>
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
@@ -2843,6 +2860,7 @@ TABS.swp=function(){
           <div style="color:#e2e8f0;font-weight:600;font-size:12.5px;margin-bottom:3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">
             <span>${from}</span><span style="color:#6b7280">&rarr;</span><span>${to}</span>
           </div>
+          ${!known&&t.rawDesc?`<div class="muted" style="font-size:10px;margin-bottom:3px">CAS text: "${t.rawDesc}"</div>`:''}
           <div class="secondary" style="font-size:11.5px">${t.units>0?t.units.toFixed(3)+' units &middot; ':''} ${fmtINR(t.val)}</div>
         </div>`;
       }).join('')
