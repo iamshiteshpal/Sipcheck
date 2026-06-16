@@ -718,8 +718,10 @@ def render_overview(data, holdings, use_live, live_total, nav_date, hits):
     # ── Goal Mode ──────────────────────────────────────────────────
     g1, g2 = st.columns([1, 2.2])
     with g1:
-        target = st.number_input("🎯 My target amount (₹)", 100000, 100_000_000,
-                                 int(round(p50[-1], -4)) or 1_000_000,
+        default_target = int(round(p50[-1], -4)) or 1_000_000
+        max_target     = max(100_000_000, default_target * 2)
+        target = st.number_input("🎯 My target amount (₹)", 100000, max_target,
+                                 min(default_target, max_target),
                                  step=100000, key="v2_goal")
     prob      = float((W[:, -1] >= target).mean() * 100)
     median_end = p50[-1]
