@@ -81,6 +81,17 @@ def amc_of(scheme: str) -> str:
     return (scheme or "Other").split()[0].title()
 
 
+def _top_n_others(labels: list, values: list, n: int = 6):
+    """Collapse long tails into a single 'Others' slice so legends/axes stay readable."""
+    pairs = sorted(zip(labels, values), key=lambda p: -p[1])
+    if len(pairs) <= n:
+        return [p[0] for p in pairs], [p[1] for p in pairs]
+    top, rest = pairs[:n], pairs[n:]
+    out_l = [p[0] for p in top] + [f"Others ({len(rest)})"]
+    out_v = [p[1] for p in top] + [sum(p[1] for p in rest)]
+    return out_l, out_v
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 #  SIP MISS DETECTION ENGINE
 #  Trusts parser's own flags (status / missed_last_month / days_since_last)
@@ -512,9 +523,17 @@ def render_overview(data, holdings, use_live, live_total, nav_date, hits):
     with cL:
         section("Wealth Journey")
         if holdings:
-            df = pd.DataFrame([{"fund": h["scheme"][:22],
-                                "Invested": h.get("invested", 0),
-                                "Current":  h.get("live_value", h.get("value", 0))} for h in holdings])
+            TOP_N    = 8
+            sorted_h = sorted(holdings, key=lambda h: -(h.get("live_value", h.get("value", 0))))
+            top_h, rest_h = sorted_h[:TOP_N], sorted_h[TOP_N:]
+            rows = [{"fund": h["scheme"][:16],
+                     "Invested": h.get("invested", 0),
+                     "Current":  h.get("live_value", h.get("value", 0))} for h in top_h]
+            if rest_h:
+                rows.append({"fund": f"Others ({len(rest_h)})",
+                             "Invested": sum(h.get("invested", 0) for h in rest_h),
+                             "Current":  sum(h.get("live_value", h.get("value", 0)) for h in rest_h)})
+            df = pd.DataFrame(rows)
             fig = go.Figure()
             fig.add_trace(go.Bar(x=df["fund"], y=df["Invested"], name="Invested",
                 marker_color="rgba(139,92,246,0.45)",
@@ -523,25 +542,28 @@ def render_overview(data, holdings, use_live, live_total, nav_date, hits):
                 marker=dict(color=df["Current"],
                             colorscale=[[0, CYAN], [1, MINT]], showscale=False),
                 hovertemplate="₹%{y:,.0f}<extra>current</extra>"))
-            fig.update_layout(**PLOT, height=300, barmode="group",
+            fig.update_layout(**PLOT, height=320, barmode="group",
                 legend=dict(orientation="h", y=1.14, bgcolor="rgba(0,0,0,0)"),
-                xaxis=dict(tickangle=-30, gridcolor="rgba(0,0,0,0)", tickfont=dict(size=8.5)),
+                xaxis=dict(tickangle=-35, gridcolor="rgba(0,0,0,0)", tickfont=dict(size=9.5), automargin=True),
                 yaxis=dict(gridcolor="rgba(139,92,246,0.08)", tickprefix="₹", separatethousands=True))
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            if rest_h:
+                st.caption(f"Top {TOP_N} funds by value shown · {len(rest_h)} more grouped as Others — full list in Fund Power Rankings below.")
         else:
             st.caption("No active holdings to chart.")
     with cM:
         section("Category Mix")
         alloc = data.get("alloc_values", {})
         if alloc:
-            fig = go.Figure(go.Pie(labels=list(alloc.keys()), values=list(alloc.values()), hole=0.66,
+            labels, values = _top_n_others(list(alloc.keys()), list(alloc.values()), n=6)
+            fig = go.Figure(go.Pie(labels=labels, values=values, hole=0.66,
                 marker=dict(colors=DONUT_COLORS, line=dict(color=C["void"], width=3)),
                 textinfo="none",
                 hovertemplate="<b>%{label}</b><br>₹%{value:,.0f} · %{percent}<extra></extra>"))
             fig.add_annotation(text=f"<b>₹{TV/100000:.1f}L</b>", showarrow=False,
                                font=dict(family="JetBrains Mono", size=14, color=INK))
-            fig.update_layout(**PLOT, height=300,
-                legend=dict(orientation="h", y=-0.15, bgcolor="rgba(0,0,0,0)", font=dict(size=9)))
+            fig.update_layout(**PLOT, height=320,
+                legend=dict(orientation="h", y=-0.2, bgcolor="rgba(0,0,0,0)", font=dict(size=9)))
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
     with cR:
         section("AMC Allocation")
@@ -551,14 +573,15 @@ def render_overview(data, holdings, use_live, live_total, nav_date, hits):
             amc_vals[amc] = amc_vals.get(amc, 0) + h.get("live_value", h.get("value", 0))
         if amc_vals:
             top_amc = max(amc_vals, key=amc_vals.get)
-            fig = go.Figure(go.Pie(labels=list(amc_vals.keys()), values=list(amc_vals.values()), hole=0.66,
+            labels, values = _top_n_others(list(amc_vals.keys()), list(amc_vals.values()), n=6)
+            fig = go.Figure(go.Pie(labels=labels, values=values, hole=0.66,
                 marker=dict(colors=DONUT_COLORS, line=dict(color=C["void"], width=3)),
                 textinfo="none",
                 hovertemplate="<b>%{label}</b><br>₹%{value:,.0f} · %{percent}<extra></extra>"))
             fig.add_annotation(text=f"<b>{len(amc_vals)} AMCs</b>", showarrow=False,
                                font=dict(family="JetBrains Mono", size=13, color=INK))
-            fig.update_layout(**PLOT, height=300,
-                legend=dict(orientation="h", y=-0.15, bgcolor="rgba(0,0,0,0)", font=dict(size=9)))
+            fig.update_layout(**PLOT, height=320,
+                legend=dict(orientation="h", y=-0.2, bgcolor="rgba(0,0,0,0)", font=dict(size=9)))
             st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
             if amc_vals[top_amc] / TV > 0.40:
                 st.caption(f"⚠️ {top_amc} holds {amc_vals[top_amc]/TV*100:.0f}% of your wealth — consider spreading across fund houses.")
