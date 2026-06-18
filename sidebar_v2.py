@@ -16,6 +16,7 @@ import streamlit as st
 
 NAV = [
     ("🏠   SipCheck Home",   "dashboard.py"),
+    ("📥  Get Your CAS",     "pages/00_Get_CAS.py"),
     ("📈  Live Markets",     "pages/01_Markets.py"),
     ("📰  News & Pulse",     "pages/04_News.py"),
     ("🧮  SIP Calculator",  "pages/03_SIP_Calculator.py"),
