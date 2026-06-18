@@ -1288,8 +1288,19 @@ def active_data():
 def show_upload():
     render_home_v2()
 
-    st.markdown("<div id='cas-upload'></div><hr style='border:none;border-top:1px solid rgba(139,92,246,0.2);margin:1.5rem 0 1.2rem;'>",
-                unsafe_allow_html=True)
+    st.markdown(
+        "<div id='cas-upload' style='padding-top:0.5rem;'></div>"
+        "<div style='text-align:center;margin:0.6rem 0 1.1rem;'>"
+        "<div style='display:inline-block;background:rgba(139,92,246,0.07);"
+        "border:1px solid rgba(139,92,246,0.22);border-top:3px solid #8b5cf6;"
+        "border-radius:14px;padding:0.85rem 2rem;'>"
+        "<div style=\"font-family:'Space Grotesk',sans-serif;font-size:1.05rem;"
+        "font-weight:700;color:#f0f0ff;letter-spacing:-0.01em;\">📤 Upload Your CAS PDF</div>"
+        "<div style='font-size:0.72rem;color:#8b93a7;margin-top:3px;'>"
+        "PAN-protected &nbsp;·&nbsp; parsed in-browser &nbsp;·&nbsp; nothing stored</div>"
+        "</div></div>",
+        unsafe_allow_html=True,
+    )
     col = st.columns([1, 2, 1])[1]
     with col:
         uploaded = st.file_uploader("CAS PDF", type=["pdf"], label_visibility="collapsed")

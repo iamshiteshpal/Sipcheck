@@ -49,10 +49,17 @@ def _css():
     st.markdown(H(f"""<style>
     div[data-testid="stMainBlockContainer"] {{ padding-top:0 !important; }}
 
+    html {{ scroll-behavior:smooth; }}
+
     /* TICKER */
-    .tk {{ width:100%;overflow:hidden;padding:8px 0;
+    .tk {{ width:100%;overflow:hidden;padding:8px 0;position:relative;
         background:linear-gradient(90deg,rgba(139,92,246,0.1),rgba(34,211,238,0.07),rgba(139,92,246,0.1));
         border-bottom:1px solid {BD}; }}
+    .tk::before,.tk::after {{ content:'';position:absolute;top:0;bottom:0;
+        width:90px;z-index:2;pointer-events:none; }}
+    .tk::before {{ left:0;background:linear-gradient(90deg,#07090f 15%,transparent 100%); }}
+    .tk::after  {{ right:0;background:linear-gradient(270deg,#07090f 15%,transparent 100%); }}
+    @media(max-width:600px) {{ .tk::before,.tk::after {{ width:48px; }} }}
     .tk-t {{ display:flex;white-space:nowrap;animation:tkm 30s linear infinite;will-change:transform; }}
     .tk-t:hover {{ animation-play-state:paused; }}
     @keyframes tkm {{ to {{ transform:translateX(-50%); }} }}
@@ -310,8 +317,12 @@ def _hero():
     rebalancer, and a 58-fund research desk.
     <b style="color:{INK};">No signup. No tracking. Nothing leaves your browser.</b></p>
     <div style="display:flex;gap:12px;flex-wrap:wrap;">
-    <a class="cta-p" href="#cas-upload">⬇  Upload CAS · it's free</a>
-    <a class="cta-g" href="#hiw">▶  See how it works</a>
+    <a class="cta-p" href="#cas-upload"
+       onclick="event.preventDefault();var el=document.getElementById('cas-upload');if(el)el.scrollIntoView({{behavior:'smooth'}});">
+       ⬇  Upload CAS · it's free</a>
+    <a class="cta-g" href="#hiw"
+       onclick="event.preventDefault();var el=document.getElementById('hiw');if(el)el.scrollIntoView({{behavior:'smooth'}});">
+       ▶  See how it works</a>
     </div>
     <div class="rfp">✓ No signup &nbsp;·&nbsp; ✓ No email &nbsp;·&nbsp; ✓ No credit card &nbsp;·&nbsp;
     ✓ Nothing stored &nbsp;·&nbsp; ✓ Close tab = data gone</div>
@@ -519,13 +530,9 @@ def _faq():
 # ───────────────── 10. FINAL CTA + LASER ─────────────────
 def _final_cta():
     st.markdown(H(f"""
-    <div class="fcta">
-    <h2>The dashboard CAMS forgot to build.</h2>
-    <div class="ss">Free forever · No signup · 6 seconds from PDF to insight</div>
-    <a class="cta-p" href="#cas-upload" style="font-size:1.02rem;padding:14px 34px;text-decoration:none;">
-    ⬇  Upload your CAS now</a>
-    <div style="margin-top:1.2rem;font-size:0.68rem;color:{FNT};">
-    SipCheck — The dashboard CAMS forgot to build · Data never leaves your device · v2.5</div>
+    <div style="text-align:center;padding:1.5rem 1rem 0.5rem;position:relative;">
+    <div style="font-size:0.66rem;color:{FNT};letter-spacing:0.08em;">
+    SipCheck &nbsp;·&nbsp; Data never leaves your device &nbsp;·&nbsp; v2.5</div>
     </div>
 
     <div class="lbm" id="lb"></div>
