@@ -18,6 +18,7 @@ NAV = [
     ("🏠   SipCheck Home",   "dashboard.py"),
     ("📈  Live Markets",     "pages/01_Markets.py"),
     ("📰  News & Pulse",     "pages/04_News.py"),
+    ("🧮  SIP Calculator",  "pages/03_SIP_Calculator.py"),
     ("🎯  Goal Tracker",     "pages/05_Goals.py"),
     ("👨‍👩‍👧  Family Wealth",    "pages/06_Family_Planner.py"),
     ("📊  MF Report Pro",    "pages/07_MF_Report.py"),
