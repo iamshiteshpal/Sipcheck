@@ -673,6 +673,109 @@ SUBCATEGORY_MAP = {
     "Index": ["All", "Nifty 50", "Nifty Next 50", "Midcap 150", "Smallcap 250"],
 }
 
+STOCK_INFO = {
+    "Bharti Airtel": {
+        "full_name": "Bharti Airtel Limited",
+        "sector": "Telecom", "industry": "Wireless Telecom Services", "market_cap": "Large Cap", "nse_symbol": "BHARTIARTL",
+        "description": "India's largest telecom operator by revenue with 500M+ subscribers. Leading 5G rollout and growing home broadband (Xstream) and enterprise segments.",
+    },
+    "Infosys": {
+        "full_name": "Infosys Limited",
+        "sector": "Information Technology", "industry": "IT Services & Consulting", "market_cap": "Large Cap", "nse_symbol": "INFY",
+        "description": "India's 2nd largest IT services company. Revenue majority from USA & Europe. Strong in digital transformation, cloud migration, and AI-led services.",
+    },
+    "HDFC Bank": {
+        "full_name": "HDFC Bank Limited",
+        "sector": "Banking & Finance", "industry": "Private Sector Bank", "market_cap": "Large Cap", "nse_symbol": "HDFCBANK",
+        "description": "India's largest private sector bank by assets. Merged with HDFC Ltd in 2023. Largest constituent of Nifty 50 & Sensex by weight.",
+    },
+    "Reliance Industries": {
+        "full_name": "Reliance Industries Limited",
+        "sector": "Conglomerate", "industry": "Oil, Telecom & Retail", "market_cap": "Large Cap", "nse_symbol": "RELIANCE",
+        "description": "India's largest company by market cap. Operates O2C (refining/petrochemicals), Jio telecom, Reliance Retail, and new energy businesses.",
+    },
+    "TCS": {
+        "full_name": "Tata Consultancy Services Limited",
+        "sector": "Information Technology", "industry": "IT Services & Consulting", "market_cap": "Large Cap", "nse_symbol": "TCS",
+        "description": "India's largest IT company and Tata Group flagship. Serves BFSI, retail, telecom, and manufacturing globally. Consistent dividend payer.",
+    },
+    "ICICI Bank": {
+        "full_name": "ICICI Bank Limited",
+        "sector": "Banking & Finance", "industry": "Private Sector Bank", "market_cap": "Large Cap", "nse_symbol": "ICICIBANK",
+        "description": "India's 2nd largest private bank. Strong retail banking franchise with robust digital channels (iMobile). Healthy asset quality post-2020 cleanup.",
+    },
+    "Axis Bank": {
+        "full_name": "Axis Bank Limited",
+        "sector": "Banking & Finance", "industry": "Private Sector Bank", "market_cap": "Large Cap", "nse_symbol": "AXISBANK",
+        "description": "India's 3rd largest private sector bank. Acquired Citi India's consumer business in 2023. Focus on premium retail and corporate banking.",
+    },
+    "Maruti Suzuki": {
+        "full_name": "Maruti Suzuki India Limited",
+        "sector": "Automobile", "industry": "Passenger Vehicles", "market_cap": "Large Cap", "nse_symbol": "MARUTI",
+        "description": "India's largest passenger vehicle manufacturer with ~40% market share. Joint venture with Suzuki Motor Corp. Strong rural distribution network.",
+    },
+    "Asian Paints": {
+        "full_name": "Asian Paints Limited",
+        "sector": "Consumer Goods", "industry": "Paints & Coatings", "market_cap": "Large Cap", "nse_symbol": "ASIANPAINT",
+        "description": "India's largest paints company with ~35% market share. Premium brand presence across decorative and industrial coatings. Expanding into home décor.",
+    },
+    "Bajaj Finance": {
+        "full_name": "Bajaj Finance Limited",
+        "sector": "Banking & Finance", "industry": "Non-Banking Financial Company", "market_cap": "Large Cap", "nse_symbol": "BAJFINANCE",
+        "description": "India's largest NBFC by AUM. Strong in consumer durables loans, home loans, SME lending. Known for rapid digital lending and deep cross-sell.",
+    },
+    "Wipro": {
+        "full_name": "Wipro Limited",
+        "sector": "Information Technology", "industry": "IT Services & Consulting", "market_cap": "Large Cap", "nse_symbol": "WIPRO",
+        "description": "India's 3rd largest IT services company. Revenue split between IT services and consumer care (Santoor, Glucon-D). Focus on consulting-led deals.",
+    },
+    "HUL": {
+        "full_name": "Hindustan Unilever Limited",
+        "sector": "Consumer Goods", "industry": "FMCG — Personal & Home Care", "market_cap": "Large Cap", "nse_symbol": "HINDUNILVR",
+        "description": "India's largest FMCG company. Portfolio includes Surf Excel, Lux, Dove, Knorr, Horlicks. Subsidiary of Unilever Plc. Dominant rural distribution.",
+    },
+    "Sun Pharma": {
+        "full_name": "Sun Pharmaceutical Industries Limited",
+        "sector": "Healthcare", "industry": "Pharmaceuticals", "market_cap": "Large Cap", "nse_symbol": "SUNPHARMA",
+        "description": "India's largest pharma company by revenue. Leading presence in US generics and specialty drugs (Ilumya, Cequa). Acquired Ranbaxy in 2015.",
+    },
+    "L&T": {
+        "full_name": "Larsen & Toubro Limited",
+        "sector": "Infrastructure & Industrials", "industry": "Engineering & Construction", "market_cap": "Large Cap", "nse_symbol": "LT",
+        "description": "India's largest engineering & construction conglomerate. Operates across infrastructure, defence, IT (LTIMindtree), financial services, and realty.",
+    },
+    "Kotak Mahindra Bank": {
+        "full_name": "Kotak Mahindra Bank Limited",
+        "sector": "Banking & Finance", "industry": "Private Sector Bank", "market_cap": "Large Cap", "nse_symbol": "KOTAKBANK",
+        "description": "India's 4th largest private bank by assets. Founded by Uday Kotak. Known for strong capital ratios, premium savings accounts, and low NPAs.",
+    },
+    "Titan": {
+        "full_name": "Titan Company Limited",
+        "sector": "Consumer Goods", "industry": "Jewellery & Watches", "market_cap": "Large Cap", "nse_symbol": "TITAN",
+        "description": "Tata Group company. India's largest branded jewellery player (Tanishq) and watch brand (Titan, Fastrack). Expanding into eyewear and fragrances.",
+    },
+    "Nestle India": {
+        "full_name": "Nestle India Limited",
+        "sector": "Consumer Goods", "industry": "FMCG — Food & Beverages", "market_cap": "Large Cap", "nse_symbol": "NESTLEIND",
+        "description": "Indian subsidiary of Nestle SA. Flagship product Maggi noodles holds ~60% market share. Strong in KitKat, Munch, Milkmaid and coffee (Nescafé).",
+    },
+    "ITC": {
+        "full_name": "ITC Limited",
+        "sector": "Consumer Goods", "industry": "Cigarettes, FMCG & Hotels", "market_cap": "Large Cap", "nse_symbol": "ITC",
+        "description": "India's largest cigarette manufacturer (Gold Flake, Classic). Diversified into FMCG foods (Aashirvaad, Sunfeast), hotels, agribusiness, and paper.",
+    },
+    "Power Grid": {
+        "full_name": "Power Grid Corporation of India Limited",
+        "sector": "Utilities", "industry": "Power Transmission", "market_cap": "Large Cap", "nse_symbol": "POWERGRID",
+        "description": "Central PSU that owns and operates India's inter-state power transmission network. Regulated returns business with 85%+ utilisation. High dividend yield.",
+    },
+    "NTPC": {
+        "full_name": "NTPC Limited",
+        "sector": "Utilities", "industry": "Power Generation", "market_cap": "Large Cap", "nse_symbol": "NTPC",
+        "description": "India's largest power generating company (Navratna PSU). ~70 GW installed capacity. Rapidly expanding renewable energy portfolio targeting 60 GW by 2032.",
+    },
+}
+
 
 # ═══════════════════════════════════════════════════════════════════════════
 # HELPERS
@@ -793,6 +896,10 @@ st.markdown("""
 
 st.markdown('<div style="font-size:0.72rem;color:#6b7280;margin-bottom:0.8rem;">⚠️ Holdings data sourced from AMFI factsheets (updated monthly). NAV data via mfapi.in & AMFI. Not investment advice.</div>', unsafe_allow_html=True)
 
+# ── Session state ──────────────────────────────────────────────────────────
+if "ss_active_stock" not in st.session_state:
+    st.session_state.ss_active_stock = None
+
 # ═══════════════════════════════════════════════════════════════════════════
 # TABS
 # ═══════════════════════════════════════════════════════════════════════════
@@ -809,152 +916,200 @@ tab1, tab2, tab3, tab4 = st.tabs([
 # TAB 1 — STOCK SEARCH
 # ───────────────────────────────────────────────────────────────────────────
 with tab1:
-    st.markdown('<div class="sec-lbl">Which funds hold this stock?</div>', unsafe_allow_html=True)
+    stock_names = list(STOCK_HOLDINGS.keys())
 
-    col_inp, col_btn = st.columns([4, 1])
-    with col_inp:
+    # ── Search bar ────────────────────────────────────────────────────────
+    t1_left, t1_right = st.columns([5, 1])
+    with t1_left:
         stock_query = st.text_input(
-            "Stock name",
-            placeholder="e.g. Infosys, HDFC Bank, Bharti Airtel...",
+            "Search stock",
+            placeholder="Type a stock name… e.g. Infosys, HDFC Bank, L&T",
             label_visibility="collapsed",
             key="stock_search_input",
         )
-    with col_btn:
-        search_clicked = st.button("Search", use_container_width=True, key="stock_search_btn")
+    with t1_right:
+        if st.button("✕ Clear", use_container_width=True, key="stock_clear_btn"):
+            st.session_state.ss_active_stock = None
+            st.rerun()
 
-    cat_filter = st.radio(
-        "Filter by category",
-        ["All", "Equity", "Debt", "Hybrid", "ETF"],
-        horizontal=True,
-        key="stock_cat_filter",
-        label_visibility="collapsed",
-    )
-
-    stock_names = list(STOCK_HOLDINGS.keys())
-
-    if stock_query or search_clicked:
-        query = stock_query.strip()
-        if not query:
-            st.info("Enter a stock name above and press Search.")
-        else:
-            matches = difflib.get_close_matches(query, stock_names, n=3, cutoff=0.4)
-            if not matches:
-                # also try partial substring match
-                matches = [s for s in stock_names if query.lower() in s.lower()]
-
-            if not matches:
-                st.warning(f"Stock '{query}' not found in our database. Try: " +
-                           ", ".join(stock_names[:8]))
-            else:
-                matched_stock = matches[0]
-                holdings = STOCK_HOLDINGS[matched_stock]
-
-                if cat_filter != "All":
-                    holdings = [h for h in holdings if h["category"] == cat_filter]
-
-                if not holdings:
-                    st.info(f"No {cat_filter} funds found holding {matched_stock}.")
-                else:
-                    total_funds = len(holdings)
-                    avg_weightage = sum(h["weightage"] for h in holdings) / total_funds
-                    top5 = sorted(holdings, key=lambda x: x["weightage"], reverse=True)[:5]
-
-                    # KPI row
-                    st.markdown(f"<div style='font-size:1rem;font-weight:700;color:#f0f0ff;margin:0.8rem 0 0.4rem;'>{matched_stock}</div>", unsafe_allow_html=True)
-                    kc1, kc2, kc3 = st.columns(3)
-                    with kc1:
-                        st.markdown(_H(f"""
-                        <div class="mf-kpi-t">
-                          <div class="mf-kpi-l">Funds Holding</div>
-                          <div class="mf-kpi-v" style="color:#8b5cf6;">{total_funds}</div>
-                        </div>"""), unsafe_allow_html=True)
-                    with kc2:
-                        st.markdown(_H(f"""
-                        <div class="mf-kpi-t">
-                          <div class="mf-kpi-l">Avg Weightage</div>
-                          <div class="mf-kpi-v" style="color:#10b981;">{avg_weightage:.1f}%</div>
-                        </div>"""), unsafe_allow_html=True)
-                    with kc3:
-                        top_fund = max(holdings, key=lambda x: x["weightage"])
-                        st.markdown(_H(f"""
-                        <div class="mf-kpi-t">
-                          <div class="mf-kpi-l">Highest Exposure</div>
-                          <div class="mf-kpi-v" style="color:#f59e0b;">{top_fund['weightage']:.1f}%</div>
-                        </div>"""), unsafe_allow_html=True)
-
-                    # Highlight top 5
-                    st.markdown('<div class="sec-lbl" style="margin-top:1rem;">Top 5 Funds by Weightage</div>', unsafe_allow_html=True)
-                    for i, h in enumerate(top5, 1):
-                        bar_w = int(h["weightage"] / 15 * 100)
-                        wt_color = "#10b981" if h["weightage"] >= 5 else ("#f59e0b" if h["weightage"] >= 2 else "#f0f0ff")
-                        st.markdown(_H(f"""
-                        <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(139,92,246,0.15);
-                             border-radius:10px;padding:0.7rem 1rem;margin-bottom:6px;
-                             display:flex;align-items:center;gap:12px;">
-                          <div style="font-size:1rem;font-weight:700;color:#8b5cf6;min-width:24px;">#{i}</div>
-                          <div style="flex:1;">
-                            <div style="font-size:0.82rem;font-weight:600;color:#f0f0ff;">{h['fund']}</div>
-                            <div style="font-size:0.65rem;color:#6b7280;margin-top:2px;">{h['category']} · AUM {fmt_cr(h['aum_cr'])} · {stars(h['rating'])}</div>
-                            <div style="height:4px;border-radius:2px;background:rgba(255,255,255,0.06);margin-top:6px;">
-                              <div style="height:100%;width:{bar_w}%;border-radius:2px;background:{wt_color};opacity:0.8;"></div>
-                            </div>
-                          </div>
-                          <div style="text-align:right;min-width:70px;">
-                            <div style="font-size:1.1rem;font-weight:700;color:{wt_color};">{h['weightage']:.1f}%</div>
-                            <div style="font-size:0.65rem;color:#6b7280;">{h['trend']}</div>
-                          </div>
-                        </div>"""), unsafe_allow_html=True)
-
-                    # Bar chart — top 10 by weightage
-                    chart_data = sorted(holdings, key=lambda x: x["weightage"], reverse=True)[:10]
-                    df_chart = pd.DataFrame(chart_data)
-                    df_chart["color"] = df_chart["weightage"].apply(
-                        lambda w: "#10b981" if w >= 5 else ("#f59e0b" if w >= 2 else "#8b5cf6")
-                    )
-
-                    fig = go.Figure(go.Bar(
-                        x=df_chart["weightage"],
-                        y=df_chart["fund"],
-                        orientation="h",
-                        marker=dict(color=df_chart["color"].tolist()),
-                        text=df_chart["weightage"].apply(lambda x: f"{x:.1f}%"),
-                        textposition="outside",
-                        textfont=dict(color="#f0f0ff", size=11),
-                        hovertemplate="%{y}<br>Weightage: %{x:.2f}%<extra></extra>",
-                    ))
-                    fig.update_layout(
-                        **plotly_dark_layout(height=max(280, len(chart_data) * 38)),
-                        xaxis=dict(title="Weightage %", gridcolor="rgba(139,92,246,0.1)", tickfont=dict(color="#6b7280")),
-                        yaxis=dict(autorange="reversed", tickfont=dict(color="#f0f0ff", size=11)),
-                        showlegend=False,
-                        title=dict(text=f"Top 10 Funds — {matched_stock} Exposure", font=dict(color="#6b7280", size=12)),
-                    )
-                    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
-
-                    # Full table
-                    st.markdown('<div class="sec-lbl">All Funds Holding This Stock</div>', unsafe_allow_html=True)
-                    df_table = pd.DataFrame([{
-                        "Fund Name": h["fund"],
-                        "Category": h["category"],
-                        "Weightage %": h["weightage"],
-                        "Rating": stars(h["rating"]),
-                        "AUM (Cr)": h["aum_cr"],
-                        "Rating Trend": h["trend"],
-                    } for h in sorted(holdings, key=lambda x: x["weightage"], reverse=True)])
-
-                    st.dataframe(df_table, use_container_width=True, hide_index=True)
-                    st.caption("Holdings data updated monthly from AMFI factsheets. Weightage as % of fund NAV.")
-
+    # ── Live suggestion pills ─────────────────────────────────────────────
+    query_lower = stock_query.strip().lower()
+    if query_lower:
+        suggestions = [s for s in stock_names if query_lower in s.lower()]
+        if not suggestions:
+            suggestions = difflib.get_close_matches(stock_query.strip(), stock_names, n=6, cutoff=0.3)
+        pill_label = "Matching stocks:" if suggestions else None
     else:
-        # Default hint
-        st.markdown(_H("""
-        <div style="margin-top:1.2rem;display:flex;flex-wrap:wrap;gap:8px;">
-        """ + "".join(
-            f'<span style="background:rgba(139,92,246,0.1);color:#8b5cf6;font-size:0.75rem;'
-            f'font-weight:600;padding:4px 12px;border-radius:20px;cursor:default;">{s}</span>'
-            for s in list(STOCK_HOLDINGS.keys())[:12]
-        ) + "</div>"), unsafe_allow_html=True)
-        st.caption("Click a stock name above or type in the search box.")
+        suggestions = stock_names
+        pill_label = "Popular stocks — click to explore:"
+
+    if suggestions and pill_label:
+        st.markdown(
+            f'<div style="font-size:0.68rem;color:#6b7280;margin:0.6rem 0 0.3rem;">{pill_label}</div>',
+            unsafe_allow_html=True,
+        )
+        pill_batch = suggestions[:10]
+        n_cols = min(len(pill_batch), 5)
+        pill_cols = st.columns(n_cols)
+        for idx, sug in enumerate(pill_batch):
+            with pill_cols[idx % n_cols]:
+                if st.button(sug, key=f"pill_{sug}", use_container_width=True):
+                    st.session_state.ss_active_stock = sug
+                    st.rerun()
+    elif query_lower and not suggestions:
+        st.warning(f"No match for '{stock_query}'. Try: " + ", ".join(stock_names[:6]))
+
+    # ── Resolve active stock ──────────────────────────────────────────────
+    active_stock = st.session_state.ss_active_stock
+    if not active_stock and query_lower:
+        sub_matches = [s for s in stock_names if query_lower in s.lower()]
+        if not sub_matches:
+            sub_matches = difflib.get_close_matches(stock_query.strip(), stock_names, n=1, cutoff=0.4)
+        if sub_matches:
+            active_stock = sub_matches[0]
+
+    # ── Results ───────────────────────────────────────────────────────────
+    if active_stock:
+        st.markdown("<hr style='border:none;border-top:1px solid rgba(139,92,246,0.15);margin:0.8rem 0;'>",
+                    unsafe_allow_html=True)
+
+        info = STOCK_INFO.get(active_stock, {})
+        full_name = info.get("full_name", active_stock)
+
+        # Stock name header + ⓘ popover
+        hdr_col, info_col = st.columns([6, 1])
+        with hdr_col:
+            st.markdown(
+                f'<div style="margin-bottom:0.2rem;">'
+                f'<div style="font-size:1.5rem;font-weight:800;color:#f0f0ff;line-height:1.2;">{full_name}</div>'
+                f'<div style="font-size:0.72rem;color:#6b7280;margin-top:4px;">'
+                f'{info.get("sector","—")} &nbsp;·&nbsp; {info.get("industry","—")} &nbsp;·&nbsp; '
+                f'{info.get("market_cap","—")} &nbsp;·&nbsp; NSE: <b style="color:#8b5cf6;">{info.get("nse_symbol","—")}</b>'
+                f'</div></div>',
+                unsafe_allow_html=True,
+            )
+        with info_col:
+            with st.popover("ⓘ Info"):
+                st.markdown(f"### {full_name}")
+                st.markdown(f"**Sector:** {info.get('sector', '—')}")
+                st.markdown(f"**Industry:** {info.get('industry', '—')}")
+                st.markdown(f"**Market Cap:** {info.get('market_cap', '—')}")
+                st.markdown(f"**NSE Symbol:** `{info.get('nse_symbol', '—')}`")
+                if info.get("description"):
+                    st.markdown("---")
+                    st.markdown(info["description"])
+
+        # Category filter
+        cat_filter = st.radio(
+            "Filter by category",
+            ["All", "Equity", "Debt", "Hybrid", "ETF"],
+            horizontal=True,
+            key="stock_cat_filter",
+            label_visibility="collapsed",
+        )
+
+        holdings = STOCK_HOLDINGS.get(active_stock, [])
+        if cat_filter != "All":
+            holdings = [h for h in holdings if h["category"] == cat_filter]
+
+        if not holdings:
+            st.info(f"No {cat_filter} funds found holding {active_stock}.")
+        else:
+            total_funds = len(holdings)
+            avg_weightage = sum(h["weightage"] for h in holdings) / total_funds
+            top_fund = max(holdings, key=lambda x: x["weightage"])
+
+            # KPI row
+            kc1, kc2, kc3 = st.columns(3)
+            with kc1:
+                st.markdown(_H(f"""
+                <div class="mf-kpi-t">
+                  <div class="mf-kpi-l">Funds Holding</div>
+                  <div class="mf-kpi-v" style="color:#8b5cf6;">{total_funds}</div>
+                </div>"""), unsafe_allow_html=True)
+            with kc2:
+                st.markdown(_H(f"""
+                <div class="mf-kpi-t">
+                  <div class="mf-kpi-l">Avg Weightage</div>
+                  <div class="mf-kpi-v" style="color:#10b981;">{avg_weightage:.1f}%</div>
+                </div>"""), unsafe_allow_html=True)
+            with kc3:
+                st.markdown(_H(f"""
+                <div class="mf-kpi-t">
+                  <div class="mf-kpi-l">Highest Exposure</div>
+                  <div class="mf-kpi-v" style="color:#f59e0b;">{top_fund['weightage']:.1f}%</div>
+                  <div style="font-size:0.6rem;color:#6b7280;margin-top:2px;">{top_fund['fund'][:28]}</div>
+                </div>"""), unsafe_allow_html=True)
+
+            # Top 5 fund cards
+            st.markdown('<div class="sec-lbl" style="margin-top:1.2rem;">Top 5 Funds by Weightage</div>',
+                        unsafe_allow_html=True)
+            top5 = sorted(holdings, key=lambda x: x["weightage"], reverse=True)[:5]
+            for i, h in enumerate(top5, 1):
+                bar_w = min(int(h["weightage"] / 15 * 100), 100)
+                wt_color = "#10b981" if h["weightage"] >= 5 else ("#f59e0b" if h["weightage"] >= 2 else "#8b5cf6")
+                st.markdown(_H(f"""
+                <div style="background:rgba(255,255,255,0.03);border:1px solid rgba(139,92,246,0.12);
+                     border-radius:12px;padding:0.85rem 1.1rem;margin-bottom:8px;">
+                  <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
+                    <div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0;">
+                      <div style="font-size:1.1rem;font-weight:800;color:#8b5cf6;min-width:26px;">#{i}</div>
+                      <div style="flex:1;min-width:0;">
+                        <div style="font-size:0.88rem;font-weight:700;color:#f0f0ff;white-space:nowrap;
+                             overflow:hidden;text-overflow:ellipsis;">{h['fund']}</div>
+                        <div style="font-size:0.68rem;color:#6b7280;margin-top:3px;">
+                          {h['category']} &nbsp;·&nbsp; AUM {fmt_cr(h['aum_cr'])} &nbsp;·&nbsp; {stars(h['rating'])}
+                        </div>
+                      </div>
+                    </div>
+                    <div style="text-align:right;flex-shrink:0;min-width:80px;">
+                      <div style="font-size:1.3rem;font-weight:800;color:{wt_color};">{h['weightage']:.1f}%</div>
+                      <div style="font-size:0.65rem;color:#6b7280;">{h['trend']}</div>
+                    </div>
+                  </div>
+                  <div style="height:4px;border-radius:2px;background:rgba(255,255,255,0.05);margin-top:8px;">
+                    <div style="height:100%;width:{bar_w}%;border-radius:2px;background:{wt_color};opacity:0.75;"></div>
+                  </div>
+                </div>"""), unsafe_allow_html=True)
+
+            # Bar chart — top 10
+            chart_data = sorted(holdings, key=lambda x: x["weightage"], reverse=True)[:10]
+            df_chart = pd.DataFrame(chart_data)
+            bar_colors = ["#10b981" if w >= 5 else ("#f59e0b" if w >= 2 else "#8b5cf6")
+                          for w in df_chart["weightage"]]
+            fig = go.Figure(go.Bar(
+                x=df_chart["weightage"],
+                y=df_chart["fund"],
+                orientation="h",
+                marker=dict(color=bar_colors),
+                text=[f"{v:.1f}%" for v in df_chart["weightage"]],
+                textposition="outside",
+                textfont=dict(color="#f0f0ff", size=11),
+                hovertemplate="%{y}<br>Weightage: %{x:.2f}%<extra></extra>",
+            ))
+            fig.update_layout(
+                **plotly_dark_layout(height=max(260, len(chart_data) * 36)),
+                xaxis=dict(title="Weightage %", gridcolor="rgba(139,92,246,0.08)",
+                           tickfont=dict(color="#6b7280")),
+                yaxis=dict(autorange="reversed", tickfont=dict(color="#f0f0ff", size=11)),
+                showlegend=False,
+                title=dict(text=f"Top 10 Funds — {active_stock} Exposure",
+                           font=dict(color="#6b7280", size=12)),
+            )
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+
+            # Full table
+            st.markdown('<div class="sec-lbl">All Funds Holding This Stock</div>', unsafe_allow_html=True)
+            df_table = pd.DataFrame([{
+                "Fund Name": h["fund"],
+                "Category": h["category"],
+                "Weightage %": h["weightage"],
+                "Rating": stars(h["rating"]),
+                "AUM (Cr)": f"₹{h['aum_cr']:,}",
+                "Trend": h["trend"],
+            } for h in sorted(holdings, key=lambda x: x["weightage"], reverse=True)])
+            st.dataframe(df_table, use_container_width=True, hide_index=True)
+            st.caption("Holdings data updated monthly from AMFI factsheets. Weightage as % of fund NAV.")
 
 
 # ───────────────────────────────────────────────────────────────────────────
