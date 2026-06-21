@@ -1263,7 +1263,7 @@ with tab4:
             return ""
 
         col_names = [c for c in df_perf.columns if c != "Period"]
-        styled_perf = df_perf.style.applymap(color_returns, subset=col_names)
+        styled_perf = df_perf.style.map(color_returns, subset=col_names)
         st.dataframe(styled_perf, use_container_width=True, hide_index=True)
 
         # Line chart — 1Y performance comparison
