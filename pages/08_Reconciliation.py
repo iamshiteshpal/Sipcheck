@@ -9,12 +9,12 @@ from dashboard import (
 )
 from ui_theme import inject_theme, page_header, section, glass_kpi
 from sidebar_v2 import render_sidebar
+from theme import apply_theme, theme_toggle_button
 
 st.set_page_config(page_title="Reconciliation — SipCheck", page_icon="🔒", layout="wide")
-from theme import apply_theme, theme_toggle_button
-apply_theme()
 render_sidebar()
 inject_theme()
+apply_theme()
 
 # ── Constants ─────────────────────────────────────────────────────────────
 RECON_PWD    = "2002"

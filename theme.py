@@ -1,421 +1,398 @@
 """
-CAS360 / SipCheck – Nuclear Theme System v2
-Default: dark. Toggle persists in st.session_state['theme'] ('dark' | 'light').
+CAS360 / SipCheck – Theme System
+Two functions exposed to every page:
+    apply_theme()          – inject full CSS for the active theme
+    theme_toggle_button()  – render the 🌙 / ☀️ button (called by sidebar_v2)
+
+Uses html body compound selectors so specificity beats page-level !important rules.
+Default theme: Light.
 """
 import streamlit as st
 
+# ── Color palettes ─────────────────────────────────────────────────────────────
 
-def _c(theme: str) -> dict:
-    if theme == 'light':
-        return {
-            'bg':       '#F8FAFC',
-            'sidebar':  '#FFFFFF',
-            'card':     '#FFFFFF',
-            'card2':    '#F1F5F9',
-            'border':   '#E2E8F0',
-            'text':     '#0F172A',
-            'text2':    '#475569',
-            'text3':    '#64748B',
-            'accent':   '#4F46E5',
-            'success':  '#059669',
-            'danger':   '#DC2626',
-            'warning':  '#D97706',
-            'input_bg': '#FFFFFF',
-            'btn_bg':   '#4F46E5',
-            'btn_text': '#FFFFFF',
-            'tab_sel':  'rgba(79,70,229,0.12)',
-        }
-    return {
-        'bg':       '#0F0F1A',
-        'sidebar':  '#16162A',
-        'card':     '#1E1E2E',
-        'card2':    '#2A2A3E',
-        'border':   '#2D2D44',
-        'text':     '#F1F5F9',
-        'text2':    '#CBD5E1',
-        'text3':    '#94A3B8',
-        'accent':   '#818CF8',
-        'success':  '#34D399',
-        'danger':   '#F87171',
-        'warning':  '#FBBF24',
-        'input_bg': '#1E1E2E',
-        'btn_bg':   '#818CF8',
-        'btn_text': '#0F0F1A',
-        'tab_sel':  'rgba(129,140,248,0.15)',
-    }
+LIGHT = {
+    "bg":             "#F0F4FF",
+    "sidebar":        "#E8EDFB",
+    "primary":        "#4F46E5",
+    "secondary":      "#06B6D4",
+    "card":           "#FFFFFF",
+    "text_primary":   "#1E1B4B",
+    "text_secondary": "#6B7280",
+    "success":        "#10B981",
+    "warning":        "#F59E0B",
+    "danger":         "#EF4444",
+    "border":         "#E0E7FF",
+}
+
+DARK = {
+    "bg":             "#0F0F1A",
+    "sidebar":        "#1A1A2E",
+    "primary":        "#818CF8",
+    "secondary":      "#22D3EE",
+    "card":           "#1E1E2E",
+    "text_primary":   "#E2E8F0",
+    "text_secondary": "#94A3B8",
+    "success":        "#34D399",
+    "warning":        "#FBBF24",
+    "danger":         "#F87171",
+    "border":         "#2D2D44",
+}
+
+
+def _get_theme() -> dict:
+    if "theme" not in st.session_state:
+        st.session_state["theme"] = "Light"
+    return LIGHT if st.session_state["theme"] == "Light" else DARK
 
 
 def apply_theme():
-    """Nuclear theme injection. Call immediately after st.set_page_config()."""
-    # Normalize any old capitalized values from previous sessions
-    raw = st.session_state.get('theme', 'dark')
-    if raw in ('Light', 'Dark'):
-        raw = raw.lower()
-        st.session_state['theme'] = raw
-    theme = raw
-    c = _c(theme)
+    """Inject comprehensive theme CSS. Call after render_sidebar() on every page."""
+    t = _get_theme()
+    is_light = st.session_state["theme"] == "Light"
+
+    # Derived tokens
+    btn_shadow   = "rgba(79,70,229,0.35)"   if is_light else "rgba(129,140,248,0.35)"
+    focus_ring   = "rgba(79,70,229,0.18)"   if is_light else "rgba(129,140,248,0.18)"
+    opt_hover    = "rgba(79,70,229,0.08)"   if is_light else "rgba(129,140,248,0.08)"
+    tag_bg       = "rgba(79,70,229,0.12)"   if is_light else "rgba(129,140,248,0.12)"
+    row_alt      = "#F5F7FF"                if is_light else "#1A1A2C"
+    header_bg    = "#EEF2FF"                if is_light else "#16162A"
+    input_bg     = "#FFFFFF"                if is_light else "#16162A"
+    card_hover   = "#F8FAFF"                if is_light else "#25253A"
+    sidebar_link = "rgba(79,70,229,0.07)"   if is_light else "rgba(129,140,248,0.07)"
+    aurora       = ""                        if is_light else (
+        "radial-gradient(900px 500px at 85% -10%,rgba(139,92,246,0.14),transparent 60%),"
+        "radial-gradient(700px 450px at -10% 30%,rgba(34,211,238,0.08),transparent 55%),"
+    )
 
     st.markdown(f"""<style>
-/* ═══════════════════════════════════════════════════════════════════════
-   NUCLEAR THEME – CAS360 SipCheck  ({theme} mode)
-   Every rule uses !important. Compound selectors beat page-level CSS.
-═══════════════════════════════════════════════════════════════════════ */
+/* ═══════════════════════════════════════════════════════════════════════════
+   CAS360 Theme – {st.session_state['theme']} Mode
+   Compound selectors (html body …) ensure higher specificity than page CSS.
+═══════════════════════════════════════════════════════════════════════════ */
 
-/* ── 0. Transitions ──────────────────────────────────────────────────── */
-*, *::before, *::after {{
-    transition: background-color 0.25s ease, color 0.25s ease,
-                border-color 0.25s ease !important;
-}}
-
-/* ── 1. Root backgrounds ─────────────────────────────────────────────── */
-html, body {{
-    background: {c['bg']} !important;
-    color: {c['text']} !important;
-}}
+/* ── Transitions ──────────────────────────────────────────────────────────── */
 html body .stApp,
-html body [data-testid="stAppViewContainer"],
-html body [data-testid="stMain"],
-html body .main,
-html body section.main,
-html body .block-container,
-html body [class*="css"] {{
-    background: {c['bg']} !important;
-}}
-/* Kill aurora gradient in light mode */
-html body .stApp {{
-    background-image: none !important;
-    animation: none !important;
-    color: {c['text']} !important;
-}}
-
-/* ── 2. NUCLEAR TEXT — every element inside the app ─────────────────── */
-html body .stApp *,
-html body .main *,
-html body section[data-testid="stSidebar"] *,
-html body .block-container * {{
-    color: {c['text']} !important;
-}}
-
-/* ── 3. Restore profit / loss / accent colors (after nuclear rule) ───── */
-.up, .profit, [class*="gain"],
-[data-testid="stMetricDelta"][data-direction="positive"],
-[data-testid="stMetricDelta"][data-direction="positive"] * {{
-    color: {c['success']} !important;
-}}
-.down, .loss, [class*="loss"],
-[data-testid="stMetricDelta"][data-direction="negative"],
-[data-testid="stMetricDelta"][data-direction="negative"] * {{
-    color: {c['danger']} !important;
-}}
-.warn {{ color: {c['warning']} !important; }}
-.pill.live, .pill.live * {{ color: {c['success']} !important; }}
-.pill {{ color: {c['text2']} !important; }}
-
-/* ── 4. Sidebar ──────────────────────────────────────────────────────── */
 html body section[data-testid="stSidebar"],
 html body section[data-testid="stSidebar"] > div,
-html body section[data-testid="stSidebar"] > div:first-child {{
-    background: {c['sidebar']} !important;
-    border-right: 1px solid {c['border']} !important;
+html body .block-container {{
+    transition: background-color 0.3s ease, color 0.3s ease !important;
+}}
+input, textarea, button, select,
+div[data-baseweb="select"] > div,
+html body div[data-testid="stMetric"],
+.g-card, .sip-card, .kpi-card-custom {{
+    transition: background-color 0.3s ease, color 0.3s ease,
+                border-color 0.3s ease, box-shadow 0.3s ease !important;
+}}
+
+/* ── App / page background ────────────────────────────────────────────────── */
+html, body {{
+    background: {t['bg']} !important;
+}}
+html body .stApp {{
+    background: {aurora}{t['bg']} !important;
+    color: {t['text_primary']} !important;
+    background-attachment: fixed !important;
+}}
+html body [data-testid="stAppViewContainer"],
+html body .main,
+html body [data-testid="stMain"] {{
+    background: {t['bg']} !important;
+}}
+html body .block-container {{
+    background: transparent !important;
+    color: {t['text_primary']} !important;
+}}
+
+/* ── Header / toolbar (always transparent) ───────────────────────────────── */
+header[data-testid="stHeader"] {{
+    background: transparent !important;
+    backdrop-filter: none !important;
+}}
+header[data-testid="stHeader"] * {{ background: transparent !important; }}
+div[data-testid="stToolbar"]   {{ background: transparent !important; }}
+div[data-testid="stDecoration"] {{ display: none !important; }}
+div[data-testid="stStatusWidget"] {{ background: transparent !important; }}
+#MainMenu, footer {{ visibility: hidden !important; height: 0 !important; }}
+
+/* ── Sidebar ──────────────────────────────────────────────────────────────── */
+html body section[data-testid="stSidebar"] {{
+    background: {t['sidebar']} !important;
+    border-right: 1px solid {t['border']} !important;
     backdrop-filter: none !important;
     box-shadow: none !important;
 }}
-/* Hide header band */
-header[data-testid="stHeader"],
-header[data-testid="stHeader"] *,
-div[data-testid="stToolbar"] {{ background: transparent !important; }}
-div[data-testid="stDecoration"] {{ display: none !important; }}
-#MainMenu, footer {{ visibility: hidden !important; height: 0 !important; }}
-
-/* ── 5. Cards / containers ───────────────────────────────────────────── */
-html body div[data-testid="stMetric"] {{
-    background: {c['card']} !important;
-    border: 1px solid {c['border']} !important;
-    border-radius: 12px !important;
+html body section[data-testid="stSidebar"] > div {{
+    background: {t['sidebar']} !important;
+    border: none !important;
 }}
-html body div[data-testid="stVerticalBlockBorderWrapper"] {{
-    background: {c['card']} !important;
-    border: 1px solid {c['border']} !important;
-    border-radius: 12px !important;
+html body section[data-testid="stSidebar"] p,
+html body section[data-testid="stSidebar"] span:not([data-testid]),
+html body section[data-testid="stSidebar"] label,
+html body section[data-testid="stSidebar"] small {{
+    color: {t['text_primary']} !important;
 }}
-/* Dashboard custom card classes */
-.card, .g-card, .sip-card, .kpi-card-custom,
-.fund-card, .alert-card, .insight-card, .notice {{
-    background: {c['card']} !important;
-    border: 1px solid {c['border']} !important;
-    color: {c['text']} !important;
+html body section[data-testid="stSidebar"] a {{
+    color: {t['text_secondary']} !important;
+    border-left: 2px solid transparent !important;
 }}
-.card *, .g-card *, .sip-card *,
-.fund-card *, .alert-card * {{
-    color: {c['text']} !important;
+html body section[data-testid="stSidebar"] a:hover {{
+    color: {t['primary']} !important;
+    background: {sidebar_link} !important;
+    border-left: 2px solid {t['primary']} !important;
 }}
-/* tab-bar used in dashboard */
-.tab-bar, .tab-bar-wrap {{
-    background: {c['card']} !important;
-    border-bottom: 1px solid {c['border']} !important;
+html body section[data-testid="stSidebar"] [aria-selected="true"],
+html body section[data-testid="stSidebar"] a[aria-current] {{
+    color: {t['primary']} !important;
+    background: {tag_bg} !important;
+    border-left: 2px solid {t['primary']} !important;
 }}
-
-/* ── 6. Buttons — fix disabled look ─────────────────────────────────── */
-html body .stButton > button,
-html body .stDownloadButton > button,
-html body button[kind="primary"],
-html body button[kind="secondary"] {{
-    background: {c['btn_bg']} !important;
-    color: {c['btn_text']} !important;
-    border: 1px solid {c['accent']} !important;
-    opacity: 1 !important;
-    font-weight: 600 !important;
-    border-radius: 8px !important;
-}}
-html body .stButton > button:hover,
-html body .stDownloadButton > button:hover {{
-    opacity: 0.88 !important;
-    box-shadow: 0 4px 14px -4px {c['accent']}66 !important;
-}}
-html body .stButton > button:disabled,
-html body .stDownloadButton > button:disabled {{
-    opacity: 0.45 !important;
-}}
-/* Sidebar buttons (nav, Add CAS, Logout, theme toggle) */
+/* Sidebar buttons (nav + toggle) */
 html body section[data-testid="stSidebar"] .stButton > button {{
-    background: {c['card']} !important;
-    color: {c['text']} !important;
-    border: 1px solid {c['border']} !important;
-    opacity: 1 !important;
+    background: {tag_bg} !important;
+    color: {t['primary']} !important;
+    border: 1px solid {t['border']} !important;
+    border-radius: 9px !important;
+    font-weight: 600 !important;
 }}
 html body section[data-testid="stSidebar"] .stButton > button:hover {{
-    background: {c['accent']} !important;
-    color: {c['btn_text']} !important;
-    border-color: {c['accent']} !important;
+    background: {t['primary']} !important;
+    color: #ffffff !important;
+    border-color: {t['primary']} !important;
 }}
 
-/* ── 7. Inputs / selects ─────────────────────────────────────────────── */
+/* ── Text ─────────────────────────────────────────────────────────────────── */
+html body p, html body li,
+html body .stMarkdown, html body div[data-testid="stText"],
+html body div[data-testid="stMarkdownContainer"] p,
+html body div[data-testid="stMarkdownContainer"] li,
+html body div[data-testid="stMarkdownContainer"] span {{
+    color: {t['text_primary']} !important;
+}}
+html body h1, html body h2, html body h3,
+html body h4, html body h5, html body h6 {{
+    color: {t['text_primary']} !important;
+}}
+html body td, html body th {{ color: {t['text_primary']} !important; }}
+.kpi-label, .pg-s {{
+    color: {t['text_secondary']} !important;
+}}
+html body div[data-testid="stMetricLabel"],
+html body div[data-testid="stMetricLabel"] * {{
+    color: {t['text_secondary']} !important;
+}}
+.pg-h {{
+    background: linear-gradient(
+        90deg, {t['text_primary']} 30%, {t['primary']} 80%, {t['secondary']}
+    ) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    color: transparent !important;
+}}
+
+/* ── Cards ────────────────────────────────────────────────────────────────── */
+.g-card, .sip-card, .kpi-card-custom {{
+    background: {t['card']} !important;
+    border-color: {t['border']} !important;
+    backdrop-filter: none !important;
+}}
+.g-card:hover, .sip-card:hover {{
+    background: {card_hover} !important;
+    border-color: {t['primary']} !important;
+}}
+.alert-banner {{
+    background: {t['card']} !important;
+    border-color: {t['border']} !important;
+}}
+
+/* ── Metric widgets ───────────────────────────────────────────────────────── */
+html body div[data-testid="stMetric"] {{
+    background: {t['card']} !important;
+    border: 1px solid {t['border']} !important;
+    border-radius: 14px !important;
+}}
+html body div[data-testid="stMetricValue"],
+html body div[data-testid="stMetricValue"] * {{
+    color: {t['text_primary']} !important;
+}}
+[data-testid="stMetricDelta"][data-direction="positive"],
+[data-testid="stMetricDelta"][data-direction="positive"] * {{
+    color: {t['success']} !important;
+}}
+[data-testid="stMetricDelta"][data-direction="negative"],
+[data-testid="stMetricDelta"][data-direction="negative"] * {{
+    color: {t['danger']} !important;
+}}
+
+/* ── Profit / loss ────────────────────────────────────────────────────────── */
+.up, .profit   {{ color: {t['success']} !important; }}
+.down, .loss   {{ color: {t['danger']}  !important; }}
+.warn          {{ color: {t['warning']} !important; }}
+
+/* ── Buttons (page-level) ─────────────────────────────────────────────────── */
+html body .block-container .stButton > button {{
+    background: linear-gradient(135deg, {t['primary']}, {t['secondary']}) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 10px !important;
+    font-weight: 600 !important;
+}}
+html body .block-container .stButton > button:hover {{
+    opacity: 0.88 !important;
+    box-shadow: 0 6px 20px -4px {btn_shadow} !important;
+    transform: translateY(-1px) !important;
+}}
+html body .block-container .stButton > button:active {{
+    transform: translateY(0) !important;
+}}
+
+/* ── Text inputs ──────────────────────────────────────────────────────────── */
 html body .stTextInput > div > div > input,
 html body .stNumberInput > div > div > input,
-html body .stTextArea > div > div > textarea,
-html body input[type="text"],
-html body input[type="password"],
-html body input[type="number"],
-html body input[type="email"] {{
-    background: {c['input_bg']} !important;
-    color: {c['text']} !important;
-    border: 1px solid {c['border']} !important;
+html body .stTextArea > div > div > textarea {{
+    background: {input_bg} !important;
+    color: {t['text_primary']} !important;
+    border: 1px solid {t['border']} !important;
     border-radius: 8px !important;
+}}
+html body .stTextInput > div > div > input:focus,
+html body .stNumberInput > div > div > input:focus,
+html body .stTextArea > div > div > textarea:focus {{
+    border-color: {t['primary']} !important;
+    box-shadow: 0 0 0 2px {focus_ring} !important;
 }}
 html body .stTextInput input::placeholder,
-html body .stTextArea textarea::placeholder,
-html body input::placeholder {{
-    color: {c['text3']} !important;
-    opacity: 1 !important;
+html body .stTextArea textarea::placeholder {{
+    color: {t['text_secondary']} !important;
+    opacity: 0.7 !important;
 }}
+
+/* ── Input / widget labels ────────────────────────────────────────────────── */
+html body .stTextInput label,  html body .stNumberInput label,
+html body .stTextArea label,   html body .stSelectbox label,
+html body .stMultiSelect label, html body .stSlider label,
+html body .stDateInput label,  html body .stCheckbox label,
+html body .stRadio label,      html body .stFileUploader label {{
+    color: {t['text_secondary']} !important;
+    font-weight: 500 !important;
+}}
+
+/* ── Selectbox / Dropdown ─────────────────────────────────────────────────── */
 html body div[data-baseweb="select"] > div,
 html body div[data-baseweb="select"] input {{
-    background: {c['input_bg']} !important;
-    color: {c['text']} !important;
-    border-color: {c['border']} !important;
+    background: {input_bg} !important;
+    color: {t['text_primary']} !important;
+    border-color: {t['border']} !important;
 }}
-div[data-baseweb="popover"], div[data-baseweb="menu"] {{
-    background: {c['card']} !important;
-    border: 1px solid {c['border']} !important;
+div[data-baseweb="popover"],
+div[data-baseweb="menu"] {{
+    background: {t['card']} !important;
+    border: 1px solid {t['border']} !important;
+    box-shadow: 0 8px 32px -8px rgba(0,0,0,0.18) !important;
 }}
 li[role="option"] {{
-    background: {c['card']} !important;
-    color: {c['text']} !important;
+    background: {t['card']} !important;
+    color: {t['text_primary']} !important;
 }}
-li[role="option"]:hover, li[role="option"][aria-selected="true"] {{
-    background: {c['card2']} !important;
-    color: {c['accent']} !important;
+li[role="option"]:hover,
+li[role="option"][aria-selected="true"] {{
+    background: {opt_hover} !important;
+    color: {t['primary']} !important;
 }}
 span[data-baseweb="tag"] {{
-    background: {c['card2']} !important;
-    color: {c['accent']} !important;
+    background: {tag_bg} !important;
+    color: {t['primary']} !important;
 }}
 
-/* ── 8. File Uploader — fix disabled look ────────────────────────────── */
-html body [data-testid="stFileUploader"],
-html body [data-testid="stFileUploaderDropzone"] {{
-    background: {c['card']} !important;
-    border: 2px dashed {c['accent']} !important;
-    border-radius: 10px !important;
-    color: {c['text']} !important;
-    opacity: 1 !important;
-}}
-html body [data-testid="stFileUploader"] *,
-html body [data-testid="stFileUploaderDropzone"] * {{
-    color: {c['text']} !important;
-    opacity: 1 !important;
-}}
-html body [data-testid="stFileUploader"] button,
-html body [data-testid="stFileUploaderDropzone"] button {{
-    background: {c['accent']} !important;
-    color: white !important;
-    opacity: 1 !important;
-    border: none !important;
-}}
-
-/* ── 9. Tabs ─────────────────────────────────────────────────────────── */
-html body .stTabs [data-baseweb="tab-list"],
+/* ── Tabs ─────────────────────────────────────────────────────────────────── */
 html body div[data-baseweb="tab-list"] {{
-    background: {c['card']} !important;
-    border-radius: 8px !important;
-    border-bottom: 1px solid {c['border']} !important;
-    gap: 4px !important;
+    background: {t['card']} !important;
+    border-bottom: 1px solid {t['border']} !important;
 }}
-html body .stTabs button[data-baseweb="tab"],
 html body button[data-baseweb="tab"] {{
     background: transparent !important;
-    color: {c['text2']} !important;
+    color: {t['text_secondary']} !important;
     font-weight: 500 !important;
-    border: none !important;
-    border-radius: 6px !important;
 }}
-html body .stTabs button[aria-selected="true"],
 html body button[data-baseweb="tab"][aria-selected="true"] {{
-    background: {c['tab_sel']} !important;
-    color: {c['accent']} !important;
-    border-bottom: 2px solid {c['accent']} !important;
+    color: {t['primary']} !important;
+    background: transparent !important;
+    border-bottom: 2px solid {t['primary']} !important;
 }}
 
-/* ── 10. Tables / DataFrames ─────────────────────────────────────────── */
-html body div[data-testid="stDataFrame"],
-html body [data-testid="stTable"] {{
-    background: {c['card']} !important;
-    border: 1px solid {c['border']} !important;
+/* ── Tables / DataFrames ──────────────────────────────────────────────────── */
+html body div[data-testid="stDataFrame"] {{
+    border: 1px solid {t['border']} !important;
     border-radius: 10px !important;
     overflow: hidden;
 }}
-html body .stDataFrame *,
-html body [data-testid="stTable"] * {{
-    color: {c['text']} !important;
-}}
-html body .stDataFrame thead tr,
-html body .stDataFrame thead tr th {{
-    background: {c['card2']} !important;
+html body .stDataFrame thead tr th,
+html body .stDataFrame thead tr {{
+    background: {header_bg} !important;
+    color: {t['text_primary']} !important;
     font-weight: 600 !important;
-    border-color: {c['border']} !important;
+    border-color: {t['border']} !important;
+}}
+html body .stDataFrame tbody tr {{
+    background: {t['card']} !important;
 }}
 html body .stDataFrame tbody tr:nth-child(even) {{
-    background: {c['card2']} !important;
+    background: {row_alt} !important;
+}}
+html body .stDataFrame tbody tr td {{
+    color: {t['text_primary']} !important;
+    border-color: {t['border']} !important;
 }}
 
-/* ── 11. Expander ────────────────────────────────────────────────────── */
-html body div[data-testid="stExpander"],
-html body .streamlit-expanderHeader {{
-    background: {c['card']} !important;
-    border: 1px solid {c['border']} !important;
+/* ── Expander ─────────────────────────────────────────────────────────────── */
+html body div[data-testid="stExpander"] {{
+    background: {t['card']} !important;
+    border: 1px solid {t['border']} !important;
     border-radius: 10px !important;
 }}
 html body div[data-testid="stExpander"] summary,
 html body div[data-testid="stExpander"] summary * {{
-    color: {c['text']} !important;
+    color: {t['text_primary']} !important;
+}}
+html body div[data-testid="stExpander"] div[data-testid="stExpanderDetails"] {{
+    background: {t['card']} !important;
 }}
 
-/* ── 12. Alert / notification boxes ─────────────────────────────────── */
-html body div[data-testid="stAlert"],
-html body [data-baseweb="notification"] {{
-    background: {c['card']} !important;
-    border-color: {c['border']} !important;
-    color: {c['text']} !important;
+/* ── Alert boxes ──────────────────────────────────────────────────────────── */
+html body div[data-testid="stAlert"] {{
+    background: {t['card']} !important;
+    border-color: {t['border']} !important;
+    color: {t['text_primary']} !important;
 }}
 
-/* ── 13. Radio / Checkbox / Toggle ──────────────────────────────────── */
-html body .stRadio *, html body .stCheckbox *,
-html body .stToggle *, html body [data-testid="stRadio"] *,
-html body [data-testid="stToggle"] * {{
-    color: {c['text']} !important;
+/* ── Checkbox / Radio ─────────────────────────────────────────────────────── */
+html body .stCheckbox span, html body .stRadio span {{
+    color: {t['text_primary']} !important;
 }}
 
-/* ── 14. Custom HTML inline styles override ──────────────────────────── */
-/* Fund names, SIP names, table rows with hardcoded dark colors */
-[style*="color:#718096"], [style*="color: #718096"],
-[style*="color:#6B7280"], [style*="color: #6B7280"],
-[style*="color:#4A5568"], [style*="color: #4A5568"],
-[style*="color:#9CA3AF"], [style*="color: #9CA3AF"],
-[style*="color:#94A3B8"], [style*="color: #94A3B8"] {{
-    color: {c['text2']} !important;
-}}
-[style*="color:#e2e8f0"], [style*="color: #e2e8f0"],
-[style*="color:#E2E8F0"], [style*="color:#f0f0ff"],
-[style*="color:#F8FAFC"], [style*="color: #F8FAFC"],
-[style*="color:#f7fafc"], [style*="color:#f6ad55"] {{
-    color: {c['text']} !important;
-}}
-/* Dark card backgrounds in inline styles */
-[style*="background:#0c0f1a"], [style*="background: #0c0f1a"],
-[style*="background:#0C0F1A"], [style*="background:#1a1f2e"],
-[style*="background:#161b27"], [style*="background:#0d0d24"],
-[style*="background:#07090f"], [style*="background:#0B0914"] {{
-    background: {c['card']} !important;
-    border: 1px solid {c['border']} !important;
-}}
-/* var(--bg2) used in SIP center */
-[style*="var(--bg2)"] {{
-    background: {c['card']} !important;
-}}
+/* ── Divider ─────────────────────────────────────────────────────────────── */
+hr {{ border-color: {t['border']} !important; }}
 
-/* ── 15. Badges / Pills ──────────────────────────────────────────────── */
-[class*="badge"], [class*="chip"], [class*="tag"] {{
-    background: {c['card2']} !important;
-    border: 1px solid {c['border']} !important;
-}}
-/* Keep semantic badge colors */
-.pill-gain, .sip-badge.live {{ background: {c['success']}1a !important; }}
-.pill-loss, .sip-badge.dead {{ background: {c['danger']}1a   !important; }}
-.pill-gain, .pill-gain * {{ color: {c['success']} !important; }}
-.pill-loss, .pill-loss * {{ color: {c['danger']}   !important; }}
-
-/* ── 16. Plotly charts – transparent, text readable ─────────────────── */
-.js-plotly-plot, .plotly, .stPlotlyChart {{
-    background: transparent !important;
-}}
-
-/* ── 17. Scrollbar ───────────────────────────────────────────────────── */
+/* ── Scrollbar ────────────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {{ width: 6px; height: 6px; }}
-::-webkit-scrollbar-track {{ background: {c['bg']} !important; }}
+::-webkit-scrollbar-track {{ background: {t['bg']} !important; }}
 ::-webkit-scrollbar-thumb {{
-    background: {c['border']} !important; border-radius: 3px;
+    background: {t['border']} !important;
+    border-radius: 3px;
 }}
-::-webkit-scrollbar-thumb:hover {{ background: {c['accent']} !important; }}
-
-/* ── 18. Mobile ──────────────────────────────────────────────────────── */
-@media (max-width: 768px) {{
-    html body .block-container {{ padding: 0.5rem !important; }}
-    html body h1 {{ font-size: 22px !important; }}
-    html body h2 {{ font-size: 18px !important; }}
-    html body [data-testid="stMetricValue"] {{ font-size: 18px !important; }}
-    html body [data-testid="stMetric"] {{ padding: 10px !important; }}
-}}
-
-/* ── 19. Dividers ────────────────────────────────────────────────────── */
-hr {{ border-color: {c['border']} !important; }}
+::-webkit-scrollbar-thumb:hover {{ background: {t['primary']} !important; }}
 
 </style>""", unsafe_allow_html=True)
 
 
 def theme_toggle_button():
-    """Render the 🌙/☀️ button in the sidebar. Called from sidebar_v2.render_sidebar()."""
-    # Normalize old capitalized values
-    raw = st.session_state.get('theme', 'dark')
-    if raw in ('Light', 'Dark'):
-        raw = raw.lower()
-        st.session_state['theme'] = raw
-    is_dark = raw == 'dark'
+    """Render 🌙 / ☀️ toggle button. Called inside sidebar_v2.render_sidebar()."""
+    if "theme" not in st.session_state:
+        st.session_state["theme"] = "Light"
+    is_dark = st.session_state["theme"] == "Dark"
     label = "☀️  Light Mode" if is_dark else "🌙  Dark Mode"
-    if st.sidebar.button(label, key="__theme_toggle__", use_container_width=True):
-        st.session_state['theme'] = 'light' if is_dark else 'dark'
+    if st.button(label, key="__theme_toggle__", use_container_width=True):
+        st.session_state["theme"] = "Light" if is_dark else "Dark"
         st.rerun()
-
-
-# Convenience exports for LIGHT/DARK dicts (used by chart helpers)
-LIGHT = _c('light')
-DARK  = _c('dark')
-
-
-def get_chart_theme() -> dict:
-    """Return Plotly layout colors for the active theme."""
-    theme = st.session_state.get('theme', 'dark')
-    if theme in ('Light', 'light'):
-        return {'bg': '#FFFFFF', 'paper': '#F8FAFC',
-                'text': '#0F172A', 'grid': '#E2E8F0'}
-    return {'bg': '#1E1E2E', 'paper': '#0F0F1A',
-            'text': '#F1F5F9', 'grid': '#2D2D44'}
