@@ -1,7 +1,6 @@
 import streamlit as st
 import requests
 import pandas as pd
-import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 import difflib
@@ -2054,6 +2053,12 @@ with tab4:
             min(aum / 80000 * 10, 10),
         ]
 
+    radar_fill = [
+        "rgba(139,92,246,0.10)",
+        "rgba(16,185,129,0.10)",
+        "rgba(245,158,11,0.10)",
+        "rgba(34,211,238,0.10)",
+    ]
     radar_fig = go.Figure()
     for idx, fname in enumerate(unique_funds):
         scores = _radar_scores(funds_data[fname])
@@ -2063,7 +2068,7 @@ with tab4:
             name=fname[:22],
             line=dict(color=fund_colors[idx % 4], width=2),
             fill="toself",
-            fillcolor=fund_colors[idx % 4].replace("#", "rgba(").rstrip(")") + ",0.08)",
+            fillcolor=radar_fill[idx % 4],
             hovertemplate=f"<b>{fname[:22]}</b><br>%{{theta}}: %{{r:.1f}}/10<extra></extra>",
         ))
     radar_fig.update_layout(
