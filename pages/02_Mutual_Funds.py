@@ -6,8 +6,9 @@ from datetime import datetime, timedelta
 import difflib
 
 st.set_page_config(page_title="MF Research Hub — SipCheck", page_icon="🏦", layout="wide")
-from sidebar_v2 import render_sidebar
 from theme import apply_theme, theme_toggle_button
+apply_theme()
+from sidebar_v2 import render_sidebar
 render_sidebar()
 
 # ── Global CSS ─────────────────────────────────────────────────────────────
@@ -128,7 +129,6 @@ iframe[data-testid="stDataFrameResizable"] { border-radius: 10px; }
 .overlap-label { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
 </style>
 """, unsafe_allow_html=True)
-apply_theme()
 
 # ═══════════════════════════════════════════════════════════════════════════
 # STATIC DATA

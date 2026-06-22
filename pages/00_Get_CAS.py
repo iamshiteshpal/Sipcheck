@@ -404,9 +404,9 @@ def main() -> None:
         layout="centered",
         initial_sidebar_state="auto",
     )
+    apply_theme()
     render_sidebar()
     _inject_css()
-    apply_theme()
 
     st.markdown(f"""
 <div style="text-align:center;padding:1.8rem 0 1rem;">

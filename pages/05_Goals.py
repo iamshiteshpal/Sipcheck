@@ -6,8 +6,9 @@ from datetime import datetime, date
 import math
 
 st.set_page_config(page_title="Goals — SipCheck", page_icon="🎯", layout="wide")
-from sidebar_v2 import render_sidebar
 from theme import apply_theme, theme_toggle_button
+apply_theme()
+from sidebar_v2 import render_sidebar
 render_sidebar()
 
 
@@ -97,7 +98,6 @@ section[data-testid="stSidebar"] { background: #0B0914; border-right: 1px solid 
 .pulse-dot { animation: pulse-dot 2s ease-in-out infinite; }
 </style>
 """, unsafe_allow_html=True)
-apply_theme()
 
 # ─── GOAL TEMPLATES ───────────────────────────────────────────────────────────
 GOAL_TEMPLATES = {
