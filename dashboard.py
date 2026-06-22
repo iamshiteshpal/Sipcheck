@@ -2,6 +2,7 @@
 import streamlit.components.v1 as components
 from sidebar_v2 import render_sidebar
 from home_v2 import render_home_v2
+from theme import apply_theme, theme_toggle_button
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -2969,6 +2970,7 @@ TABS.allocation();
 def run_app():
     apply_page_config()
     inject_global_styles()
+    apply_theme()
     initialize_session_state()
     render_sidebar()
     active = active_data()

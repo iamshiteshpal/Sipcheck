@@ -11,7 +11,9 @@ st.set_page_config(
 from sidebar_v2 import render_sidebar
 render_sidebar()
 from ui_theme import inject_theme, page_header, section
+from theme import apply_theme, theme_toggle_button
 inject_theme()
+apply_theme()
 
 # ── Extra page CSS ────────────────────────────────────────────────────────
 st.markdown("""

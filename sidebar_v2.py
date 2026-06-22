@@ -13,6 +13,7 @@
 # ──────────────────────────────────────────────────────────────────
 import os
 import streamlit as st
+from theme import theme_toggle_button
 
 NAV = [
     ("🏠   SipCheck Home",   "dashboard.py"),
@@ -90,6 +91,9 @@ def render_sidebar():
                     unsafe_allow_html=True,
                 )
 
+        st.markdown("<div style='margin-top:1rem;'></div>", unsafe_allow_html=True)
+        theme_toggle_button()
+
         st.markdown(
-            """<div style="margin-top:1.2rem;padding-top:0.9rem;border-top:1px solid rgba(139,92,246,0.15);font-size:0.62rem;color:#374151;letter-spacing:0.06em;">Your data never leaves your device.</div>""",
+            """<div style="margin-top:0.8rem;padding-top:0.9rem;border-top:1px solid rgba(139,92,246,0.15);font-size:0.62rem;color:#374151;letter-spacing:0.06em;">Your data never leaves your device.</div>""",
             unsafe_allow_html=True)

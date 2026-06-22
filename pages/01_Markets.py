@@ -12,7 +12,9 @@ st.set_page_config(page_title="Markets — SipCheck", page_icon="📈", layout="
 from sidebar_v2 import render_sidebar
 render_sidebar()
 from ui_theme import inject_theme
+from theme import apply_theme, theme_toggle_button
 inject_theme()
+apply_theme()
 
 # ── Design tokens ─────────────────────────────────────────────────────────
 VL  = "#8b5cf6"

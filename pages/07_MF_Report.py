@@ -13,6 +13,7 @@ st.set_page_config(
     layout="wide",
 )
 from sidebar_v2 import render_sidebar
+from theme import apply_theme, theme_toggle_button
 render_sidebar()
 
 
@@ -258,6 +259,7 @@ st.markdown("""
   .block-container { padding-top: 1.5rem; }
 </style>
 """, unsafe_allow_html=True)
+apply_theme()
 
 
 # ────────────────────────────────────────────────────────────────────────────
