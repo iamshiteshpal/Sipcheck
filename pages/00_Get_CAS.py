@@ -7,7 +7,6 @@ import streamlit as st
 import streamlit.components.v1 as components
 from datetime import date
 from sidebar_v2 import render_sidebar
-from theme import apply_theme, theme_toggle_button
 
 # ── Design tokens ──────────────────────────────────────────────────────────────
 _BG  = "#070714"; _GL  = "rgba(17,17,48,0.55)"
@@ -406,7 +405,6 @@ def main() -> None:
     )
     render_sidebar()
     _inject_css()
-    apply_theme()
 
     st.markdown(f"""
 <div style="text-align:center;padding:1.8rem 0 1rem;">

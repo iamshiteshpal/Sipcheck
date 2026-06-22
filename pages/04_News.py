@@ -18,9 +18,7 @@ except ImportError:
 
 st.set_page_config(page_title="News & Pulse — SipCheck", page_icon="📰", layout="wide")
 from sidebar_v2 import render_sidebar
-from theme import apply_theme, theme_toggle_button
 render_sidebar()
-apply_theme()
 
 # ── Constants ─────────────────────────────────────────────────────────────────
 
